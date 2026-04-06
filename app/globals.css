@@ -230,6 +230,221 @@ img {
   font-size: 0.98rem;
 }
 
+.market-layout-home {
+  gap: 20px;
+}
+
+.landing-hero {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius-xl) + 6px);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.82)),
+    radial-gradient(circle at top right, rgba(70, 99, 219, 0.12), transparent 24%),
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.landing-hero-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.landing-copy {
+  display: grid;
+  gap: 12px;
+  max-width: 760px;
+}
+
+.landing-brand {
+  margin: 0;
+  font-family: var(--brand-font);
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+  line-height: 0.92;
+  letter-spacing: -0.07em;
+}
+
+.landing-copy-text {
+  margin: 0;
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.landing-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 0 20px;
+  border: 1px solid rgba(17, 36, 58, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.landing-search-icon {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.landing-search-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  font-size: 1rem;
+}
+
+.landing-feature-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.92fr);
+  gap: 18px;
+}
+
+.landing-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.landing-category-card {
+  display: grid;
+  gap: 18px;
+  align-content: space-between;
+  min-height: 176px;
+  padding: 20px;
+  border: 1px solid rgba(17, 36, 58, 0.08);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.94);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.landing-category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(17, 36, 58, 0.08);
+}
+
+.landing-category-card.studio {
+  border-color: rgba(77, 113, 255, 0.18);
+}
+
+.landing-category-card.apartment {
+  border-color: rgba(15, 118, 110, 0.18);
+}
+
+.landing-category-card.villa {
+  border-color: rgba(249, 115, 22, 0.18);
+}
+
+.landing-category-card.officetel {
+  border-color: rgba(124, 58, 237, 0.18);
+}
+
+.landing-category-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-category-copy strong {
+  font-size: 1.35rem;
+  letter-spacing: -0.04em;
+}
+
+.landing-category-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.landing-category-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  width: fit-content;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(17, 36, 58, 0.06);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.landing-promo-card {
+  display: grid;
+  gap: 16px;
+  min-height: 100%;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(135deg, rgba(16, 32, 51, 0.95), rgba(37, 99, 235, 0.94)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  color: white;
+}
+
+.landing-promo-main {
+  display: grid;
+  gap: 10px;
+}
+
+.landing-promo-main strong {
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.landing-promo-main p,
+.landing-promo-note {
+  margin: 0;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.landing-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.landing-stat-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.landing-stat-card span {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.landing-stat-card strong {
+  font-size: 1.4rem;
+}
+
+.landing-filter-panel {
+  gap: 12px;
+}
+
+.guest-safe-note {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(17, 36, 58, 0.05);
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 .eyebrow,
 .listing-badge,
 .status-pill {
@@ -489,6 +704,22 @@ img {
   justify-content: space-between;
 }
 
+.landing-listing-grid {
+  gap: 14px;
+}
+
+.landing-listing-card {
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+
+.listing-blurb {
+  color: var(--muted);
+}
+
+.landing-selected-panel {
+  gap: 12px;
+}
+
 .map-column {
   position: sticky;
   top: 18px;
@@ -574,6 +805,28 @@ img {
   background: rgba(17, 36, 58, 0.06);
   color: var(--muted);
   border-color: var(--line);
+}
+
+.auth-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 17, 31, 0.42);
+  backdrop-filter: blur(12px);
+  z-index: 70;
+}
+
+.auth-prompt-dialog {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 60px rgba(10, 17, 31, 0.22);
 }
 
 .map-marker-chip {
@@ -662,6 +915,19 @@ img {
 
 .auth-card.admin {
   width: min(620px, 100%);
+}
+
+.signup-card {
+  width: min(720px, 100%);
+}
+
+.signup-verify-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  background: rgba(15, 118, 110, 0.05);
 }
 
 .field {
@@ -1115,6 +1381,7 @@ img {
 }
 
 @media (max-width: 1200px) {
+  .landing-feature-grid,
   .market-shell,
   .admin-lead-card {
     grid-template-columns: 1fr;
@@ -1152,6 +1419,15 @@ img {
     gap: 6px;
   }
 
+  .landing-category-grid,
+  .landing-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero-head {
+    flex-direction: column;
+  }
+
   .listing-card {
     grid-template-columns: 1fr;
   }
@@ -1173,6 +1449,20 @@ img {
   .site-shell {
     width: min(100%, calc(100% - 16px));
     padding-top: 12px;
+  }
+
+  .landing-hero {
+    padding: 18px;
+  }
+
+  .landing-search {
+    min-height: 56px;
+    padding-inline: 16px;
+  }
+
+  .landing-category-card {
+    min-height: 148px;
+    padding: 16px;
   }
 
   .hero-panel,

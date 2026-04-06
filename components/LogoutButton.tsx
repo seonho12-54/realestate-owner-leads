@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 
-import { clearLocationAccessCache } from "@/lib/location-access";
-
 export function LogoutButton({
   action,
   redirectTo = "/",
@@ -33,7 +31,6 @@ export function LogoutButton({
     } catch (error) {
       console.error("Failed to logout", error);
     } finally {
-      clearLocationAccessCache();
       window.location.assign(redirectTo);
     }
   }
