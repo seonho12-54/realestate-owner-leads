@@ -3,12 +3,23 @@ import { propertyTypeOptions, transactionTypeOptions } from "@/lib/validation";
 const propertyTypeLabelMap = Object.fromEntries(propertyTypeOptions.map((option) => [option.value, option.label]));
 const transactionTypeLabelMap = Object.fromEntries(transactionTypeOptions.map((option) => [option.value, option.label]));
 
+const numberFormatter = new Intl.NumberFormat("ko-KR");
+const areaFormatter = new Intl.NumberFormat("ko-KR", {
+  maximumFractionDigits: 2,
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Seoul",
+});
+
 export function formatKrw(value: number | null): string {
   if (value === null) {
     return "-";
   }
 
-  return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
+  return `${numberFormatter.format(value)}원`;
 }
 
 export function formatCompactKrw(value: number | null): string {
@@ -31,7 +42,7 @@ export function formatCompactKrw(value: number | null): string {
     return `${Math.floor(value / 10000).toLocaleString("ko-KR")}만`;
   }
 
-  return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
+  return `${numberFormatter.format(value)}원`;
 }
 
 export function formatArea(value: number | null): string {
@@ -39,16 +50,11 @@ export function formatArea(value: number | null): string {
     return "-";
   }
 
-  return `${new Intl.NumberFormat("ko-KR", {
-    maximumFractionDigits: 2,
-  }).format(value)}㎡`;
+  return `${areaFormatter.format(value)}㎡`;
 }
 
 export function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return dateTimeFormatter.format(new Date(value));
 }
 
 export function formatTradeLabel(params: {
@@ -81,4 +87,3 @@ export function getPropertyTypeLabel(value: string): string {
 export function getTransactionTypeLabel(value: string): string {
   return transactionTypeLabelMap[value] ?? value;
 }
-
