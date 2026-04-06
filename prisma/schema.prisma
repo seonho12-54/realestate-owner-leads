@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  super
+  manager
+}
+
+enum PropertyType {
+  apartment
+  officetel
+  villa
+  house
+  commercial
+  land
+  other
+}
+
+enum TransactionType {
+  sale
+  jeonse
+  monthly
+  consult
+}
+
+enum LeadStatus {
+  new
+  contacted
+  reviewing
+  completed
+  closed
+}
+
+model Office {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  phone       String?  @db.VarChar(30)
+  address     String?  @db.VarChar(255)
+  description String?  @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  admins Admin[]
+  leads  Lead[]
+
+  @@map("offices")
+}
+
+model Admin {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  officeId     BigInt?   @map("office_id") @db.UnsignedBigInt
+  email        String    @unique @db.VarChar(191)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  name         String    @db.VarChar(100)
+  role         AdminRole @default(manager)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at") @db.DateTime(0)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  office    Office?    @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  auditLogs AuditLog[]
+
+  @@index([officeId])
+  @@map("admins")
+}
+
+model Lead {
+  id              BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  officeId        BigInt          @map("office_id") @db.UnsignedBigInt
+  ownerName       String          @map("owner_name") @db.VarChar(100)
+  phone           String          @db.VarChar(30)
+  email           String?         @db.VarChar(191)
+  propertyType    PropertyType    @map("property_type")
+  transactionType TransactionType @map("transaction_type")
+  addressLine1    String          @map("address_line1") @db.VarChar(255)
+  addressLine2    String?         @map("address_line2") @db.VarChar(255)
+  postalCode      String?         @map("postal_code") @db.VarChar(20)
+  areaM2          Decimal?        @map("area_m2") @db.Decimal(10, 2)
+  priceKrw        BigInt?         @map("price_krw") @db.UnsignedBigInt
+  depositKrw      BigInt?         @map("deposit_krw") @db.UnsignedBigInt
+  monthlyRentKrw  BigInt?         @map("monthly_rent_krw") @db.UnsignedBigInt
+  moveInDate      String?         @map("move_in_date") @db.VarChar(50)
+  contactTime     String?         @map("contact_time") @db.VarChar(100)
+  description     String?         @db.Text
+  privacyConsent  Boolean         @default(false) @map("privacy_consent")
+  marketingConsent Boolean        @default(false) @map("marketing_consent")
+  status          LeadStatus      @default(new)
+  utmSource       String?         @map("utm_source") @db.VarChar(100)
+  utmMedium       String?         @map("utm_medium") @db.VarChar(100)
+  utmCampaign     String?         @map("utm_campaign") @db.VarChar(100)
+  utmTerm         String?         @map("utm_term") @db.VarChar(100)
+  utmContent      String?         @map("utm_content") @db.VarChar(100)
+  referrerUrl     String?         @map("referrer_url") @db.VarChar(500)
+  landingUrl      String?         @map("landing_url") @db.VarChar(500)
+  userAgent       String?         @map("user_agent") @db.VarChar(500)
+  submittedIp     String?         @map("submitted_ip") @db.VarChar(64)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  office  Office       @relation(fields: [officeId], references: [id])
+  photos  LeadPhoto[]
+
+  @@index([officeId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model LeadPhoto {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  leadId       BigInt   @map("lead_id") @db.UnsignedBigInt
+  s3Key        String   @map("s3_key") @db.VarChar(500)
+  fileName     String   @map("file_name") @db.VarChar(255)
+  contentType  String   @map("content_type") @db.VarChar(100)
+  fileSize     BigInt   @map("file_size") @db.UnsignedBigInt
+  displayOrder Int      @default(0) @map("display_order") @db.UnsignedInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_photos")
+}
+
+model AuditLog {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  adminId    BigInt?   @map("admin_id") @db.UnsignedBigInt
+  actionType String    @map("action_type") @db.VarChar(100)
+  entityType String    @map("entity_type") @db.VarChar(50)
+  entityId   BigInt?   @map("entity_id") @db.UnsignedBigInt
+  requestIp  String?   @map("request_ip") @db.VarChar(64)
+  userAgent  String?   @map("user_agent") @db.VarChar(500)
+  payloadJson Json?    @map("payload_json")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+

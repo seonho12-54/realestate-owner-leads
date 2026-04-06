@@ -1,0 +1,100 @@
+CREATE TABLE IF NOT EXISTS offices (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  phone VARCHAR(30) NULL,
+  address VARCHAR(255) NULL,
+  description VARCHAR(255) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_offices_slug (slug)
+);
+
+CREATE TABLE IF NOT EXISTS admins (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  office_id BIGINT UNSIGNED NULL,
+  email VARCHAR(191) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  role ENUM('super', 'manager') NOT NULL DEFAULT 'manager',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  last_login_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_admins_email (email),
+  KEY idx_admins_office_id (office_id),
+  CONSTRAINT fk_admins_office_id FOREIGN KEY (office_id) REFERENCES offices(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS leads (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  office_id BIGINT UNSIGNED NOT NULL,
+  owner_name VARCHAR(100) NOT NULL,
+  phone VARCHAR(30) NOT NULL,
+  email VARCHAR(191) NULL,
+  property_type ENUM('apartment', 'officetel', 'villa', 'house', 'commercial', 'land', 'other') NOT NULL,
+  transaction_type ENUM('sale', 'jeonse', 'monthly', 'consult') NOT NULL,
+  address_line1 VARCHAR(255) NOT NULL,
+  address_line2 VARCHAR(255) NULL,
+  postal_code VARCHAR(20) NULL,
+  area_m2 DECIMAL(10, 2) NULL,
+  price_krw BIGINT UNSIGNED NULL,
+  deposit_krw BIGINT UNSIGNED NULL,
+  monthly_rent_krw BIGINT UNSIGNED NULL,
+  move_in_date VARCHAR(50) NULL,
+  contact_time VARCHAR(100) NULL,
+  description TEXT NULL,
+  privacy_consent TINYINT(1) NOT NULL DEFAULT 0,
+  marketing_consent TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('new', 'contacted', 'reviewing', 'completed', 'closed') NOT NULL DEFAULT 'new',
+  utm_source VARCHAR(100) NULL,
+  utm_medium VARCHAR(100) NULL,
+  utm_campaign VARCHAR(100) NULL,
+  utm_term VARCHAR(100) NULL,
+  utm_content VARCHAR(100) NULL,
+  referrer_url VARCHAR(500) NULL,
+  landing_url VARCHAR(500) NULL,
+  user_agent VARCHAR(500) NULL,
+  submitted_ip VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_leads_office_id (office_id),
+  KEY idx_leads_status (status),
+  KEY idx_leads_created_at (created_at),
+  CONSTRAINT fk_leads_office_id FOREIGN KEY (office_id) REFERENCES offices(id)
+);
+
+CREATE TABLE IF NOT EXISTS lead_photos (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  lead_id BIGINT UNSIGNED NOT NULL,
+  s3_key VARCHAR(500) NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  content_type VARCHAR(100) NOT NULL,
+  file_size BIGINT UNSIGNED NOT NULL,
+  display_order INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_lead_photos_lead_id (lead_id),
+  CONSTRAINT fk_lead_photos_lead_id FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  admin_id BIGINT UNSIGNED NULL,
+  action_type VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id BIGINT UNSIGNED NULL,
+  request_ip VARCHAR(64) NULL,
+  user_agent VARCHAR(500) NULL,
+  payload_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_audit_logs_admin_id (admin_id),
+  KEY idx_audit_logs_entity (entity_type, entity_id),
+  KEY idx_audit_logs_created_at (created_at)
+);
+
