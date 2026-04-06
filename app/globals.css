@@ -481,12 +481,118 @@ img {
   min-height: 620px;
 }
 
+.market-map-shell,
+.sell-map-shell {
+  display: grid;
+}
+
+.market-map-shell {
+  gap: 0;
+}
+
 .map-fallback {
   display: grid;
   place-items: center;
   padding: 24px;
   color: var(--muted);
   text-align: center;
+}
+
+.market-map-canvas {
+  min-height: 620px;
+}
+
+.map-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.map-legend-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.map-legend-item.sale {
+  background: rgba(249, 115, 22, 0.1);
+  color: #c25d11;
+}
+
+.map-legend-item.jeonse {
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--primary);
+}
+
+.map-legend-item.monthly {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+}
+
+.map-legend-item.neutral {
+  background: rgba(17, 36, 58, 0.06);
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.map-marker-chip {
+  display: grid;
+  gap: 2px;
+  min-width: 88px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 16px 36px rgba(17, 36, 58, 0.16);
+  color: white;
+  cursor: pointer;
+  transform: translateY(-8px);
+}
+
+.map-marker-chip.sale {
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+}
+
+.map-marker-chip.jeonse {
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+}
+
+.map-marker-chip.monthly {
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.map-marker-chip.consult {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+
+.map-marker-chip.is-selected {
+  box-shadow: 0 20px 44px rgba(15, 118, 110, 0.24);
+  outline: 3px solid rgba(255, 255, 255, 0.92);
+}
+
+.map-marker-type {
+  font-size: 0.72rem;
+  font-weight: 800;
+  opacity: 0.84;
+}
+
+.map-marker-price {
+  font-size: 0.9rem;
+  letter-spacing: -0.02em;
 }
 
 .selected-panel {
@@ -582,6 +688,11 @@ img {
   cursor: pointer;
 }
 
+.address-result.selected {
+  border-color: rgba(15, 118, 110, 0.3);
+  box-shadow: 0 12px 26px rgba(15, 118, 110, 0.1);
+}
+
 .address-result strong,
 .detail-card strong,
 .selected-header strong {
@@ -596,6 +707,106 @@ img {
 
 .address-result-line {
   font-size: 0.92rem;
+}
+
+.address-selected-summary,
+.inline-note-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.address-selected-summary {
+  padding: 14px 16px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: var(--radius-md);
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.address-selected-summary strong {
+  font-size: 0.95rem;
+}
+
+.inline-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(17, 36, 58, 0.06);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.inline-note.success {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--primary);
+}
+
+.sell-map-shell {
+  gap: 12px;
+}
+
+.sell-map-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.sell-map-status {
+  display: grid;
+  gap: 4px;
+}
+
+.sell-map-status span,
+.sell-map-empty {
+  color: var(--muted);
+}
+
+.sell-map-canvas {
+  min-height: 380px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.sell-map-empty {
+  padding: 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.sell-map-empty strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.sell-map-overlay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: white;
+  box-shadow: 0 14px 36px rgba(17, 36, 58, 0.16);
+  transform: translateY(-6px);
+}
+
+.sell-map-overlay.current {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.sell-map-overlay.target {
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
 }
 
 .photo-grid {
@@ -893,5 +1104,9 @@ img {
   .map-canvas,
   .map-fallback {
     min-height: 420px;
+  }
+
+  .sell-map-canvas {
+    min-height: 300px;
   }
 }

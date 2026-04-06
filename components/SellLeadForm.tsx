@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 
+import { SellMapPreview } from "@/components/SellMapPreview";
 import type { OfficeOption } from "@/lib/offices";
 import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 import { getValidationMessage, leadCreateSchema, propertyTypeOptions, transactionTypeOptions } from "@/lib/validation";
@@ -50,13 +51,6 @@ type FormState = {
   description: string;
   privacyConsent: boolean;
   marketingConsent: boolean;
-  utmSource: string;
-  utmMedium: string;
-  utmCampaign: string;
-  utmTerm: string;
-  utmContent: string;
-  referrerUrl: string;
-  landingUrl: string;
 };
 
 const MAX_PHOTO_COUNT = 10;
@@ -94,19 +88,14 @@ export function SellLeadForm({
     description: "",
     privacyConsent: false,
     marketingConsent: false,
-    utmSource: "",
-    utmMedium: "",
-    utmCampaign: "",
-    utmTerm: "",
-    utmContent: "",
-    referrerUrl: "",
-    landingUrl: "",
   });
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [addressQuery, setAddressQuery] = useState("");
   const [addressResults, setAddressResults] = useState<AddressCandidate[]>([]);
-  const [selectedAddressLabel, setSelectedAddressLabel] = useState<string | null>(null);
-  const [locationMessage, setLocationMessage] = useState(`매물 접수 전에 현재 위치가 ${SERVICE_REGION_LABEL} 중 한 곳인지 확인해 주세요.`);
+  const [selectedAddress, setSelectedAddress] = useState<AddressCandidate | null>(null);
+  const [locationMessage, setLocationMessage] = useState(
+    `매물 접수 전에 현재 위치가 ${SERVICE_REGION_LABEL} 중 한 곳인지 먼저 확인해 주세요.`,
+  );
   const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -117,6 +106,7 @@ export function SellLeadForm({
   const [hasAddressSearched, setHasAddressSearched] = useState(false);
 
   const hasUploadingPhoto = useMemo(() => photos.some((photo) => photo.status === "uploading"), [photos]);
+  const isLocationVerified = Boolean(browserCoords);
 
   function handleFieldChange<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
     setForm((current) => ({
@@ -127,7 +117,7 @@ export function SellLeadForm({
 
   async function handleLocationCheck() {
     if (!navigator.geolocation) {
-      setLocationMessage("이 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
+      setLocationMessage("현재 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
       return;
     }
 
@@ -156,7 +146,7 @@ export function SellLeadForm({
 
           if (!result.allowed) {
             setBrowserCoords(null);
-            setLocationMessage(`현재 위치(${result.addressName ?? "확인 불가"})에서는 접수할 수 없습니다.`);
+            setLocationMessage(`현재 위치(${result.addressName ?? "확인 불가"})에서는 매물 등록을 할 수 없습니다.`);
             return;
           }
 
@@ -176,12 +166,12 @@ export function SellLeadForm({
         setIsCheckingLocation(false);
 
         if (error.code === error.PERMISSION_DENIED) {
-          setLocationMessage("브라우저 위치 권한을 허용해 주세요.");
+          setLocationMessage("브라우저에서 위치 권한을 허용해 주세요.");
           return;
         }
 
         if (error.code === error.TIMEOUT) {
-          setLocationMessage("위치 확인 시간이 초과되었습니다. 다시 시도해 주세요.");
+          setLocationMessage("위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
           return;
         }
 
@@ -204,7 +194,7 @@ export function SellLeadForm({
 
     if (!query) {
       setAddressResults([]);
-      setAddressSearchError("도로명주소, 지번, 건물명 중 하나를 입력해 주세요.");
+      setAddressSearchError("도로명주소나 지번 주소를 입력해 주세요.");
       return;
     }
 
@@ -218,7 +208,12 @@ export function SellLeadForm({
         throw new Error(result.error ?? "주소 검색에 실패했습니다.");
       }
 
-      setAddressResults(result.results ?? []);
+      const nextResults = (result.results ?? []) as AddressCandidate[];
+      setAddressResults(nextResults);
+
+      if (nextResults.length === 1) {
+        selectAddress(nextResults[0]);
+      }
     } catch (error) {
       setAddressResults([]);
       setAddressSearchError(error instanceof Error ? error.message : "주소 검색에 실패했습니다.");
@@ -235,12 +230,12 @@ export function SellLeadForm({
   }
 
   function selectAddress(address: AddressCandidate) {
+    setSelectedAddress(address);
     setForm((current) => ({
       ...current,
       addressLine1: address.roadAddress ?? address.addressName,
       postalCode: address.postalCode ?? current.postalCode,
     }));
-    setSelectedAddressLabel(`${address.region2DepthName} ${address.region3DepthName}`);
     setAddressResults([]);
     setAddressQuery(address.roadAddress ?? address.addressName);
     setAddressSearchError(null);
@@ -342,6 +337,7 @@ export function SellLeadForm({
       if (target) {
         URL.revokeObjectURL(target.previewUrl);
       }
+
       return current.filter((photo) => photo.id !== photoId);
     });
   }
@@ -351,7 +347,12 @@ export function SellLeadForm({
     setSubmitError(null);
 
     if (!browserCoords) {
-      setSubmitError("현재 위치 확인 후에만 등록할 수 있습니다.");
+      setSubmitError("현재 위치 확인 후에만 매물 등록을 진행할 수 있습니다.");
+      return;
+    }
+
+    if (!selectedAddress) {
+      setSubmitError("주소 검색 결과에서 등록할 주소를 하나 선택해 주세요.");
       return;
     }
 
@@ -436,7 +437,7 @@ export function SellLeadForm({
   if (offices.length === 0) {
     return (
       <div className="empty-panel">
-        <strong>활성화된 중개사무소가 없습니다</strong>
+        <strong>등록 가능한 중개사무소가 없습니다</strong>
         <p>`offices` 테이블에 중개사무소 데이터를 먼저 넣어 주세요.</p>
       </div>
     );
@@ -448,14 +449,18 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">1. 위치 확인</span>
-            <h1 className="page-title">허용 지역에서 접속한 경우에만 등록할 수 있어요</h1>
+            <h1 className="page-title">허용 지역에서 접속했는지 먼저 확인해 주세요</h1>
           </div>
           <button type="button" className="button button-secondary" onClick={handleLocationCheck} disabled={isCheckingLocation}>
             {isCheckingLocation ? "확인 중..." : "현재 위치 확인"}
           </button>
         </div>
         <p className="page-copy">{locationMessage}</p>
-        <p className="muted-row">허용 지역은 {SERVICE_REGION_LABEL} 입니다.</p>
+        <div className="inline-note-list">
+          <span className={`inline-note${isLocationVerified ? " success" : ""}`}>
+            {isLocationVerified ? "위치 확인 완료" : `허용 지역: ${SERVICE_REGION_LABEL}`}
+          </span>
+        </div>
       </section>
 
       <section className="form-card">
@@ -482,7 +487,7 @@ export function SellLeadForm({
               className="input"
               value={form.listingTitle}
               onChange={(event) => handleFieldChange("listingTitle", event.target.value)}
-              placeholder="예: 다운동 채광 좋은 투룸 전세"
+              placeholder="예: 다운동 채광 좋은 2룸 전세"
             />
           </label>
           <label className="field">
@@ -513,26 +518,34 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">3. 주소 찾기</span>
-            <h2 className="section-title">다운동 또는 포곡읍 주소만 검색 결과로 보여줍니다</h2>
+            <h2 className="section-title">도로명주소, 지번, 건물명으로 검색해 바로 선택하세요</h2>
           </div>
         </div>
 
         <div className="address-search-shell">
-          <p className="muted-row">예: 다운로 120, 다운동 123-4, 포곡로 85, 포곡읍 전대리</p>
+          <p className="muted-row">예: 다운로 120, 다운동 123-4, 포곡로 85, 포곡읍 전대리, 건물명</p>
           <div className="address-search-row">
             <input
               className="input"
               value={addressQuery}
               onChange={(event) => setAddressQuery(event.target.value)}
               onKeyDown={handleAddressKeyDown}
-              placeholder="도로명주소나 지번주소를 입력해 주세요"
+              placeholder="도로명주소, 지번 주소, 건물명을 입력해 주세요"
             />
             <button type="button" className="button button-secondary" onClick={handleAddressSearch} disabled={isSearchingAddress}>
               {isSearchingAddress ? "검색 중..." : "주소 찾기"}
             </button>
           </div>
           {addressSearchError ? <div className="error-banner">{addressSearchError}</div> : null}
-          {selectedAddressLabel ? <p className="muted-row">선택 지역: {selectedAddressLabel}</p> : null}
+          {selectedAddress ? (
+            <div className="address-selected-summary">
+              <strong>선택된 주소</strong>
+              <span>{selectedAddress.roadAddress ?? selectedAddress.addressName}</span>
+              <span>
+                {selectedAddress.region2DepthName} {selectedAddress.region3DepthName}
+              </span>
+            </div>
+          ) : null}
           {hasAddressSearched && !isSearchingAddress && addressResults.length === 0 && !addressSearchError ? (
             <p className="muted-row">검색 결과가 없습니다. 다운동 또는 포곡읍 주소로 다시 검색해 주세요.</p>
           ) : null}
@@ -542,7 +555,7 @@ export function SellLeadForm({
                 <button
                   key={`${result.addressName}-${result.latitude}-${result.longitude}`}
                   type="button"
-                  className="address-result"
+                  className={`address-result${selectedAddress?.latitude === result.latitude && selectedAddress?.longitude === result.longitude ? " selected" : ""}`}
                   onClick={() => selectAddress(result)}
                 >
                   <strong>{result.roadAddress ?? result.addressName}</strong>
@@ -557,10 +570,19 @@ export function SellLeadForm({
           ) : null}
         </div>
 
+        <SellMapPreview browserCoords={browserCoords} selectedAddress={selectedAddress} transactionType={form.transactionType} />
+
         <div className="form-grid">
           <label className="field">
             <span>선택한 주소</span>
-            <input className="input" value={form.addressLine1} onChange={(event) => handleFieldChange("addressLine1", event.target.value)} />
+            <input
+              className="input"
+              value={form.addressLine1}
+              onChange={(event) => {
+                handleFieldChange("addressLine1", event.target.value);
+                setSelectedAddress(null);
+              }}
+            />
           </label>
           <label className="field">
             <span>상세 주소</span>
@@ -657,7 +679,7 @@ export function SellLeadForm({
         </div>
         <div className="field">
           <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple onChange={handleFileChange} />
-          <span className="muted-row">사진은 S3에 바로 업로드되며, 관리자 공개 후 목록과 상세 화면에 노출됩니다.</span>
+          <span className="muted-row">관리자가 공개 승인한 뒤에만 사진과 매물이 지도와 목록에 노출됩니다.</span>
         </div>
         {uploadError ? <div className="error-banner">{uploadError}</div> : null}
         {photos.length > 0 ? (
@@ -672,7 +694,7 @@ export function SellLeadForm({
                   </span>
                 </div>
                 <button type="button" className="button button-ghost button-small" onClick={() => removePhoto(photo.id)}>
-                  제거
+                  삭제
                 </button>
               </div>
             ))}
