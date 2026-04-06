@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { LocationGate } from "@/components/LocationGate";
 import { MarketplaceShell } from "@/components/MarketplaceShell";
-import { getUserSession } from "@/lib/auth";
+import { getAdminSession, getUserSession } from "@/lib/auth";
 import { listPublishedListings, type PublicListing } from "@/lib/leads";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +22,10 @@ export default async function HomePage() {
   }
 
   const userSession = getUserSession();
+  const adminSession = getAdminSession();
 
   return (
-    <LocationGate>
+    <LocationGate bypass={Boolean(adminSession)}>
       {loadError ? (
         <div className="page-stack">
           <section className="hero-panel">

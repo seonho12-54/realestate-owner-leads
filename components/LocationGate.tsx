@@ -14,10 +14,12 @@ function getInsecureContextMessage() {
 
 export function LocationGate({
   children,
+  bypass = false,
   title = "울산 중구 내에서만 이용할 수 있어요",
   description = "서비스 사용 전 위치 권한을 허용해 주세요. 현재 위치를 확인해 울산광역시 중구 접속만 허용합니다.",
 }: {
   children: ReactNode;
+  bypass?: boolean;
   title?: string;
   description?: string;
 }) {
@@ -25,6 +27,11 @@ export function LocationGate({
   const [message, setMessage] = useState(description);
 
   useEffect(() => {
+    if (bypass) {
+      setState("allowed");
+      return;
+    }
+
     const cached = window.sessionStorage.getItem(CACHE_KEY);
     if (!cached) {
       return;
@@ -33,9 +40,14 @@ export function LocationGate({
     if (Date.now() - Number(cached) < CACHE_TTL_MS) {
       setState("allowed");
     }
-  }, []);
+  }, [bypass]);
 
   async function requestAccess() {
+    if (bypass) {
+      setState("allowed");
+      return;
+    }
+
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
       setState("error");
       setMessage(getInsecureContextMessage());
@@ -107,7 +119,7 @@ export function LocationGate({
     );
   }
 
-  if (state === "allowed") {
+  if (bypass || state === "allowed") {
     return <>{children}</>;
   }
 
