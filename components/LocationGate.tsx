@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 type GateState = "idle" | "checking" | "allowed" | "blocked" | "error";
@@ -7,12 +8,16 @@ type GateState = "idle" | "checking" | "allowed" | "blocked" | "error";
 const CACHE_KEY = "junggu-location-approved-at";
 const CACHE_TTL_MS = 1000 * 60 * 30;
 
+function getInsecureContextMessage() {
+  return "현재 주소는 HTTP라서 브라우저 위치 권한이 차단될 수 있습니다. HTTPS 도메인으로 접속한 뒤 다시 시도해 주세요.";
+}
+
 export function LocationGate({
   children,
   title = "울산 중구 내에서만 이용할 수 있어요",
   description = "서비스 사용 전 위치 권한을 허용해 주세요. 현재 위치를 확인해 울산광역시 중구 접속만 허용합니다.",
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   title?: string;
   description?: string;
 }) {
@@ -31,6 +36,12 @@ export function LocationGate({
   }, []);
 
   async function requestAccess() {
+    if (!window.isSecureContext && window.location.hostname !== "localhost") {
+      setState("error");
+      setMessage(getInsecureContextMessage());
+      return;
+    }
+
     if (!navigator.geolocation) {
       setState("error");
       setMessage("이 브라우저는 위치 서비스를 지원하지 않습니다.");
@@ -81,6 +92,11 @@ export function LocationGate({
           return;
         }
 
+        if (error.code === error.TIMEOUT) {
+          setMessage("위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+          return;
+        }
+
         setMessage("현재 위치를 가져오지 못했습니다.");
       },
       {
@@ -108,4 +124,3 @@ export function LocationGate({
     </div>
   );
 }
-
