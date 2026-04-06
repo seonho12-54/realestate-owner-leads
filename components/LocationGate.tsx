@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 type GateState = "idle" | "checking" | "allowed" | "blocked" | "error";
 
-const CACHE_KEY = "junggu-location-approved-at";
+const CACHE_KEY = "allowed-location-approved-at";
 const CACHE_TTL_MS = 1000 * 60 * 30;
 
 function getInsecureContextMessage() {
@@ -14,12 +14,10 @@ function getInsecureContextMessage() {
 
 export function LocationGate({
   children,
-  bypass = false,
-  title = "위치 확인 후 둘러볼 수 있어요",
-  description = "현재 위치를 확인해 울산광역시 중구 안에서 접속했는지 먼저 확인합니다.",
+  title = "허용 지역 확인 후 둘러볼 수 있어요",
+  description = "현재 위치를 확인해 `다운동` 또는 `포곡읍`에서 접속했는지 먼저 확인합니다.",
 }: {
   children: ReactNode;
-  bypass?: boolean;
   title?: string;
   description?: string;
 }) {
@@ -27,11 +25,6 @@ export function LocationGate({
   const [message, setMessage] = useState(description);
 
   useEffect(() => {
-    if (bypass) {
-      setState("allowed");
-      return;
-    }
-
     const cached = window.sessionStorage.getItem(CACHE_KEY);
     if (!cached) {
       return;
@@ -40,14 +33,9 @@ export function LocationGate({
     if (Date.now() - Number(cached) < CACHE_TTL_MS) {
       setState("allowed");
     }
-  }, [bypass]);
+  }, []);
 
   async function requestAccess() {
-    if (bypass) {
-      setState("allowed");
-      return;
-    }
-
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
       setState("error");
       setMessage(getInsecureContextMessage());
@@ -119,7 +107,7 @@ export function LocationGate({
     );
   }
 
-  if (bypass || state === "allowed") {
+  if (state === "allowed") {
     return <>{children}</>;
   }
 

@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "다우니",
-  description: "울산광역시 중구 지역형 매물 플랫폼",
+  description: "다운동과 포곡읍 전용 지역 매물 플랫폼",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href={adminSession ? "/admin/leads" : "/"} className="site-brand" aria-label="다우니 홈">
                 다우니
               </Link>
-              <span className="site-caption">{adminSession ? "관리자 전용 콘솔" : "울산 중구 동네 매물 플랫폼"}</span>
+              <span className="site-caption">{adminSession ? "관리자 전용 콘솔" : "다운동 · 포곡읍 전용 매물 플랫폼"}</span>
             </div>
 
             <nav className="site-nav">

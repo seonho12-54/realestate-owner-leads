@@ -23,7 +23,6 @@ export async function POST(request: Request) {
     const leadId = await createLead(payload, getRequestMeta(request), {
       userId: userSession?.userId ?? null,
       adminId: adminSession?.adminId ?? null,
-      bypassLocationCheck: Boolean(adminSession),
     });
 
     return NextResponse.json({

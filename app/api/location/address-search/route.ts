@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { searchAddresses } from "@/lib/kakao";
-import { SERVICE_REGION_2 } from "@/lib/service-area";
+import { isAllowedServiceArea } from "@/lib/service-area";
 import { addressSearchSchema } from "@/lib/validation";
 
 export async function GET(request: Request) {
@@ -14,7 +14,9 @@ export async function GET(request: Request) {
     const results = await searchAddresses(query);
 
     return NextResponse.json({
-      results: results.filter((result) => result.region2DepthName === SERVICE_REGION_2),
+      results: results.filter((result) =>
+        isAllowedServiceArea(result.region1DepthName, result.region2DepthName, result.region3DepthName),
+      ),
     });
   } catch (error) {
     return NextResponse.json(
@@ -25,4 +27,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 
 import type { OfficeOption } from "@/lib/offices";
-import { SERVICE_MAP_CENTER, SERVICE_REGION_LABEL } from "@/lib/service-area";
+import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 import { getValidationMessage, leadCreateSchema, propertyTypeOptions, transactionTypeOptions } from "@/lib/validation";
 
 type UploadedPhoto = {
@@ -67,13 +67,11 @@ export function SellLeadForm({
   initialOfficeId,
   userName,
   userEmail,
-  bypassLocationCheck = false,
 }: {
   offices: OfficeOption[];
   initialOfficeId?: number | null;
   userName?: string | null;
   userEmail?: string | null;
-  bypassLocationCheck?: boolean;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>({
@@ -108,15 +106,11 @@ export function SellLeadForm({
   const [addressQuery, setAddressQuery] = useState("");
   const [addressResults, setAddressResults] = useState<AddressCandidate[]>([]);
   const [selectedAddressLabel, setSelectedAddressLabel] = useState<string | null>(null);
-  const [locationMessage, setLocationMessage] = useState(
-    bypassLocationCheck ? "관리자 계정은 현재 위치와 상관없이 등록할 수 있습니다." : "매물 접수 전에 현재 위치를 확인해 주세요.",
-  );
+  const [locationMessage, setLocationMessage] = useState(`매물 접수 전에 현재 위치가 ${SERVICE_REGION_LABEL} 중 한 곳인지 확인해 주세요.`);
   const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [browserCoords, setBrowserCoords] = useState<{ latitude: number; longitude: number } | null>(
-    bypassLocationCheck ? { latitude: SERVICE_MAP_CENTER.lat, longitude: SERVICE_MAP_CENTER.lng } : null,
-  );
+  const [browserCoords, setBrowserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
@@ -132,15 +126,6 @@ export function SellLeadForm({
   }
 
   async function handleLocationCheck() {
-    if (bypassLocationCheck) {
-      setBrowserCoords({
-        latitude: SERVICE_MAP_CENTER.lat,
-        longitude: SERVICE_MAP_CENTER.lng,
-      });
-      setLocationMessage("관리자 계정은 위치 제한 없이 바로 등록할 수 있습니다.");
-      return;
-    }
-
     if (!navigator.geolocation) {
       setLocationMessage("이 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
       return;
@@ -365,7 +350,7 @@ export function SellLeadForm({
     event.preventDefault();
     setSubmitError(null);
 
-    if (!browserCoords && !bypassLocationCheck) {
+    if (!browserCoords) {
       setSubmitError("현재 위치 확인 후에만 등록할 수 있습니다.");
       return;
     }
@@ -404,8 +389,8 @@ export function SellLeadForm({
       utmContent: currentUrl?.searchParams.get("utm_content") ?? "",
       referrerUrl: typeof document !== "undefined" ? document.referrer : "",
       landingUrl: typeof window !== "undefined" ? window.location.href : "",
-      browserLatitude: browserCoords?.latitude ?? SERVICE_MAP_CENTER.lat,
-      browserLongitude: browserCoords?.longitude ?? SERVICE_MAP_CENTER.lng,
+      browserLatitude: browserCoords.latitude,
+      browserLongitude: browserCoords.longitude,
       photos: photos
         .filter((photo) => photo.status === "uploaded" && photo.s3Key)
         .map((photo, index) => ({
@@ -463,18 +448,14 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">1. 위치 확인</span>
-            <h1 className="page-title">중구 매물 등록 전 확인 단계</h1>
+            <h1 className="page-title">허용 지역에서 접속한 경우에만 등록할 수 있어요</h1>
           </div>
-          {bypassLocationCheck ? (
-            <span className="eyebrow">관리자 예외</span>
-          ) : (
-            <button type="button" className="button button-secondary" onClick={handleLocationCheck} disabled={isCheckingLocation}>
-              {isCheckingLocation ? "확인 중..." : "현재 위치 확인"}
-            </button>
-          )}
+          <button type="button" className="button button-secondary" onClick={handleLocationCheck} disabled={isCheckingLocation}>
+            {isCheckingLocation ? "확인 중..." : "현재 위치 확인"}
+          </button>
         </div>
         <p className="page-copy">{locationMessage}</p>
-        <p className="muted-row">접수 후 관리자가 공개 처리하면 카카오맵과 매물 목록에 바로 표시됩니다.</p>
+        <p className="muted-row">허용 지역은 {SERVICE_REGION_LABEL} 입니다.</p>
       </section>
 
       <section className="form-card">
@@ -532,12 +513,12 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">3. 주소 찾기</span>
-            <h2 className="section-title">도로명, 지번, 건물명으로 중구 주소를 찾아 주세요</h2>
+            <h2 className="section-title">다운동 또는 포곡읍 주소만 검색 결과로 보여줍니다</h2>
           </div>
         </div>
 
         <div className="address-search-shell">
-          <p className="muted-row">예: 다운로 120, 다운동 123-4, 다운동아파트</p>
+          <p className="muted-row">예: 다운로 120, 다운동 123-4, 포곡로 85, 포곡읍 전대리</p>
           <div className="address-search-row">
             <input
               className="input"
@@ -553,7 +534,7 @@ export function SellLeadForm({
           {addressSearchError ? <div className="error-banner">{addressSearchError}</div> : null}
           {selectedAddressLabel ? <p className="muted-row">선택 지역: {selectedAddressLabel}</p> : null}
           {hasAddressSearched && !isSearchingAddress && addressResults.length === 0 && !addressSearchError ? (
-            <p className="muted-row">검색 결과가 없습니다. 울산 중구 주소로 다시 검색해 주세요.</p>
+            <p className="muted-row">검색 결과가 없습니다. 다운동 또는 포곡읍 주소로 다시 검색해 주세요.</p>
           ) : null}
           {addressResults.length > 0 ? (
             <div className="address-results">

@@ -1,5 +1,5 @@
 import { getEnv } from "@/lib/env";
-import { isAllowedServiceArea } from "@/lib/service-area";
+import { SERVICE_REGION_LABEL, isAllowedServiceArea } from "@/lib/service-area";
 
 type KakaoAddressDocument = {
   address_name: string;
@@ -116,10 +116,12 @@ export async function searchAddresses(query: string): Promise<AddressSearchResul
 
 export async function geocodeAddressWithinServiceArea(query: string): Promise<AddressSearchResult> {
   const results = await searchAddresses(query);
-  const match = results.find((result) => isAllowedServiceArea(result.region1DepthName, result.region2DepthName));
+  const match = results.find((result) =>
+    isAllowedServiceArea(result.region1DepthName, result.region2DepthName, result.region3DepthName),
+  );
 
   if (!match) {
-    throw new Error("울산광역시 중구 매물만 등록할 수 있습니다.");
+    throw new Error(`${SERVICE_REGION_LABEL} 주소만 등록할 수 있습니다.`);
   }
 
   return match;
@@ -156,11 +158,10 @@ export async function verifyCoordsWithinServiceArea(latitude: number, longitude:
   }
 
   return {
-    allowed: isAllowedServiceArea(region.region_1depth_name, region.region_2depth_name),
+    allowed: isAllowedServiceArea(region.region_1depth_name, region.region_2depth_name, region.region_3depth_name),
     addressName: region.address_name,
     region1DepthName: region.region_1depth_name,
     region2DepthName: region.region_2depth_name,
     region3DepthName: region.region_3depth_name,
   };
 }
-

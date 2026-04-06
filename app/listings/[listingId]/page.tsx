@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { LocationGate } from "@/components/LocationGate";
-import { getAdminSession } from "@/lib/auth";
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel, getTransactionTypeLabel } from "@/lib/format";
 import { getPublishedListingDetail, incrementLeadViewCount } from "@/lib/leads";
 
@@ -32,11 +31,10 @@ export default async function ListingDetailPage({
 
   await incrementLeadViewCount(listingId);
 
-  const adminSession = getAdminSession();
   const visiblePhotos = listing.photos.filter((photo) => Boolean(photo.viewUrl));
 
   return (
-    <LocationGate bypass={Boolean(adminSession)}>
+    <LocationGate>
       <div className="page-stack">
         <section className="detail-hero">
           <div className="detail-copy">
@@ -103,7 +101,7 @@ export default async function ListingDetailPage({
               </div>
               <div>
                 <span>지역</span>
-                <strong>{listing.region3DepthName || "중구"}</strong>
+                <strong>{listing.region3DepthName || "허용 지역"}</strong>
               </div>
             </div>
           </div>

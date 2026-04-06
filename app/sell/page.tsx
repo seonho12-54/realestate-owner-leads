@@ -21,7 +21,7 @@ export default async function SellPage() {
         <section className="hero-panel">
           <span className="eyebrow">로그인 후 등록</span>
           <h1 className="page-title">매물 등록은 회원 또는 관리자 로그인 후 이용할 수 있어요</h1>
-          <p className="page-copy">일반 회원은 위치 확인 후 등록하고, 관리자는 어느 위치에서든 바로 등록할 수 있습니다.</p>
+          <p className="page-copy">현재 위치가 `울산광역시 중구 다운동` 또는 `경기도 용인시 처인구 포곡읍`일 때만 등록할 수 있습니다.</p>
           <div className="button-row">
             <Link href="/login?next=/sell" className="button button-primary">
               회원 로그인
@@ -43,21 +43,11 @@ export default async function SellPage() {
       <section className="hero-panel compact">
         <div>
           <span className="eyebrow">매물 등록</span>
-          <h1 className="page-title">다우니에서 중구 매물을 바로 접수해 보세요</h1>
-          <p className="page-copy">
-            {adminSession
-              ? "관리자 계정은 현재 위치와 상관없이 등록할 수 있습니다. 주소만 중구로 정확히 입력해 주세요."
-              : "현재 위치 확인, 주소 검색, 사진 업로드까지 한 번에 마치면 관리자가 공개 여부를 검토합니다."}
-          </p>
+          <h1 className="page-title">다우니 허용 지역에서만 매물을 접수할 수 있어요</h1>
+          <p className="page-copy">허용 지역은 `다운동`과 `포곡읍` 두 곳입니다. 위치 확인과 주소 검색을 통과한 매물만 접수됩니다.</p>
         </div>
       </section>
-      <SellLeadForm
-        offices={offices}
-        initialOfficeId={offices[0]?.id ?? null}
-        userName={session.name}
-        userEmail={session.email}
-        bypassLocationCheck={Boolean(adminSession)}
-      />
+      <SellLeadForm offices={offices} initialOfficeId={offices[0]?.id ?? null} userName={session.name} userEmail={session.email} />
     </div>
   );
 }

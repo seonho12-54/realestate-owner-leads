@@ -1,30 +1,29 @@
-export const SERVICE_REGION_1 = "울산광역시";
-export const SERVICE_REGION_2 = "중구";
-export const SERVICE_REGION_LABEL = `${SERVICE_REGION_1} ${SERVICE_REGION_2}`;
+export const SERVICE_AREAS = [
+  {
+    label: "울산광역시 중구 다운동",
+    region1: "울산광역시",
+    region2: "중구",
+    region3: "다운동",
+  },
+  {
+    label: "경기도 용인시 처인구 포곡읍",
+    region1: "경기도",
+    region2: "용인시 처인구",
+    region3: "포곡읍",
+  },
+] as const;
+
+export const SERVICE_REGION_LABEL = SERVICE_AREAS.map((area) => area.label).join(" / ");
 
 export const SERVICE_MAP_CENTER = {
   lat: 35.5571,
   lng: 129.3292,
 };
 
-export const SERVICE_DONGS = [
-  "다운동",
-  "병영동",
-  "복산동",
-  "반구동",
-  "성안동",
-  "우정동",
-  "옥교동",
-  "태화동",
-  "학산동",
-  "서동",
-  "약사동",
-  "유곡동",
-  "남외동",
-] as const;
-
-export function isAllowedServiceArea(region1?: string | null, region2?: string | null): boolean {
-  return region1 === SERVICE_REGION_1 && region2 === SERVICE_REGION_2;
+export function isAllowedServiceArea(region1?: string | null, region2?: string | null, region3?: string | null): boolean {
+  return SERVICE_AREAS.some(
+    (area) => area.region1 === region1 && area.region2 === region2 && area.region3 === region3,
+  );
 }
 
 export function createCompactLocation(region2?: string | null, region3?: string | null): string {

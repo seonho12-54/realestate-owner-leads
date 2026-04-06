@@ -71,9 +71,9 @@ export function MarketplaceShell({
     <div className="market-layout">
       <section className="hero-panel compact market-intro">
         <div className="market-intro-copy">
-          <span className="eyebrow">울산광역시 중구 한정</span>
+          <span className="eyebrow">다운동 / 포곡읍 한정</span>
           <h1 className="market-brand-title">다우니</h1>
-          <p className="market-brand-note">확인된 위치에서만 열리는 동네 매물 지도</p>
+          <p className="market-brand-note">허용된 두 지역에서만 열리는 동네 매물 지도</p>
         </div>
         <div className="button-row">
           <Link href="/sell" className="button button-primary">
@@ -123,7 +123,7 @@ export function MarketplaceShell({
             className="input"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="동 이름, 아파트명, 매물 제목으로 검색"
+            placeholder="동 이름, 읍 이름, 아파트명, 매물 제목으로 검색"
           />
         </label>
       </section>
@@ -166,7 +166,7 @@ export function MarketplaceShell({
                   <p>{listing.addressLine1}</p>
                   <div className="listing-meta">
                     <span>{getPropertyTypeLabel(listing.propertyType)}</span>
-                    <span>{listing.region3DepthName ?? "중구"}</span>
+                    <span>{listing.region3DepthName ?? "허용 지역"}</span>
                     <span>{formatDateTime(listing.createdAt)}</span>
                   </div>
                   <div className="listing-footer">
