@@ -1,13 +1,27 @@
 import { NextResponse } from "next/server";
 
+import { getUserSession } from "@/lib/auth";
 import { createLead } from "@/lib/leads";
 import { getRequestMeta } from "@/lib/request";
 import { leadCreateSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
+  const session = getUserSession();
+
+  if (!session) {
+    return NextResponse.json(
+      {
+        error: "로그인이 필요합니다.",
+      },
+      { status: 401 },
+    );
+  }
+
   try {
     const payload = leadCreateSchema.parse(await request.json());
-    const leadId = await createLead(payload, getRequestMeta(request));
+    const leadId = await createLead(payload, getRequestMeta(request), {
+      userId: session.userId,
+    });
 
     return NextResponse.json({
       id: leadId,
@@ -21,4 +35,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

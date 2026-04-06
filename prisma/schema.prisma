@@ -54,6 +54,22 @@ model Office {
   @@map("offices")
 }
 
+model User {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  email       String    @unique @db.VarChar(191)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  name        String    @db.VarChar(100)
+  phone       String?   @db.VarChar(30)
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at") @db.DateTime(0)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  leads Lead[]
+
+  @@map("users")
+}
+
 model Admin {
   id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   officeId     BigInt?   @map("office_id") @db.UnsignedBigInt
@@ -66,52 +82,68 @@ model Admin {
   createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
 
-  office    Office?    @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  auditLogs AuditLog[]
+  office           Office? @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  publishedLeads   Lead[]  @relation("published_by_admin")
 
   @@index([officeId])
   @@map("admins")
 }
 
 model Lead {
-  id              BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
-  officeId        BigInt          @map("office_id") @db.UnsignedBigInt
-  ownerName       String          @map("owner_name") @db.VarChar(100)
-  phone           String          @db.VarChar(30)
-  email           String?         @db.VarChar(191)
-  propertyType    PropertyType    @map("property_type")
-  transactionType TransactionType @map("transaction_type")
-  addressLine1    String          @map("address_line1") @db.VarChar(255)
-  addressLine2    String?         @map("address_line2") @db.VarChar(255)
-  postalCode      String?         @map("postal_code") @db.VarChar(20)
-  areaM2          Decimal?        @map("area_m2") @db.Decimal(10, 2)
-  priceKrw        BigInt?         @map("price_krw") @db.UnsignedBigInt
-  depositKrw      BigInt?         @map("deposit_krw") @db.UnsignedBigInt
-  monthlyRentKrw  BigInt?         @map("monthly_rent_krw") @db.UnsignedBigInt
-  moveInDate      String?         @map("move_in_date") @db.VarChar(50)
-  contactTime     String?         @map("contact_time") @db.VarChar(100)
-  description     String?         @db.Text
-  privacyConsent  Boolean         @default(false) @map("privacy_consent")
-  marketingConsent Boolean        @default(false) @map("marketing_consent")
-  status          LeadStatus      @default(new)
-  utmSource       String?         @map("utm_source") @db.VarChar(100)
-  utmMedium       String?         @map("utm_medium") @db.VarChar(100)
-  utmCampaign     String?         @map("utm_campaign") @db.VarChar(100)
-  utmTerm         String?         @map("utm_term") @db.VarChar(100)
-  utmContent      String?         @map("utm_content") @db.VarChar(100)
-  referrerUrl     String?         @map("referrer_url") @db.VarChar(500)
-  landingUrl      String?         @map("landing_url") @db.VarChar(500)
-  userAgent       String?         @map("user_agent") @db.VarChar(500)
-  submittedIp     String?         @map("submitted_ip") @db.VarChar(64)
-  createdAt       DateTime        @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+  id                BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  officeId          BigInt          @map("office_id") @db.UnsignedBigInt
+  userId            BigInt?         @map("user_id") @db.UnsignedBigInt
+  listingTitle      String          @map("listing_title") @db.VarChar(160)
+  ownerName         String          @map("owner_name") @db.VarChar(100)
+  phone             String          @db.VarChar(30)
+  email             String?         @db.VarChar(191)
+  propertyType      PropertyType    @map("property_type")
+  transactionType   TransactionType @map("transaction_type")
+  addressLine1      String          @map("address_line1") @db.VarChar(255)
+  addressLine2      String?         @map("address_line2") @db.VarChar(255)
+  postalCode        String?         @map("postal_code") @db.VarChar(20)
+  region1DepthName  String?         @map("region_1depth_name") @db.VarChar(40)
+  region2DepthName  String?         @map("region_2depth_name") @db.VarChar(40)
+  region3DepthName  String?         @map("region_3depth_name") @db.VarChar(60)
+  latitude          Decimal?        @db.Decimal(10, 7)
+  longitude         Decimal?        @db.Decimal(10, 7)
+  locationVerified  Boolean         @default(false) @map("location_verified")
+  areaM2            Decimal?        @map("area_m2") @db.Decimal(10, 2)
+  priceKrw          BigInt?         @map("price_krw") @db.UnsignedBigInt
+  depositKrw        BigInt?         @map("deposit_krw") @db.UnsignedBigInt
+  monthlyRentKrw    BigInt?         @map("monthly_rent_krw") @db.UnsignedBigInt
+  moveInDate        String?         @map("move_in_date") @db.VarChar(50)
+  contactTime       String?         @map("contact_time") @db.VarChar(100)
+  description       String?         @db.Text
+  adminMemo         String?         @map("admin_memo") @db.Text
+  privacyConsent    Boolean         @default(false) @map("privacy_consent")
+  marketingConsent  Boolean         @default(false) @map("marketing_consent")
+  status            LeadStatus      @default(new)
+  isPublished       Boolean         @default(false) @map("is_published")
+  publishedAt       DateTime?       @map("published_at") @db.DateTime(0)
+  publishedByAdminId BigInt?        @map("published_by_admin_id") @db.UnsignedBigInt
+  viewCount         Int             @default(0) @map("view_count") @db.UnsignedInt
+  utmSource         String?         @map("utm_source") @db.VarChar(100)
+  utmMedium         String?         @map("utm_medium") @db.VarChar(100)
+  utmCampaign       String?         @map("utm_campaign") @db.VarChar(100)
+  utmTerm           String?         @map("utm_term") @db.VarChar(100)
+  utmContent        String?         @map("utm_content") @db.VarChar(100)
+  referrerUrl       String?         @map("referrer_url") @db.VarChar(500)
+  landingUrl        String?         @map("landing_url") @db.VarChar(500)
+  userAgent         String?         @map("user_agent") @db.VarChar(500)
+  submittedIp       String?         @map("submitted_ip") @db.VarChar(64)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
 
-  office  Office       @relation(fields: [officeId], references: [id])
-  photos  LeadPhoto[]
+  office            Office          @relation(fields: [officeId], references: [id])
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  publishedByAdmin  Admin?          @relation("published_by_admin", fields: [publishedByAdminId], references: [id], onDelete: SetNull)
+  photos            LeadPhoto[]
 
   @@index([officeId])
+  @@index([userId])
   @@index([status])
-  @@index([createdAt])
+  @@index([isPublished])
   @@map("leads")
 }
 
@@ -142,11 +174,8 @@ model AuditLog {
   payloadJson Json?    @map("payload_json")
   createdAt  DateTime  @default(now()) @map("created_at") @db.DateTime(0)
 
-  admin Admin? @relation(fields: [adminId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
   @@index([adminId])
   @@index([entityType, entityId])
-  @@index([createdAt])
   @@map("audit_logs")
 }
 

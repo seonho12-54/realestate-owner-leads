@@ -1,15 +1,52 @@
 import type { PoolConnection } from "mysql2/promise";
 
 import { writeAuditLog } from "@/lib/audit";
+import { createPresignedPhotoViewUrl } from "@/lib/s3";
 import type { DbMutation, DbRow } from "@/lib/db";
 import { getPool, withTransaction } from "@/lib/db";
+import { geocodeAddressWithinServiceArea, verifyCoordsWithinServiceArea } from "@/lib/kakao";
 import type { RequestMeta } from "@/lib/request";
-import type { LeadCreateInput, LeadStatus } from "@/lib/validation";
+import type { AdminLeadUpdateInput, LeadCreateInput, LeadStatus } from "@/lib/validation";
 
-export type LeadSummary = {
+export type LeadPhotoAsset = {
+  id: number;
+  leadId: number;
+  fileName: string;
+  s3Key: string;
+  viewUrl: string;
+};
+
+export type PublicListing = {
+  id: number;
+  listingTitle: string;
+  propertyType: string;
+  transactionType: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  region3DepthName: string | null;
+  areaM2: number | null;
+  priceKrw: number | null;
+  depositKrw: number | null;
+  monthlyRentKrw: number | null;
+  description: string | null;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  officeName: string;
+  officePhone: string | null;
+  photoCount: number;
+  previewPhotoUrl: string | null;
+};
+
+export type AdminLeadSummary = {
   id: number;
   officeId: number;
   officeName: string;
+  officePhone: string | null;
+  userId: number | null;
+  userName: string | null;
+  userEmail: string | null;
+  listingTitle: string;
   ownerName: string;
   phone: string;
   email: string | null;
@@ -17,15 +54,23 @@ export type LeadSummary = {
   transactionType: string;
   addressLine1: string;
   addressLine2: string | null;
+  region2DepthName: string | null;
+  region3DepthName: string | null;
+  latitude: number | null;
+  longitude: number | null;
   areaM2: number | null;
   priceKrw: number | null;
   depositKrw: number | null;
   monthlyRentKrw: number | null;
   contactTime: string | null;
   description: string | null;
+  adminMemo: string | null;
+  locationVerified: boolean;
   privacyConsent: boolean;
   marketingConsent: boolean;
   status: LeadStatus;
+  isPublished: boolean;
+  publishedAt: string | null;
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
@@ -33,15 +78,41 @@ export type LeadSummary = {
   landingUrl: string | null;
   createdAt: string;
   photoCount: number;
-  photoNames: string[];
+  photos: LeadPhotoAsset[];
 };
 
 type OfficeExistsRow = DbRow & { id: number };
 
-type LeadSummaryRow = DbRow & {
+type PublicListingRow = DbRow & {
+  id: number;
+  listing_title: string;
+  property_type: string;
+  transaction_type: string;
+  address_line1: string;
+  address_line2: string | null;
+  region_3depth_name: string | null;
+  area_m2: string | null;
+  price_krw: string | null;
+  deposit_krw: string | null;
+  monthly_rent_krw: string | null;
+  description: string | null;
+  latitude: string;
+  longitude: string;
+  created_at: Date | string;
+  office_name: string;
+  office_phone: string | null;
+  photo_count: number;
+};
+
+type AdminLeadRow = DbRow & {
   id: number;
   office_id: number;
   office_name: string;
+  office_phone: string | null;
+  user_id: number | null;
+  user_name: string | null;
+  user_email: string | null;
+  listing_title: string;
   owner_name: string;
   phone: string;
   email: string | null;
@@ -49,15 +120,23 @@ type LeadSummaryRow = DbRow & {
   transaction_type: string;
   address_line1: string;
   address_line2: string | null;
+  region_2depth_name: string | null;
+  region_3depth_name: string | null;
+  latitude: string | null;
+  longitude: string | null;
   area_m2: string | null;
   price_krw: string | null;
   deposit_krw: string | null;
   monthly_rent_krw: string | null;
   contact_time: string | null;
   description: string | null;
+  admin_memo: string | null;
+  location_verified: number;
   privacy_consent: number;
   marketing_consent: number;
   status: LeadStatus;
+  is_published: number;
+  published_at: Date | string | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
@@ -67,12 +146,50 @@ type LeadSummaryRow = DbRow & {
   photo_count: number;
 };
 
-type LeadPhotoNameRow = DbRow & {
+type LeadPhotoRow = DbRow & {
+  id: number;
   lead_id: number;
+  s3_key: string;
   file_name: string;
 };
 
-export async function createLead(input: LeadCreateInput, requestMeta: RequestMeta): Promise<number> {
+type PublishedDetailRow = DbRow & {
+  id: number;
+  listing_title: string;
+  property_type: string;
+  transaction_type: string;
+  address_line1: string;
+  address_line2: string | null;
+  region_2depth_name: string | null;
+  region_3depth_name: string | null;
+  area_m2: string | null;
+  price_krw: string | null;
+  deposit_krw: string | null;
+  monthly_rent_krw: string | null;
+  description: string | null;
+  contact_time: string | null;
+  move_in_date: string | null;
+  latitude: string;
+  longitude: string;
+  office_name: string;
+  office_phone: string | null;
+  office_address: string | null;
+  created_at: Date | string;
+};
+
+export async function createLead(
+  input: LeadCreateInput,
+  requestMeta: RequestMeta,
+  options?: { userId?: number | null },
+): Promise<number> {
+  const browserRegion = await verifyCoordsWithinServiceArea(input.browserLatitude, input.browserLongitude);
+
+  if (!browserRegion.allowed) {
+    throw new Error("울산광역시 중구 안에서만 서비스를 이용할 수 있습니다.");
+  }
+
+  const geocodedAddress = await geocodeAddressWithinServiceArea(input.addressLine1);
+
   return withTransaction(async (connection) => {
     await ensureOfficeExists(input.officeId, connection);
 
@@ -80,6 +197,8 @@ export async function createLead(input: LeadCreateInput, requestMeta: RequestMet
       `
         INSERT INTO leads (
           office_id,
+          user_id,
+          listing_title,
           owner_name,
           phone,
           email,
@@ -88,6 +207,12 @@ export async function createLead(input: LeadCreateInput, requestMeta: RequestMet
           address_line1,
           address_line2,
           postal_code,
+          region_1depth_name,
+          region_2depth_name,
+          region_3depth_name,
+          latitude,
+          longitude,
+          location_verified,
           area_m2,
           price_krw,
           deposit_krw,
@@ -106,18 +231,26 @@ export async function createLead(input: LeadCreateInput, requestMeta: RequestMet
           landing_url,
           user_agent,
           submitted_ip
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         input.officeId,
+        options?.userId ?? null,
+        input.listingTitle,
         input.ownerName,
         input.phone,
         input.email,
         input.propertyType,
         input.transactionType,
-        input.addressLine1,
+        geocodedAddress.roadAddress ?? geocodedAddress.addressName,
         input.addressLine2 || null,
-        input.postalCode || null,
+        input.postalCode || geocodedAddress.postalCode || null,
+        geocodedAddress.region1DepthName,
+        geocodedAddress.region2DepthName,
+        geocodedAddress.region3DepthName,
+        geocodedAddress.latitude,
+        geocodedAddress.longitude,
+        1,
         input.areaM2,
         input.priceKrw,
         input.depositKrw,
@@ -175,9 +308,12 @@ export async function createLead(input: LeadCreateInput, requestMeta: RequestMet
         userAgent: requestMeta.userAgent,
         payload: {
           officeId: input.officeId,
-          photoCount: input.photos.length,
-          propertyType: input.propertyType,
+          userId: options?.userId ?? null,
+          listingTitle: input.listingTitle,
           transactionType: input.transactionType,
+          region2DepthName: geocodedAddress.region2DepthName,
+          region3DepthName: geocodedAddress.region3DepthName,
+          locationAllowed: browserRegion.allowed,
         },
       },
       connection,
@@ -187,20 +323,158 @@ export async function createLead(input: LeadCreateInput, requestMeta: RequestMet
   });
 }
 
-export async function listLeads(status?: LeadStatus | null): Promise<LeadSummary[]> {
-  const params: Array<string> = [];
+export async function listPublishedListings(): Promise<PublicListing[]> {
+  const [rows] = await getPool().query<PublicListingRow[]>(
+    `
+      SELECT
+        l.id,
+        l.listing_title,
+        l.property_type,
+        l.transaction_type,
+        l.address_line1,
+        l.address_line2,
+        l.region_3depth_name,
+        l.area_m2,
+        l.price_krw,
+        l.deposit_krw,
+        l.monthly_rent_krw,
+        l.description,
+        l.latitude,
+        l.longitude,
+        l.created_at,
+        o.name AS office_name,
+        o.phone AS office_phone,
+        COUNT(lp.id) AS photo_count
+      FROM leads l
+      INNER JOIN offices o ON o.id = l.office_id
+      LEFT JOIN lead_photos lp ON lp.lead_id = l.id
+      WHERE l.is_published = 1
+        AND l.location_verified = 1
+        AND l.latitude IS NOT NULL
+        AND l.longitude IS NOT NULL
+      GROUP BY l.id
+      ORDER BY l.is_published DESC, l.created_at DESC
+    `,
+  );
+
+  const photoMap = await listLeadPhotoAssets(rows.map((row) => Number(row.id)), 1);
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    listingTitle: row.listing_title,
+    propertyType: row.property_type,
+    transactionType: row.transaction_type,
+    addressLine1: row.address_line1,
+    addressLine2: row.address_line2,
+    region3DepthName: row.region_3depth_name,
+    areaM2: parseNullableNumber(row.area_m2),
+    priceKrw: parseNullableNumber(row.price_krw),
+    depositKrw: parseNullableNumber(row.deposit_krw),
+    monthlyRentKrw: parseNullableNumber(row.monthly_rent_krw),
+    description: row.description,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    createdAt: new Date(row.created_at).toISOString(),
+    officeName: row.office_name,
+    officePhone: row.office_phone,
+    photoCount: Number(row.photo_count),
+    previewPhotoUrl: photoMap.get(Number(row.id))?.[0]?.viewUrl ?? null,
+  }));
+}
+
+export async function getPublishedListingDetail(leadId: number): Promise<(PublicListing & {
+  officeAddress: string | null;
+  contactTime: string | null;
+  moveInDate: string | null;
+  photos: LeadPhotoAsset[];
+}) | null> {
+  const [rows] = await getPool().execute<PublishedDetailRow[]>(
+    `
+      SELECT
+        l.id,
+        l.listing_title,
+        l.property_type,
+        l.transaction_type,
+        l.address_line1,
+        l.address_line2,
+        l.region_2depth_name,
+        l.region_3depth_name,
+        l.area_m2,
+        l.price_krw,
+        l.deposit_krw,
+        l.monthly_rent_krw,
+        l.description,
+        l.contact_time,
+        l.move_in_date,
+        l.latitude,
+        l.longitude,
+        l.created_at,
+        o.name AS office_name,
+        o.phone AS office_phone,
+        o.address AS office_address
+      FROM leads l
+      INNER JOIN offices o ON o.id = l.office_id
+      WHERE l.id = ?
+        AND l.is_published = 1
+      LIMIT 1
+    `,
+    [leadId],
+  );
+
+  const row = rows[0];
+
+  if (!row) {
+    return null;
+  }
+
+  const photos = (await listLeadPhotoAssets([leadId])).get(leadId) ?? [];
+
+  return {
+    id: Number(row.id),
+    listingTitle: row.listing_title,
+    propertyType: row.property_type,
+    transactionType: row.transaction_type,
+    addressLine1: row.address_line1,
+    addressLine2: row.address_line2,
+    region3DepthName: row.region_3depth_name,
+    areaM2: parseNullableNumber(row.area_m2),
+    priceKrw: parseNullableNumber(row.price_krw),
+    depositKrw: parseNullableNumber(row.deposit_krw),
+    monthlyRentKrw: parseNullableNumber(row.monthly_rent_krw),
+    description: row.description,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    createdAt: new Date(row.created_at).toISOString(),
+    officeName: row.office_name,
+    officePhone: row.office_phone,
+    photoCount: photos.length,
+    previewPhotoUrl: photos[0]?.viewUrl ?? null,
+    officeAddress: row.office_address,
+    contactTime: row.contact_time,
+    moveInDate: row.move_in_date,
+    photos,
+  };
+}
+
+export async function listAdminLeads(status?: LeadStatus | null): Promise<AdminLeadSummary[]> {
+  const params: string[] = [];
   const whereClause = status ? "WHERE l.status = ?" : "";
 
   if (status) {
     params.push(status);
   }
 
-  const [rows] = await getPool().query<LeadSummaryRow[]>(
+  const [rows] = await getPool().query<AdminLeadRow[]>(
     `
       SELECT
         l.id,
         l.office_id,
         o.name AS office_name,
+        o.phone AS office_phone,
+        l.user_id,
+        u.name AS user_name,
+        u.email AS user_email,
+        l.listing_title,
         l.owner_name,
         l.phone,
         l.email,
@@ -208,15 +482,23 @@ export async function listLeads(status?: LeadStatus | null): Promise<LeadSummary
         l.transaction_type,
         l.address_line1,
         l.address_line2,
+        l.region_2depth_name,
+        l.region_3depth_name,
+        l.latitude,
+        l.longitude,
         l.area_m2,
         l.price_krw,
         l.deposit_krw,
         l.monthly_rent_krw,
         l.contact_time,
         l.description,
+        l.admin_memo,
+        l.location_verified,
         l.privacy_consent,
         l.marketing_consent,
         l.status,
+        l.is_published,
+        l.published_at,
         l.utm_source,
         l.utm_medium,
         l.utm_campaign,
@@ -226,6 +508,7 @@ export async function listLeads(status?: LeadStatus | null): Promise<LeadSummary
         COUNT(lp.id) AS photo_count
       FROM leads l
       INNER JOIN offices o ON o.id = l.office_id
+      LEFT JOIN users u ON u.id = l.user_id
       LEFT JOIN lead_photos lp ON lp.lead_id = l.id
       ${whereClause}
       GROUP BY l.id
@@ -234,13 +517,17 @@ export async function listLeads(status?: LeadStatus | null): Promise<LeadSummary
     params,
   );
 
-  const leadIds = rows.map((row) => Number(row.id));
-  const photoNames = leadIds.length > 0 ? await listLeadPhotoNames(leadIds) : new Map<number, string[]>();
+  const photoMap = await listLeadPhotoAssets(rows.map((row) => Number(row.id)), 6);
 
   return rows.map((row) => ({
     id: Number(row.id),
     officeId: Number(row.office_id),
     officeName: row.office_name,
+    officePhone: row.office_phone,
+    userId: row.user_id === null ? null : Number(row.user_id),
+    userName: row.user_name,
+    userEmail: row.user_email,
+    listingTitle: row.listing_title,
     ownerName: row.owner_name,
     phone: row.phone,
     email: row.email,
@@ -248,15 +535,23 @@ export async function listLeads(status?: LeadStatus | null): Promise<LeadSummary
     transactionType: row.transaction_type,
     addressLine1: row.address_line1,
     addressLine2: row.address_line2,
+    region2DepthName: row.region_2depth_name,
+    region3DepthName: row.region_3depth_name,
+    latitude: parseNullableNumber(row.latitude),
+    longitude: parseNullableNumber(row.longitude),
     areaM2: parseNullableNumber(row.area_m2),
     priceKrw: parseNullableNumber(row.price_krw),
     depositKrw: parseNullableNumber(row.deposit_krw),
     monthlyRentKrw: parseNullableNumber(row.monthly_rent_krw),
     contactTime: row.contact_time,
     description: row.description,
+    adminMemo: row.admin_memo,
+    locationVerified: Boolean(row.location_verified),
     privacyConsent: Boolean(row.privacy_consent),
     marketingConsent: Boolean(row.marketing_consent),
     status: row.status,
+    isPublished: Boolean(row.is_published),
+    publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null,
     utmSource: row.utm_source,
     utmMedium: row.utm_medium,
     utmCampaign: row.utm_campaign,
@@ -264,13 +559,13 @@ export async function listLeads(status?: LeadStatus | null): Promise<LeadSummary
     landingUrl: row.landing_url,
     createdAt: new Date(row.created_at).toISOString(),
     photoCount: Number(row.photo_count),
-    photoNames: photoNames.get(Number(row.id)) ?? [],
+    photos: photoMap.get(Number(row.id)) ?? [],
   }));
 }
 
-export async function updateLeadStatus(params: {
+export async function updateLeadAdminFields(params: {
   leadId: number;
-  status: LeadStatus;
+  input: AdminLeadUpdateInput;
   adminId: number;
   requestMeta: RequestMeta;
 }): Promise<void> {
@@ -278,31 +573,64 @@ export async function updateLeadStatus(params: {
     const [result] = await connection.execute<DbMutation>(
       `
         UPDATE leads
-        SET status = ?
+        SET
+          status = ?,
+          is_published = ?,
+          admin_memo = ?,
+          published_at = CASE
+            WHEN ? = 1 AND published_at IS NULL THEN NOW()
+            WHEN ? = 0 THEN NULL
+            ELSE published_at
+          END,
+          published_by_admin_id = CASE
+            WHEN ? = 1 THEN ?
+            ELSE published_by_admin_id
+          END
         WHERE id = ?
       `,
-      [params.status, params.leadId],
+      [
+        params.input.status,
+        params.input.isPublished ? 1 : 0,
+        params.input.adminMemo || null,
+        params.input.isPublished ? 1 : 0,
+        params.input.isPublished ? 1 : 0,
+        params.input.isPublished ? 1 : 0,
+        params.adminId,
+        params.leadId,
+      ],
     );
 
     if (result.affectedRows === 0) {
-      throw new Error("매물 접수 건을 찾을 수 없습니다.");
+      throw new Error("매물을 찾을 수 없습니다.");
     }
 
     await writeAuditLog(
       {
         adminId: params.adminId,
-        actionType: "lead.status_changed",
+        actionType: "lead.admin_updated",
         entityType: "lead",
         entityId: params.leadId,
         requestIp: params.requestMeta.ip,
         userAgent: params.requestMeta.userAgent,
         payload: {
-          status: params.status,
+          status: params.input.status,
+          isPublished: params.input.isPublished,
         },
       },
       connection,
     );
   });
+}
+
+export async function incrementLeadViewCount(leadId: number): Promise<void> {
+  await getPool().execute(
+    `
+      UPDATE leads
+      SET view_count = view_count + 1
+      WHERE id = ? AND is_published = 1
+    `,
+    [leadId],
+  );
 }
 
 async function ensureOfficeExists(officeId: number, connection: PoolConnection): Promise<void> {
@@ -321,10 +649,14 @@ async function ensureOfficeExists(officeId: number, connection: PoolConnection):
   }
 }
 
-async function listLeadPhotoNames(leadIds: number[]): Promise<Map<number, string[]>> {
-  const [rows] = await getPool().query<LeadPhotoNameRow[]>(
+async function listLeadPhotoAssets(leadIds: number[], perLeadLimit = 999): Promise<Map<number, LeadPhotoAsset[]>> {
+  if (leadIds.length === 0) {
+    return new Map<number, LeadPhotoAsset[]>();
+  }
+
+  const [rows] = await getPool().query<LeadPhotoRow[]>(
     `
-      SELECT lead_id, file_name
+      SELECT id, lead_id, s3_key, file_name
       FROM lead_photos
       WHERE lead_id IN (?)
       ORDER BY display_order ASC, id ASC
@@ -332,13 +664,33 @@ async function listLeadPhotoNames(leadIds: number[]): Promise<Map<number, string
     [leadIds],
   );
 
-  return rows.reduce((map, row) => {
+  const groupedRows = rows.reduce((map, row) => {
     const leadId = Number(row.lead_id);
     const current = map.get(leadId) ?? [];
-    current.push(row.file_name);
-    map.set(leadId, current);
+    if (current.length < perLeadLimit) {
+      current.push(row);
+      map.set(leadId, current);
+    }
     return map;
-  }, new Map<number, string[]>());
+  }, new Map<number, LeadPhotoRow[]>());
+
+  const photoMaps = await Promise.all(
+    Array.from(groupedRows.entries()).map(async ([leadId, photoRows]) => {
+      const assets = await Promise.all(
+        photoRows.map(async (photoRow) => ({
+          id: Number(photoRow.id),
+          leadId,
+          fileName: photoRow.file_name,
+          s3Key: photoRow.s3_key,
+          viewUrl: await createPresignedPhotoViewUrl(photoRow.s3_key),
+        })),
+      );
+
+      return [leadId, assets] as const;
+    }),
+  );
+
+  return new Map<number, LeadPhotoAsset[]>(photoMaps);
 }
 
 function parseNullableNumber(value: string | number | null): number | null {
@@ -349,4 +701,3 @@ function parseNullableNumber(value: string | number | null): number | null {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
-

@@ -8,10 +8,14 @@ const envSchema = z.object({
   DB_NAME: z.string().min(1),
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
+  DATABASE_URL: z.string().optional(),
   S3_BUCKET: z.string().min(1),
   S3_REGION: z.string().min(1),
   S3_UPLOAD_PREFIX: z.string().default("leads"),
   ADMIN_SESSION_SECRET: z.string().min(32),
+  USER_SESSION_SECRET: z.string().min(32).optional(),
+  KAKAO_REST_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_KAKAO_JS_KEY: z.string().optional(),
   MAX_PHOTO_SIZE_MB: z.coerce.number().int().positive().default(20),
   MAX_PHOTO_COUNT: z.coerce.number().int().positive().default(10),
 });
@@ -39,4 +43,3 @@ export function getEnv(): AppEnv {
   cachedEnv = parsed.data;
   return cachedEnv;
 }
-

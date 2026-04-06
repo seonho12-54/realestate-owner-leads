@@ -9,19 +9,19 @@ export default function SellDonePage({
 }) {
   return (
     <div className="page-stack">
-      <section className="hero-card">
-        <span className="eyebrow">접수 완료</span>
-        <h1 className="hero-title">매물 접수가 정상적으로 등록되었습니다</h1>
-        <p className="hero-copy">
-          담당 중개사가 내용을 검토한 뒤 입력하신 연락처로 확인 연락을 드립니다.
-          {searchParams?.id ? ` 접수 번호는 #${searchParams.id}입니다.` : ""}
+      <section className="hero-panel">
+        <span className="eyebrow">등록 완료</span>
+        <h1 className="page-title">매물 등록이 접수되었습니다</h1>
+        <p className="page-copy">
+          관리자가 검토 후 공개 여부를 설정합니다.
+          {searchParams?.id ? ` 접수 번호는 #${searchParams.id} 입니다.` : ""}
         </p>
-        <div className="cta-row">
-          <Link href="/" className="btn">
-            홈으로
+        <div className="button-row">
+          <Link href="/" className="button button-primary">
+            목록으로 이동
           </Link>
-          <Link href="/sell" className="btn-secondary">
-            다른 매물 접수
+          <Link href="/sell" className="button button-secondary">
+            다른 매물 등록
           </Link>
         </div>
       </section>

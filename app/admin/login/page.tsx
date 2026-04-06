@@ -4,14 +4,12 @@ import { AdminLoginForm } from "@/components/AdminLoginForm";
 import { getAdminSession } from "@/lib/auth";
 
 export default function AdminLoginPage() {
-  const session = getAdminSession();
-
-  if (session) {
+  if (getAdminSession()) {
     redirect("/admin/leads");
   }
 
   return (
-    <div className="login-wrap">
+    <div className="auth-page">
       <AdminLoginForm />
     </div>
   );

@@ -4,8 +4,9 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 
 import { getEnv } from "@/lib/env";
 
-const SESSION_COOKIE_NAME = "rea_admin_session";
-const SESSION_DURATION_MS = 1000 * 60 * 60 * 12;
+const ADMIN_SESSION_COOKIE_NAME = "rea_admin_session";
+const USER_SESSION_COOKIE_NAME = "rea_user_session";
+const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 14;
 
 export type AdminSession = {
   adminId: number;
@@ -16,7 +17,14 @@ export type AdminSession = {
   exp: number;
 };
 
-type SessionPayload = Omit<AdminSession, "exp">;
+export type UserSession = {
+  userId: number;
+  email: string;
+  name: string;
+  exp: number;
+};
+
+type SessionPayload = Record<string, unknown> & { exp: number };
 
 export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -41,22 +49,31 @@ export function verifyPassword(password: string, hash: string): boolean {
   return timingSafeEqual(derivedBuffer, storedBuffer);
 }
 
-function signValue(encodedPayload: string): string {
-  return createHmac("sha256", getEnv().ADMIN_SESSION_SECRET).update(encodedPayload).digest("base64url");
+function getSigningKey(kind: "admin" | "user"): string {
+  const env = getEnv();
+  if (kind === "user") {
+    return env.USER_SESSION_SECRET ?? env.ADMIN_SESSION_SECRET;
+  }
+
+  return env.ADMIN_SESSION_SECRET;
 }
 
-export function createAdminSessionToken(payload: SessionPayload): string {
-  const session: AdminSession = {
+function signValue(kind: "admin" | "user", encodedPayload: string): string {
+  return createHmac("sha256", getSigningKey(kind)).update(encodedPayload).digest("base64url");
+}
+
+function createSessionToken(kind: "admin" | "user", payload: Omit<AdminSession, "exp"> | Omit<UserSession, "exp">): string {
+  const sessionPayload: SessionPayload = {
     ...payload,
     exp: Date.now() + SESSION_DURATION_MS,
   };
 
-  const encodedPayload = Buffer.from(JSON.stringify(session), "utf8").toString("base64url");
-  const signature = signValue(encodedPayload);
+  const encodedPayload = Buffer.from(JSON.stringify(sessionPayload), "utf8").toString("base64url");
+  const signature = signValue(kind, encodedPayload);
   return `${encodedPayload}.${signature}`;
 }
 
-export function verifyAdminSessionToken(token: string | undefined): AdminSession | null {
+function verifySessionToken<T extends SessionPayload>(kind: "admin" | "user", token: string | undefined): T | null {
   if (!token) {
     return null;
   }
@@ -66,7 +83,7 @@ export function verifyAdminSessionToken(token: string | undefined): AdminSession
     return null;
   }
 
-  const expectedSignature = signValue(encodedPayload);
+  const expectedSignature = signValue(kind, encodedPayload);
   const signatureBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expectedSignature);
 
@@ -79,7 +96,8 @@ export function verifyAdminSessionToken(token: string | undefined): AdminSession
   }
 
   try {
-    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as AdminSession;
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as T;
+
     if (payload.exp <= Date.now()) {
       return null;
     }
@@ -90,10 +108,10 @@ export function verifyAdminSessionToken(token: string | undefined): AdminSession
   }
 }
 
-export function setAdminSessionCookie(sessionToken: string): void {
+function setSessionCookie(name: string, value: string): void {
   cookies().set({
-    name: SESSION_COOKIE_NAME,
-    value: sessionToken,
+    name,
+    value,
     httpOnly: true,
     sameSite: "lax",
     secure: getEnv().NODE_ENV === "production",
@@ -102,9 +120,9 @@ export function setAdminSessionCookie(sessionToken: string): void {
   });
 }
 
-export function clearAdminSessionCookie(): void {
+function clearSessionCookie(name: string): void {
   cookies().set({
-    name: SESSION_COOKIE_NAME,
+    name,
     value: "",
     httpOnly: true,
     sameSite: "lax",
@@ -114,9 +132,36 @@ export function clearAdminSessionCookie(): void {
   });
 }
 
+export function createAdminSessionToken(payload: Omit<AdminSession, "exp">): string {
+  return createSessionToken("admin", payload);
+}
+
+export function createUserSessionToken(payload: Omit<UserSession, "exp">): string {
+  return createSessionToken("user", payload);
+}
+
+export function setAdminSessionCookie(sessionToken: string): void {
+  setSessionCookie(ADMIN_SESSION_COOKIE_NAME, sessionToken);
+}
+
+export function setUserSessionCookie(sessionToken: string): void {
+  setSessionCookie(USER_SESSION_COOKIE_NAME, sessionToken);
+}
+
+export function clearAdminSessionCookie(): void {
+  clearSessionCookie(ADMIN_SESSION_COOKIE_NAME);
+}
+
+export function clearUserSessionCookie(): void {
+  clearSessionCookie(USER_SESSION_COOKIE_NAME);
+}
+
 export function getAdminSession(): AdminSession | null {
-  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
-  return verifyAdminSessionToken(token);
+  return verifySessionToken<AdminSession>("admin", cookies().get(ADMIN_SESSION_COOKIE_NAME)?.value);
+}
+
+export function getUserSession(): UserSession | null {
+  return verifySessionToken<UserSession>("user", cookies().get(USER_SESSION_COOKIE_NAME)?.value);
 }
 
 export function requireAdminSession(): AdminSession {
@@ -127,3 +172,13 @@ export function requireAdminSession(): AdminSession {
 
   return session;
 }
+
+export function requireUserSession(): UserSession {
+  const session = getUserSession();
+  if (!session) {
+    redirect("/login");
+  }
+
+  return session;
+}
+

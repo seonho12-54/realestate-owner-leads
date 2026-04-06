@@ -12,6 +12,20 @@ CREATE TABLE IF NOT EXISTS offices (
   UNIQUE KEY uq_offices_slug (slug)
 );
 
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email VARCHAR(191) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(30) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  last_login_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_users_email (email)
+);
+
 CREATE TABLE IF NOT EXISTS admins (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   office_id BIGINT UNSIGNED NULL,
@@ -32,6 +46,8 @@ CREATE TABLE IF NOT EXISTS admins (
 CREATE TABLE IF NOT EXISTS leads (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   office_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NULL,
+  listing_title VARCHAR(160) NOT NULL,
   owner_name VARCHAR(100) NOT NULL,
   phone VARCHAR(30) NOT NULL,
   email VARCHAR(191) NULL,
@@ -40,6 +56,12 @@ CREATE TABLE IF NOT EXISTS leads (
   address_line1 VARCHAR(255) NOT NULL,
   address_line2 VARCHAR(255) NULL,
   postal_code VARCHAR(20) NULL,
+  region_1depth_name VARCHAR(40) NULL,
+  region_2depth_name VARCHAR(40) NULL,
+  region_3depth_name VARCHAR(60) NULL,
+  latitude DECIMAL(10, 7) NULL,
+  longitude DECIMAL(10, 7) NULL,
+  location_verified TINYINT(1) NOT NULL DEFAULT 0,
   area_m2 DECIMAL(10, 2) NULL,
   price_krw BIGINT UNSIGNED NULL,
   deposit_krw BIGINT UNSIGNED NULL,
@@ -47,9 +69,14 @@ CREATE TABLE IF NOT EXISTS leads (
   move_in_date VARCHAR(50) NULL,
   contact_time VARCHAR(100) NULL,
   description TEXT NULL,
+  admin_memo TEXT NULL,
   privacy_consent TINYINT(1) NOT NULL DEFAULT 0,
   marketing_consent TINYINT(1) NOT NULL DEFAULT 0,
   status ENUM('new', 'contacted', 'reviewing', 'completed', 'closed') NOT NULL DEFAULT 'new',
+  is_published TINYINT(1) NOT NULL DEFAULT 0,
+  published_at DATETIME NULL,
+  published_by_admin_id BIGINT UNSIGNED NULL,
+  view_count INT UNSIGNED NOT NULL DEFAULT 0,
   utm_source VARCHAR(100) NULL,
   utm_medium VARCHAR(100) NULL,
   utm_campaign VARCHAR(100) NULL,
@@ -63,9 +90,15 @@ CREATE TABLE IF NOT EXISTS leads (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_leads_office_id (office_id),
+  KEY idx_leads_user_id (user_id),
   KEY idx_leads_status (status),
+  KEY idx_leads_is_published (is_published),
+  KEY idx_leads_region (region_2depth_name, region_3depth_name),
+  KEY idx_leads_transaction_type (transaction_type),
   KEY idx_leads_created_at (created_at),
-  CONSTRAINT fk_leads_office_id FOREIGN KEY (office_id) REFERENCES offices(id)
+  CONSTRAINT fk_leads_office_id FOREIGN KEY (office_id) REFERENCES offices(id),
+  CONSTRAINT fk_leads_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_leads_published_admin_id FOREIGN KEY (published_by_admin_id) REFERENCES admins(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS lead_photos (
