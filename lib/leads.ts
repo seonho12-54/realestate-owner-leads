@@ -6,6 +6,7 @@ import type { DbMutation, DbRow } from "@/lib/db";
 import { getPool, withTransaction } from "@/lib/db";
 import { geocodeAddressWithinServiceArea, verifyCoordsWithinServiceArea } from "@/lib/kakao";
 import type { RequestMeta } from "@/lib/request";
+import { ensureRuntimeSchema } from "@/lib/schema";
 import type { AdminLeadUpdateInput, LeadCreateInput, LeadStatus } from "@/lib/validation";
 
 export type LeadPhotoAsset = {
@@ -182,6 +183,8 @@ export async function createLead(
   requestMeta: RequestMeta,
   options?: { userId?: number | null },
 ): Promise<number> {
+  await ensureRuntimeSchema();
+
   const browserRegion = await verifyCoordsWithinServiceArea(input.browserLatitude, input.browserLongitude);
 
   if (!browserRegion.allowed) {
@@ -324,6 +327,8 @@ export async function createLead(
 }
 
 export async function listPublishedListings(): Promise<PublicListing[]> {
+  await ensureRuntimeSchema();
+
   const [rows] = await getPool().query<PublicListingRow[]>(
     `
       SELECT
@@ -388,6 +393,8 @@ export async function getPublishedListingDetail(leadId: number): Promise<(Public
   moveInDate: string | null;
   photos: LeadPhotoAsset[];
 }) | null> {
+  await ensureRuntimeSchema();
+
   const [rows] = await getPool().execute<PublishedDetailRow[]>(
     `
       SELECT
@@ -457,6 +464,8 @@ export async function getPublishedListingDetail(leadId: number): Promise<(Public
 }
 
 export async function listAdminLeads(status?: LeadStatus | null): Promise<AdminLeadSummary[]> {
+  await ensureRuntimeSchema();
+
   const params: string[] = [];
   const whereClause = status ? "WHERE l.status = ?" : "";
 
@@ -569,6 +578,8 @@ export async function updateLeadAdminFields(params: {
   adminId: number;
   requestMeta: RequestMeta;
 }): Promise<void> {
+  await ensureRuntimeSchema();
+
   await withTransaction(async (connection) => {
     const [result] = await connection.execute<DbMutation>(
       `
@@ -623,6 +634,8 @@ export async function updateLeadAdminFields(params: {
 }
 
 export async function incrementLeadViewCount(leadId: number): Promise<void> {
+  await ensureRuntimeSchema();
+
   await getPool().execute(
     `
       UPDATE leads

@@ -1,6 +1,7 @@
 import type { PoolConnection } from "mysql2/promise";
 
 import { getPool } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/schema";
 
 type AuditLogInput = {
   adminId?: number | null;
@@ -13,6 +14,8 @@ type AuditLogInput = {
 };
 
 export async function writeAuditLog(input: AuditLogInput, connection?: PoolConnection): Promise<void> {
+  await ensureRuntimeSchema();
+
   const executor = connection ?? getPool();
 
   await executor.execute(
@@ -38,4 +41,3 @@ export async function writeAuditLog(input: AuditLogInput, connection?: PoolConne
     ],
   );
 }
-

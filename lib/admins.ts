@@ -1,5 +1,6 @@
 import type { DbMutation, DbRow } from "@/lib/db";
 import { getPool } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/schema";
 
 export type AdminRecord = {
   id: number;
@@ -22,6 +23,8 @@ type AdminRow = DbRow & {
 };
 
 export async function findAdminByEmail(email: string): Promise<AdminRecord | null> {
+  await ensureRuntimeSchema();
+
   const [rows] = await getPool().execute<AdminRow[]>(
     `
       SELECT id, office_id, email, name, role, password_hash, is_active
@@ -49,6 +52,8 @@ export async function findAdminByEmail(email: string): Promise<AdminRecord | nul
 }
 
 export async function touchAdminLastLogin(adminId: number): Promise<void> {
+  await ensureRuntimeSchema();
+
   await getPool().execute<DbMutation>(
     `
       UPDATE admins
@@ -58,4 +63,3 @@ export async function touchAdminLastLogin(adminId: number): Promise<void> {
     [adminId],
   );
 }
-

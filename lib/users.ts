@@ -1,5 +1,6 @@
 import type { DbMutation, DbRow } from "@/lib/db";
 import { getPool } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/schema";
 
 export type UserRecord = {
   id: number;
@@ -19,34 +20,8 @@ type UserRow = DbRow & {
   is_active: number;
 };
 
-let ensuredUsersTable = false;
-
-async function ensureUsersTable(): Promise<void> {
-  if (ensuredUsersTable) {
-    return;
-  }
-
-  await getPool().execute(`
-    CREATE TABLE IF NOT EXISTS users (
-      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-      email VARCHAR(191) NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
-      name VARCHAR(100) NOT NULL,
-      phone VARCHAR(30) NULL,
-      is_active TINYINT(1) NOT NULL DEFAULT 1,
-      last_login_at DATETIME NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (id),
-      UNIQUE KEY uq_users_email (email)
-    )
-  `);
-
-  ensuredUsersTable = true;
-}
-
 export async function findUserByEmail(email: string): Promise<UserRecord | null> {
-  await ensureUsersTable();
+  await ensureRuntimeSchema();
 
   const [rows] = await getPool().execute<UserRow[]>(
     `
@@ -79,7 +54,7 @@ export async function createUser(params: {
   name: string;
   phone?: string | null;
 }): Promise<number> {
-  await ensureUsersTable();
+  await ensureRuntimeSchema();
 
   const [result] = await getPool().execute<DbMutation>(
     `
@@ -97,7 +72,7 @@ export async function createUser(params: {
 }
 
 export async function touchUserLastLogin(userId: number): Promise<void> {
-  await ensureUsersTable();
+  await ensureRuntimeSchema();
 
   await getPool().execute(
     `

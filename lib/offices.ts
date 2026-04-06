@@ -1,5 +1,6 @@
 import type { DbRow } from "@/lib/db";
 import { getPool } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/schema";
 
 export type OfficeOption = {
   id: number;
@@ -13,6 +14,8 @@ export type OfficeOption = {
 type OfficeRow = DbRow & OfficeOption;
 
 export async function listActiveOffices(): Promise<OfficeOption[]> {
+  await ensureRuntimeSchema();
+
   const [rows] = await getPool().query<OfficeRow[]>(
     `
       SELECT id, name, slug, phone, address, description
@@ -31,4 +34,3 @@ export async function listActiveOffices(): Promise<OfficeOption[]> {
     description: row.description,
   }));
 }
-
