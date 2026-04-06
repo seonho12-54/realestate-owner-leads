@@ -2,6 +2,7 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { AdminLeadManager } from "@/components/AdminLeadManager";
+import { LogoutButton } from "@/components/LogoutButton";
 import { requireAdminSession } from "@/lib/auth";
 import { listAdminLeads } from "@/lib/leads";
 import { leadStatusOptions } from "@/lib/validation";
@@ -30,17 +31,15 @@ export default async function AdminLeadsPage({
         <div>
           <span className="eyebrow">관리자 콘솔</span>
           <h1 className="page-title">관리자 전용 매물 관리 화면</h1>
-          <p className="page-copy">{adminSession.name} 관리자 계정으로 로그인되어 있습니다. 접수 검토, 공개 전환, 메모 저장을 이 화면에서 처리합니다.</p>
+          <p className="page-copy">
+            {adminSession.name} 관리자 계정으로 로그인되어 있습니다. 접수 검토, 공개 전환, 메모 관리까지 이 화면에서 처리합니다.
+          </p>
         </div>
         <div className="button-row">
           <Link href="/" className="button button-secondary">
             공개 홈 보기
           </Link>
-          <form action="/api/admin/logout" method="post">
-            <button type="submit" className="button button-primary">
-              관리자 로그아웃
-            </button>
-          </form>
+          <LogoutButton action="/api/admin/logout" redirectTo="/" className="button button-primary" label="관리자 로그아웃" />
         </div>
       </section>
 

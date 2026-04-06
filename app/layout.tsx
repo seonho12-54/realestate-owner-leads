@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { LogoutButton } from "@/components/LogoutButton";
 import { getAdminSession, getUserSession } from "@/lib/auth";
 
 import "./globals.css";
@@ -47,20 +48,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               {adminSession ? (
                 <>
                   <span className="auth-greeting">{adminSession.name} 관리자</span>
-                  <form action="/api/admin/logout" method="post">
-                    <button className="button button-ghost button-small" type="submit">
-                      로그아웃
-                    </button>
-                  </form>
+                  <LogoutButton action="/api/admin/logout" redirectTo="/" />
                 </>
               ) : userSession ? (
                 <>
                   <span className="auth-greeting">{userSession.name}님</span>
-                  <form action="/api/auth/logout" method="post">
-                    <button className="button button-ghost button-small" type="submit">
-                      로그아웃
-                    </button>
-                  </form>
+                  <LogoutButton action="/api/auth/logout" redirectTo="/" />
                 </>
               ) : (
                 <>

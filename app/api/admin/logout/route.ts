@@ -4,10 +4,11 @@ import { clearAdminSessionCookie } from "@/lib/auth";
 
 export async function POST() {
   clearAdminSessionCookie();
+
   return new NextResponse(null, {
     status: 303,
     headers: {
-      Location: "/admin/login",
+      Location: "/",
     },
   });
 }

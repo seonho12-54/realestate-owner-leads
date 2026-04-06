@@ -3,19 +3,20 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { LOCATION_ACCESS_CACHE_KEY } from "@/lib/location-access";
+
 type GateState = "idle" | "checking" | "allowed" | "blocked" | "error";
 
-const CACHE_KEY = "allowed-location-approved-at";
 const CACHE_TTL_MS = 1000 * 60 * 30;
 
 function getInsecureContextMessage() {
-  return "현재 주소가 HTTP라서 브라우저 위치 권한이 제한될 수 있습니다. HTTPS 도메인으로 접속한 뒤 다시 시도해 주세요.";
+  return "현재 주소가 HTTP라서 브라우저 위치 권한이 제한될 수 있습니다. HTTPS 주소로 접속한 뒤 다시 시도해 주세요.";
 }
 
 export function LocationGate({
   children,
   title = "허용 지역 확인 후 둘러볼 수 있어요",
-  description = "현재 위치를 확인해 `다운동` 또는 `포곡읍`에서 접속했는지 먼저 확인합니다.",
+  description = "현재 위치를 확인해 다운동 또는 포곡읍에서 접속했는지 먼저 확인합니다.",
 }: {
   children: ReactNode;
   title?: string;
@@ -25,7 +26,8 @@ export function LocationGate({
   const [message, setMessage] = useState(description);
 
   useEffect(() => {
-    const cached = window.sessionStorage.getItem(CACHE_KEY);
+    const cached = window.sessionStorage.getItem(LOCATION_ACCESS_CACHE_KEY);
+
     if (!cached) {
       return;
     }
@@ -44,7 +46,7 @@ export function LocationGate({
 
     if (!navigator.geolocation) {
       setState("error");
-      setMessage("이 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
+      setMessage("현재 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
       return;
     }
 
@@ -77,7 +79,7 @@ export function LocationGate({
             return;
           }
 
-          window.sessionStorage.setItem(CACHE_KEY, String(Date.now()));
+          window.sessionStorage.setItem(LOCATION_ACCESS_CACHE_KEY, String(Date.now()));
           setState("allowed");
         } catch (error) {
           setState("error");
