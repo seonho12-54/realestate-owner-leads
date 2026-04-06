@@ -181,11 +181,19 @@ type PublishedDetailRow = DbRow & {
 export async function createLead(
   input: LeadCreateInput,
   requestMeta: RequestMeta,
-  options?: { userId?: number | null },
+  options?: { userId?: number | null; adminId?: number | null; bypassLocationCheck?: boolean },
 ): Promise<number> {
   await ensureRuntimeSchema();
 
-  const browserRegion = await verifyCoordsWithinServiceArea(input.browserLatitude, input.browserLongitude);
+  const browserRegion = options?.bypassLocationCheck
+    ? {
+        allowed: true,
+        addressName: "관리자 우회 등록",
+        region1DepthName: null,
+        region2DepthName: null,
+        region3DepthName: null,
+      }
+    : await verifyCoordsWithinServiceArea(input.browserLatitude, input.browserLongitude);
 
   if (!browserRegion.allowed) {
     throw new Error("울산광역시 중구 안에서만 서비스를 이용할 수 있습니다.");
@@ -304,6 +312,7 @@ export async function createLead(
 
     await writeAuditLog(
       {
+        adminId: options?.adminId ?? null,
         actionType: "lead.created",
         entityType: "lead",
         entityId: leadId,
@@ -317,6 +326,7 @@ export async function createLead(
           region2DepthName: geocodedAddress.region2DepthName,
           region3DepthName: geocodedAddress.region3DepthName,
           locationAllowed: browserRegion.allowed,
+          bypassLocationCheck: Boolean(options?.bypassLocationCheck),
         },
       },
       connection,

@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { getUserSession } from "@/lib/auth";
+import { getAdminSession, getUserSession } from "@/lib/auth";
 import { createLead } from "@/lib/leads";
 import { getRequestMeta } from "@/lib/request";
 import { leadCreateSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  const session = getUserSession();
+  const adminSession = getAdminSession();
+  const userSession = getUserSession();
 
-  if (!session) {
+  if (!adminSession && !userSession) {
     return NextResponse.json(
       {
         error: "로그인이 필요합니다.",
@@ -20,7 +21,9 @@ export async function POST(request: Request) {
   try {
     const payload = leadCreateSchema.parse(await request.json());
     const leadId = await createLead(payload, getRequestMeta(request), {
-      userId: session.userId,
+      userId: userSession?.userId ?? null,
+      adminId: adminSession?.adminId ?? null,
+      bypassLocationCheck: Boolean(adminSession),
     });
 
     return NextResponse.json({
