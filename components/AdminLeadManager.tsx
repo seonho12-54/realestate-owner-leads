@@ -41,7 +41,7 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
         throw new Error(result.error ?? "저장에 실패했습니다.");
       }
 
-      setMessage("저장되었습니다.");
+      setMessage("변경이 저장되었습니다.");
       window.location.reload();
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "저장에 실패했습니다.");
@@ -51,12 +51,14 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
   }
 
   return (
-    <article className="admin-lead-card">
-      <div className="admin-lead-media">
+    <article className="admin-lead-card compact">
+      <div className="admin-lead-media compact">
         {coverPhoto?.viewUrl ? (
-          <img src={coverPhoto.viewUrl} alt={lead.listingTitle} className="admin-lead-thumb" />
+          <img src={coverPhoto.viewUrl} alt={lead.listingTitle} className="admin-lead-thumb compact" />
         ) : (
-          <div className="admin-lead-thumb empty">사진 없음</div>
+          <div className="admin-lead-thumb empty compact">
+            {lead.photoCount > 0 ? "S3 미리보기 확인 필요" : "사진 없음"}
+          </div>
         )}
         <div className="admin-badges">
           <span className={`status-pill ${lead.isPublished ? "published" : "draft"}`}>{lead.isPublished ? "공개 중" : "비공개"}</span>
@@ -64,18 +66,18 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
         </div>
       </div>
 
-      <div className="admin-lead-body">
-        <div className="admin-lead-head">
+      <div className="admin-lead-body compact">
+        <div className="admin-lead-head compact">
           <div>
             <h2>{lead.listingTitle}</h2>
             <p>
-              {lead.officeName} · {lead.region2DepthName ?? "중구"} {lead.region3DepthName ?? ""}
+              {lead.officeName} · {lead.region2DepthName ?? "허용 지역"} {lead.region3DepthName ?? ""}
             </p>
           </div>
-          <strong>{formatTradeLabel(lead)}</strong>
+          <strong className="admin-price-tag">{formatTradeLabel(lead)}</strong>
         </div>
 
-        <div className="admin-meta-grid">
+        <div className="admin-meta-grid compact">
           <span>{getPropertyTypeLabel(lead.propertyType)}</span>
           <span>{formatArea(lead.areaM2)}</span>
           <span>{lead.addressLine1}</span>
@@ -87,18 +89,20 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
         </div>
 
         {visiblePhotos.length > 1 ? (
-          <div className="admin-photo-strip">
-            {visiblePhotos.slice(1, 6).map((photo) =>
+          <div className="admin-photo-strip compact">
+            {visiblePhotos.slice(1, 5).map((photo) =>
               photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="admin-photo-mini" /> : null,
             )}
           </div>
-        ) : lead.photoCount > 0 ? (
-          <div className="admin-photo-strip">
-            <div className="muted-row">사진은 등록됐지만 현재 미리보기를 만들지 못했습니다.</div>
+        ) : null}
+
+        {lead.photoCount > 0 && visiblePhotos.length === 0 ? (
+          <div className="inline-diagnostic">
+            사진은 접수됐지만 미리보기를 만들지 못했습니다. S3 버킷, IAM 권한, presigned GET URL 생성을 확인해 주세요.
           </div>
         ) : null}
 
-        <div className="admin-control-grid">
+        <div className="admin-control-grid compact">
           <label className="field">
             <span>상태</span>
             <select className="input" value={status} onChange={(event) => setStatus(event.target.value as LeadStatus)}>
@@ -126,8 +130,8 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
           />
         </label>
 
-        <div className="admin-footer">
-          <div className="admin-footnotes">
+        <div className="admin-footer compact">
+          <div className="admin-footnotes compact">
             <span>UTM: {[lead.utmSource, lead.utmMedium, lead.utmCampaign].filter(Boolean).join(" / ") || "-"}</span>
             <span>위치 검증: {lead.locationVerified ? "완료" : "미완료"}</span>
           </div>

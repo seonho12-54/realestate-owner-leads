@@ -3,11 +3,9 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { LOCATION_ACCESS_CACHE_KEY } from "@/lib/location-access";
+import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
 
 type GateState = "idle" | "checking" | "allowed" | "blocked" | "error";
-
-const CACHE_TTL_MS = 1000 * 60 * 30;
 
 function getInsecureContextMessage() {
   return "현재 주소가 HTTP라서 브라우저 위치 권한이 제한될 수 있습니다. HTTPS 주소로 접속한 뒤 다시 시도해 주세요.";
@@ -26,15 +24,13 @@ export function LocationGate({
   const [message, setMessage] = useState(description);
 
   useEffect(() => {
-    const cached = window.sessionStorage.getItem(LOCATION_ACCESS_CACHE_KEY);
+    const cached = readLocationAccessCache();
 
     if (!cached) {
       return;
     }
 
-    if (Date.now() - Number(cached) < CACHE_TTL_MS) {
-      setState("allowed");
-    }
+    setState("allowed");
   }, []);
 
   async function requestAccess() {
@@ -79,7 +75,12 @@ export function LocationGate({
             return;
           }
 
-          window.sessionStorage.setItem(LOCATION_ACCESS_CACHE_KEY, String(Date.now()));
+          writeLocationAccessCache({
+            approvedAt: Date.now(),
+            addressName: result.addressName ?? null,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
           setState("allowed");
         } catch (error) {
           setState("error");
@@ -116,8 +117,8 @@ export function LocationGate({
   return (
     <div className="gate-panel">
       <span className="eyebrow">Location Access</span>
-      <h1 className="page-title">{title}</h1>
-      <p className="page-copy">{message}</p>
+      <h1 className="page-title page-title-medium">{title}</h1>
+      <p className="page-copy compact-copy">{message}</p>
       <div className="button-row">
         <button type="button" className="button button-primary" onClick={requestAccess} disabled={state === "checking"}>
           {state === "checking" ? "확인 중..." : "위치 확인하고 보기"}

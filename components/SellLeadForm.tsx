@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 
 import { SellMapPreview } from "@/components/SellMapPreview";
+import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
 import type { OfficeOption } from "@/lib/offices";
 import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 import { getValidationMessage, leadCreateSchema, propertyTypeOptions, transactionTypeOptions } from "@/lib/validation";
@@ -55,6 +56,18 @@ type FormState = {
 
 const MAX_PHOTO_COUNT = 10;
 const MAX_PHOTO_SIZE_MB = 20;
+
+function getUploadFailureMessage(error: unknown) {
+  if (error instanceof TypeError) {
+    return "S3 업로드 요청이 브라우저에서 차단되었습니다. 버킷 CORS 설정과 presigned URL 응답을 확인해 주세요.";
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "S3 업로드에 실패했습니다. 버킷 CORS, IAM 권한, S3 버킷 이름을 확인해 주세요.";
+}
 
 export function SellLeadForm({
   offices,
@@ -108,6 +121,24 @@ export function SellLeadForm({
   const hasUploadingPhoto = useMemo(() => photos.some((photo) => photo.status === "uploading"), [photos]);
   const isLocationVerified = Boolean(browserCoords);
 
+  useEffect(() => {
+    const cached = readLocationAccessCache();
+
+    if (!cached) {
+      return;
+    }
+
+    setBrowserCoords({
+      latitude: cached.latitude,
+      longitude: cached.longitude,
+    });
+    setLocationMessage(
+      cached.addressName
+        ? `${cached.addressName}에서 위치 인증이 완료된 사용자입니다. 저장된 인증을 사용합니다.`
+        : "이미 위치 인증이 완료된 사용자입니다. 저장된 인증을 사용합니다.",
+    );
+  }, []);
+
   function handleFieldChange<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
     setForm((current) => ({
       ...current,
@@ -154,6 +185,12 @@ export function SellLeadForm({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
+          writeLocationAccessCache({
+            approvedAt: Date.now(),
+            addressName: result.addressName ?? null,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
           setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 접속한 것이 확인되었습니다.`);
         } catch (error) {
           setBrowserCoords(null);
@@ -194,7 +231,7 @@ export function SellLeadForm({
 
     if (!query) {
       setAddressResults([]);
-      setAddressSearchError("도로명주소나 지번 주소를 입력해 주세요.");
+      setAddressSearchError("도로명주소, 지번 주소, 건물명을 입력해 주세요.");
       return;
     }
 
@@ -301,7 +338,7 @@ export function SellLeadForm({
         });
 
         if (!uploadResponse.ok) {
-          throw new Error("사진 업로드에 실패했습니다.");
+          throw new Error(`S3 업로드 실패 (${uploadResponse.status}). 버킷 CORS와 IAM 권한을 확인해 주세요.`);
         }
 
         setPhotos((current) =>
@@ -322,7 +359,7 @@ export function SellLeadForm({
               ? {
                   ...photo,
                   status: "error",
-                  error: error instanceof Error ? error.message : "업로드 중 오류가 발생했습니다.",
+                  error: getUploadFailureMessage(error),
                 }
               : photo,
           ),
@@ -449,17 +486,18 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">1. 위치 확인</span>
-            <h1 className="page-title">허용 지역에서 접속했는지 먼저 확인해 주세요</h1>
+            <h1 className="page-title page-title-medium">허용 지역인지 한 번만 확인하면 됩니다</h1>
           </div>
           <button type="button" className="button button-secondary" onClick={handleLocationCheck} disabled={isCheckingLocation}>
-            {isCheckingLocation ? "확인 중..." : "현재 위치 확인"}
+            {isCheckingLocation ? "확인 중..." : isLocationVerified ? "다시 확인" : "현재 위치 확인"}
           </button>
         </div>
-        <p className="page-copy">{locationMessage}</p>
+        <p className="page-copy compact-copy">{locationMessage}</p>
         <div className="inline-note-list">
           <span className={`inline-note${isLocationVerified ? " success" : ""}`}>
-            {isLocationVerified ? "위치 확인 완료" : `허용 지역: ${SERVICE_REGION_LABEL}`}
+            {isLocationVerified ? "위치 인증 완료" : `허용 지역: ${SERVICE_REGION_LABEL}`}
           </span>
+          {isLocationVerified ? <span className="inline-note success">인증된 사용자입니다. 저장된 인증을 사용합니다.</span> : null}
         </div>
       </section>
 
@@ -467,7 +505,7 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">2. 기본 정보</span>
-            <h2 className="section-title">등록자와 매물 기본값을 입력해 주세요</h2>
+            <h2 className="section-title">등록자와 매물 기본 정보를 입력해 주세요</h2>
           </div>
         </div>
         <div className="form-grid">
@@ -555,7 +593,9 @@ export function SellLeadForm({
                 <button
                   key={`${result.addressName}-${result.latitude}-${result.longitude}`}
                   type="button"
-                  className={`address-result${selectedAddress?.latitude === result.latitude && selectedAddress?.longitude === result.longitude ? " selected" : ""}`}
+                  className={`address-result${
+                    selectedAddress?.latitude === result.latitude && selectedAddress?.longitude === result.longitude ? " selected" : ""
+                  }`}
                   onClick={() => selectAddress(result)}
                 >
                   <strong>{result.roadAddress ?? result.addressName}</strong>

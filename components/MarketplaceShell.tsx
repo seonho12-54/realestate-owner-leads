@@ -69,11 +69,13 @@ export function MarketplaceShell({
 
   return (
     <div className="market-layout">
-      <section className="hero-panel compact market-intro">
+      <section className="hero-panel compact market-intro market-intro-slim">
         <div className="market-intro-copy">
           <span className="eyebrow">다운동 / 포곡읍 한정</span>
-          <h1 className="market-brand-title">다우니</h1>
-          <p className="market-brand-note">관리자 승인까지 끝난 매물만 지도와 목록에 표시됩니다.</p>
+          <div className="market-brand-row">
+            <h1 className="market-brand-title">다우니</h1>
+            <p className="market-brand-note">관리자 승인까지 끝난 매물만 표시됩니다.</p>
+          </div>
         </div>
         <div className="button-row">
           <Link href="/sell" className="button button-primary">
@@ -139,7 +141,7 @@ export function MarketplaceShell({
             {filteredListings.length === 0 ? (
               <div className="empty-panel">
                 <strong>조건에 맞는 매물이 없습니다</strong>
-                <p>필터를 바꾸거나 관리자가 공개 승인한 매물이 올라오길 기다려 주세요.</p>
+                <p>필터를 바꾸거나 관리자가 공개 승인한 새 매물을 기다려 주세요.</p>
               </div>
             ) : null}
 

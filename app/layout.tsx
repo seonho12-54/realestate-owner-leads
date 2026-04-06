@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="auth-nav">
               {adminSession ? (
                 <>
-                  <span className="auth-greeting">{adminSession.name} 관리자</span>
+                  <span className="auth-greeting">{adminSession.name}</span>
                   <LogoutButton action="/api/admin/logout" redirectTo="/" />
                 </>
               ) : userSession ? (

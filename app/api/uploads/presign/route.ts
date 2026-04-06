@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { getUserSession } from "@/lib/auth";
+import { getAdminSession, getUserSession } from "@/lib/auth";
 import { getEnv } from "@/lib/env";
 import { createPresignedPhotoUpload } from "@/lib/s3";
 import { uploadPresignSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  const session = getUserSession();
+  const userSession = getUserSession();
+  const adminSession = getAdminSession();
 
-  if (!session) {
+  if (!userSession && !adminSession) {
     return NextResponse.json(
       {
         error: "로그인이 필요합니다.",
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(signedUpload);
   } catch (error) {
+    console.error("Failed to create presigned upload URL", error);
+
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "업로드 URL 발급에 실패했습니다.",

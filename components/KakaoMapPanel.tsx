@@ -12,32 +12,44 @@ type OverlayEntry = {
   element: HTMLButtonElement;
 };
 
-function createMarkerElement(listing: PublicListing, selected: boolean, onClick: () => void) {
-  const element = document.createElement("button");
-  element.type = "button";
-  element.className = `map-marker-chip ${listing.transactionType}${selected ? " is-selected" : ""}`;
-  element.innerHTML = [
-    `<span class="map-marker-type">${getTransactionTypeLabel(listing.transactionType)}</span>`,
-    `<strong class="map-marker-price">${getMarkerPriceText(listing)}</strong>`,
-  ].join("");
-  element.addEventListener("click", onClick);
-  return element;
-}
-
-function getMarkerPriceText(listing: PublicListing): string {
+function getMarkerPriceText(listing: PublicListing): string | null {
   if (listing.transactionType === "sale") {
-    return formatCompactKrw(listing.priceKrw);
+    const value = formatCompactKrw(listing.priceKrw);
+    return value === "-" ? null : value;
   }
 
   if (listing.transactionType === "jeonse") {
-    return formatCompactKrw(listing.depositKrw);
+    const value = formatCompactKrw(listing.depositKrw);
+    return value === "-" ? null : value;
   }
 
   if (listing.transactionType === "monthly") {
-    return `${formatCompactKrw(listing.depositKrw)} / ${formatCompactKrw(listing.monthlyRentKrw)}`;
+    const deposit = formatCompactKrw(listing.depositKrw);
+    const rent = formatCompactKrw(listing.monthlyRentKrw);
+
+    if (deposit === "-" && rent === "-") {
+      return null;
+    }
+
+    return `${deposit} / ${rent}`;
   }
 
-  return "상담";
+  return null;
+}
+
+function createMarkerElement(listing: PublicListing, selected: boolean, onClick: () => void) {
+  const priceText = getMarkerPriceText(listing);
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = `map-marker-chip ${listing.transactionType}${selected ? " is-selected" : ""}${priceText ? "" : " single-line"}`;
+  element.innerHTML = priceText
+    ? [
+        `<span class="map-marker-type">${getTransactionTypeLabel(listing.transactionType)}</span>`,
+        `<strong class="map-marker-price">${priceText}</strong>`,
+      ].join("")
+    : `<strong class="map-marker-type">${getTransactionTypeLabel(listing.transactionType)}</strong>`;
+  element.addEventListener("click", onClick);
+  return element;
 }
 
 export function KakaoMapPanel({
@@ -116,7 +128,7 @@ export function KakaoMapPanel({
       const overlay = new kakao.maps.CustomOverlay({
         position,
         content: element,
-        yAnchor: 1.08,
+        yAnchor: 1.05,
         clickable: true,
       });
 

@@ -27,11 +27,11 @@ export default async function AdminLeadsPage({
 
   return (
     <div className="page-stack">
-      <section className="hero-panel compact">
+      <section className="hero-panel compact hero-panel-slim">
         <div>
           <span className="eyebrow">관리자 콘솔</span>
-          <h1 className="page-title">관리자 전용 매물 관리 화면</h1>
-          <p className="page-copy">
+          <h1 className="page-title page-title-medium">관리자 전용 매물 관리 화면</h1>
+          <p className="page-copy compact-copy">
             {adminSession.name} 관리자 계정으로 로그인되어 있습니다. 접수 검토, 공개 전환, 메모 관리까지 이 화면에서 처리합니다.
           </p>
         </div>
