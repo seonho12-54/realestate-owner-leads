@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const userSession = getUserSession();
   const adminSession = getAdminSession();
+  const userSession = getUserSession();
 
   return (
     <html lang="ko">
@@ -21,33 +21,42 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div className="site-shell">
           <header className="site-header">
             <div className="brand-cluster">
-              <Link href="/" className="site-brand" aria-label="다우니 홈">
+              <Link href={adminSession ? "/admin/leads" : "/"} className="site-brand" aria-label="다우니 홈">
                 다우니
               </Link>
-              <span className="site-caption">울산 중구 동네 매물 플랫폼</span>
+              <span className="site-caption">{adminSession ? "관리자 전용 콘솔" : "울산 중구 동네 매물 플랫폼"}</span>
             </div>
 
             <nav className="site-nav">
-              <Link href="/">매물 보기</Link>
-              <Link href="/sell">매물 등록</Link>
-              <Link href="/privacy">개인정보</Link>
-              {adminSession ? <Link href="/admin/leads">관리 콘솔</Link> : <Link href="/admin/login">관리자</Link>}
+              {adminSession ? (
+                <>
+                  <Link href="/admin/leads">관리 콘솔</Link>
+                  <Link href="/">공개 홈</Link>
+                  <Link href="/privacy">개인정보</Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/">매물 보기</Link>
+                  <Link href="/sell">매물 등록</Link>
+                  <Link href="/privacy">개인정보</Link>
+                </>
+              )}
             </nav>
 
             <div className="auth-nav">
-              {userSession ? (
+              {adminSession ? (
                 <>
-                  <span className="auth-greeting">{userSession.name}님</span>
-                  <form action="/api/auth/logout" method="post">
+                  <span className="auth-greeting">{adminSession.name} 관리자</span>
+                  <form action="/api/admin/logout" method="post">
                     <button className="button button-ghost button-small" type="submit">
                       로그아웃
                     </button>
                   </form>
                 </>
-              ) : adminSession ? (
+              ) : userSession ? (
                 <>
-                  <span className="auth-greeting">{adminSession.name} 관리자</span>
-                  <form action="/api/admin/logout" method="post">
+                  <span className="auth-greeting">{userSession.name}님</span>
+                  <form action="/api/auth/logout" method="post">
                     <button className="button button-ghost button-small" type="submit">
                       로그아웃
                     </button>
@@ -60,6 +69,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   </Link>
                   <Link href="/signup" className="button button-primary button-small">
                     회원가입
+                  </Link>
+                  <Link href="/admin/login" className="button button-secondary button-small">
+                    관리자 전용
                   </Link>
                 </>
               )}

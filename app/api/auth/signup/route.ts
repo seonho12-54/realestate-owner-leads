@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { writeAuditLog } from "@/lib/audit";
-import { createUserSessionToken, hashPassword, setUserSessionCookie } from "@/lib/auth";
+import { clearAdminSessionCookie, createUserSessionToken, hashPassword, setUserSessionCookie } from "@/lib/auth";
 import { getRequestMeta } from "@/lib/request";
 import { createUser, findUserByEmail } from "@/lib/users";
 import { userSignupSchema } from "@/lib/validation";
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (existingUser) {
       return NextResponse.json(
         {
-          error: "이미 가입된 이메일입니다.",
+          error: "이미 가입한 이메일입니다.",
         },
         { status: 409 },
       );
@@ -39,6 +39,8 @@ export async function POST(request: Request) {
         email: payload.email,
       },
     });
+
+    clearAdminSessionCookie();
 
     setUserSessionCookie(
       createUserSessionToken({

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { UserSignupForm } from "@/components/UserSignupForm";
-import { getUserSession } from "@/lib/auth";
+import { getAdminSession, getUserSession } from "@/lib/auth";
 
 export default function SignupPage({
   searchParams,
@@ -10,6 +10,10 @@ export default function SignupPage({
     next?: string;
   };
 }) {
+  if (getAdminSession()) {
+    redirect("/admin/leads");
+  }
+
   if (getUserSession()) {
     redirect(searchParams?.next || "/");
   }
@@ -20,4 +24,3 @@ export default function SignupPage({
     </div>
   );
 }
-

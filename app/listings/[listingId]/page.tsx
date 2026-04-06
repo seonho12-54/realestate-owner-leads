@@ -55,7 +55,7 @@ export default async function ListingDetailPage({
               목록으로
             </Link>
             <Link href="/sell" className="button button-primary">
-              비슷한 매물 등록
+              매물 등록하기
             </Link>
           </div>
         </section>

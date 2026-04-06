@@ -29,14 +29,19 @@ export default async function AdminLeadsPage({
       <section className="hero-panel compact">
         <div>
           <span className="eyebrow">관리자 콘솔</span>
-          <h1 className="page-title">등록된 매물 전체를 검토하고 공개 상태를 제어합니다</h1>
-          <p className="page-copy">{adminSession.name}님으로 로그인되었습니다. 상태, 게시 여부, 메모를 한 번에 관리할 수 있습니다.</p>
+          <h1 className="page-title">관리자 전용 매물 관리 화면</h1>
+          <p className="page-copy">{adminSession.name} 관리자 계정으로 로그인되어 있습니다. 접수 검토, 공개 전환, 메모 저장을 이 화면에서 처리합니다.</p>
         </div>
-        <form action="/api/admin/logout" method="post">
-          <button type="submit" className="button button-secondary">
-            관리자 로그아웃
-          </button>
-        </form>
+        <div className="button-row">
+          <Link href="/" className="button button-secondary">
+            공개 홈 보기
+          </Link>
+          <form action="/api/admin/logout" method="post">
+            <button type="submit" className="button button-primary">
+              관리자 로그아웃
+            </button>
+          </form>
+        </div>
       </section>
 
       <section className="stats-row">
@@ -75,4 +80,3 @@ export default async function AdminLeadsPage({
     </div>
   );
 }
-

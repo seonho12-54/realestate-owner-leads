@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel } from "@/lib/format";
@@ -58,7 +59,7 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
           <div className="admin-lead-thumb empty">사진 없음</div>
         )}
         <div className="admin-badges">
-          <span className={`status-pill ${lead.isPublished ? "published" : "draft"}`}>{lead.isPublished ? "게시 중" : "비공개"}</span>
+          <span className={`status-pill ${lead.isPublished ? "published" : "draft"}`}>{lead.isPublished ? "공개 중" : "비공개"}</span>
           <span className="status-pill neutral">{formatDateTime(lead.createdAt)}</span>
         </div>
       </div>
@@ -79,7 +80,9 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
           <span>{formatArea(lead.areaM2)}</span>
           <span>{lead.addressLine1}</span>
           <span>등록 회원: {lead.userName ?? "게스트 없음"}</span>
-          <span>접수자: {lead.ownerName} / {lead.phone}</span>
+          <span>
+            접수자: {lead.ownerName} / {lead.phone}
+          </span>
           <span>사진 {lead.photoCount}장</span>
         </div>
 
@@ -91,7 +94,7 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
           </div>
         ) : lead.photoCount > 0 ? (
           <div className="admin-photo-strip">
-            <div className="muted-row">사진은 등록되었지만 현재 미리보기를 생성하지 못했습니다.</div>
+            <div className="muted-row">사진은 등록됐지만 현재 미리보기를 만들지 못했습니다.</div>
           </div>
         ) : null}
 
@@ -119,7 +122,7 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
             className="textarea"
             value={adminMemo}
             onChange={(event) => setAdminMemo(event.target.value)}
-            placeholder="노출 여부, 보완 요청 사항, 확인 메모 등을 남겨 두세요."
+            placeholder="노출 여부, 보완 요청 사항, 확인 메모 등을 적어 주세요"
           />
         </label>
 
@@ -129,6 +132,11 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
             <span>위치 검증: {lead.locationVerified ? "완료" : "미완료"}</span>
           </div>
           <div className="button-row">
+            {lead.isPublished ? (
+              <Link href={`/listings/${lead.id}`} className="button button-secondary button-small">
+                공개 상세 보기
+              </Link>
+            ) : null}
             {message ? <span className="muted-row">{message}</span> : null}
             <button type="button" className="button button-primary" onClick={handleSave} disabled={isSaving}>
               {isSaving ? "저장 중..." : "변경 저장"}

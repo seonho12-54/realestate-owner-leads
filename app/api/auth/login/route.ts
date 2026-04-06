@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { writeAuditLog } from "@/lib/audit";
-import { createUserSessionToken, setUserSessionCookie, verifyPassword } from "@/lib/auth";
+import { clearAdminSessionCookie, createUserSessionToken, setUserSessionCookie, verifyPassword } from "@/lib/auth";
 import { getRequestMeta } from "@/lib/request";
 import { findUserByEmail, touchUserLastLogin } from "@/lib/users";
 import { userLoginSchema } from "@/lib/validation";
@@ -34,6 +34,8 @@ export async function POST(request: Request) {
         email: user.email,
       },
     });
+
+    clearAdminSessionCookie();
 
     setUserSessionCookie(
       createUserSessionToken({

@@ -46,16 +46,11 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   return (
     <form className="auth-card" onSubmit={handleSubmit}>
       <span className="eyebrow">회원가입</span>
-      <h1 className="page-title">울산 중구 전용 플랫폼 계정을 만들어 보세요</h1>
+      <h1 className="page-title">일반 회원 가입</h1>
+      <p className="page-copy">다우니 계정을 만들면 위치 확인 후 매물을 등록하고, 공개된 매물을 자세히 볼 수 있습니다.</p>
       <div className="field">
         <label htmlFor="signupName">이름</label>
-        <input
-          id="signupName"
-          className="input"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="이름"
-        />
+        <input id="signupName" className="input" value={name} onChange={(event) => setName(event.target.value)} placeholder="이름" />
       </div>
       <div className="field">
         <label htmlFor="signupEmail">이메일</label>
@@ -87,16 +82,21 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="영문+숫자 8자 이상"
+          placeholder="영문과 숫자를 포함해 8자 이상"
         />
       </div>
       {error ? <div className="error-banner">{error}</div> : null}
       <button className="button button-primary" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "가입 중..." : "회원가입"}
       </button>
-      <p className="muted-row">
-        이미 계정이 있나요? <Link href={`/login?next=${encodeURIComponent(nextUrl)}`}>로그인</Link>
-      </p>
+      <div className="button-row">
+        <Link href={`/login?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
+          로그인
+        </Link>
+        <Link href="/admin/login" className="button button-ghost button-small">
+          관리자 로그인
+        </Link>
+      </div>
     </form>
   );
 }

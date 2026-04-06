@@ -44,7 +44,8 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
   return (
     <form className="auth-card" onSubmit={handleSubmit}>
       <span className="eyebrow">회원 로그인</span>
-      <h1 className="page-title">매물 등록과 상세 기능을 사용하려면 로그인해 주세요</h1>
+      <h1 className="page-title">일반 회원 로그인</h1>
+      <p className="page-copy">매물 등록, 접수 완료 확인, 상세 페이지 진입을 위해 로그인해 주세요.</p>
       <div className="field">
         <label htmlFor="loginEmail">이메일</label>
         <input
@@ -73,9 +74,14 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
       <button className="button button-primary" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "로그인 중..." : "로그인"}
       </button>
-      <p className="muted-row">
-        아직 계정이 없나요? <Link href={`/signup?next=${encodeURIComponent(nextUrl)}`}>회원가입</Link>
-      </p>
+      <div className="button-row">
+        <Link href={`/signup?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
+          회원가입
+        </Link>
+        <Link href="/admin/login" className="button button-ghost button-small">
+          관리자 로그인
+        </Link>
+      </div>
     </form>
   );
 }

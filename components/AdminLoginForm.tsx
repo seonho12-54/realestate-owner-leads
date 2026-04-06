@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -42,8 +43,9 @@ export function AdminLoginForm() {
 
   return (
     <form className="auth-card admin" onSubmit={handleSubmit}>
-      <span className="eyebrow">Admin Console</span>
-      <h1 className="page-title">등록된 매물을 검토하고 게시 상태를 관리합니다</h1>
+      <span className="eyebrow">Admin Only</span>
+      <h1 className="page-title">관리자 전용 로그인</h1>
+      <p className="page-copy">관리자 계정으로 로그인하면 접수 목록, 공개 여부, 메모를 관리하는 전용 콘솔로 이동합니다.</p>
       <div className="field">
         <label htmlFor="adminEmail">관리자 이메일</label>
         <input
@@ -72,6 +74,14 @@ export function AdminLoginForm() {
       <button className="button button-primary" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "로그인 중..." : "관리자 로그인"}
       </button>
+      <div className="button-row">
+        <Link href="/" className="button button-secondary button-small">
+          공개 홈으로
+        </Link>
+        <Link href="/login" className="button button-ghost button-small">
+          일반 회원 로그인
+        </Link>
+      </div>
     </form>
   );
 }

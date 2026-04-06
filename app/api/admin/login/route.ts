@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { writeAuditLog } from "@/lib/audit";
-import { createAdminSessionToken, setAdminSessionCookie, verifyPassword } from "@/lib/auth";
+import { clearUserSessionCookie, createAdminSessionToken, setAdminSessionCookie, verifyPassword } from "@/lib/auth";
 import { findAdminByEmail, touchAdminLastLogin } from "@/lib/admins";
 import { getRequestMeta } from "@/lib/request";
 import { adminLoginSchema } from "@/lib/validation";
@@ -36,6 +36,8 @@ export async function POST(request: Request) {
       },
     });
 
+    clearUserSessionCookie();
+
     const sessionToken = createAdminSessionToken({
       adminId: admin.id,
       officeId: admin.officeId,
@@ -58,4 +60,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
