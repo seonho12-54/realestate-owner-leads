@@ -13,7 +13,7 @@ export type LeadPhotoAsset = {
   leadId: number;
   fileName: string;
   s3Key: string;
-  viewUrl: string;
+  viewUrl: string | null;
 };
 
 export type PublicListing = {
@@ -677,13 +677,28 @@ async function listLeadPhotoAssets(leadIds: number[], perLeadLimit = 999): Promi
   const photoMaps = await Promise.all(
     Array.from(groupedRows.entries()).map(async ([leadId, photoRows]) => {
       const assets = await Promise.all(
-        photoRows.map(async (photoRow) => ({
-          id: Number(photoRow.id),
-          leadId,
-          fileName: photoRow.file_name,
-          s3Key: photoRow.s3_key,
-          viewUrl: await createPresignedPhotoViewUrl(photoRow.s3_key),
-        })),
+        photoRows.map(async (photoRow) => {
+          let viewUrl: string | null = null;
+
+          try {
+            viewUrl = await createPresignedPhotoViewUrl(photoRow.s3_key);
+          } catch (error) {
+            console.error("Failed to create photo view URL", {
+              leadId,
+              photoId: Number(photoRow.id),
+              s3Key: photoRow.s3_key,
+              error,
+            });
+          }
+
+          return {
+            id: Number(photoRow.id),
+            leadId,
+            fileName: photoRow.file_name,
+            s3Key: photoRow.s3_key,
+            viewUrl,
+          };
+        }),
       );
 
       return [leadId, assets] as const;

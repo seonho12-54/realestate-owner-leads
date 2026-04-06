@@ -69,7 +69,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
         />
       </div>
       <div className="field">
-        <label htmlFor="signupPhone">휴대폰 번호</label>
+        <label htmlFor="signupPhone">전화번호</label>
         <input
           id="signupPhone"
           className="input"
@@ -100,4 +100,3 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
     </form>
   );
 }
-

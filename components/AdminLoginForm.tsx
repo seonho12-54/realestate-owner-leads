@@ -43,7 +43,7 @@ export function AdminLoginForm() {
   return (
     <form className="auth-card admin" onSubmit={handleSubmit}>
       <span className="eyebrow">Admin Console</span>
-      <h1 className="page-title">등록된 매물을 검토하고 게시 상태를 제어합니다</h1>
+      <h1 className="page-title">등록된 매물을 검토하고 게시 상태를 관리합니다</h1>
       <div className="field">
         <label htmlFor="adminEmail">관리자 이메일</label>
         <input
@@ -75,4 +75,3 @@ export function AdminLoginForm() {
     </form>
   );
 }
-

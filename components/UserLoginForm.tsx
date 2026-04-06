@@ -79,4 +79,3 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
     </form>
   );
 }
-

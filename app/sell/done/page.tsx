@@ -13,7 +13,7 @@ export default function SellDonePage({
         <span className="eyebrow">등록 완료</span>
         <h1 className="page-title">매물 등록이 접수되었습니다</h1>
         <p className="page-copy">
-          관리자가 검토 후 공개 여부를 설정합니다.
+          관리자가 검토 후 공개 여부를 결정합니다.
           {searchParams?.id ? ` 접수 번호는 #${searchParams.id} 입니다.` : ""}
         </p>
         <div className="button-row">
@@ -28,4 +28,3 @@ export default function SellDonePage({
     </div>
   );
 }
-

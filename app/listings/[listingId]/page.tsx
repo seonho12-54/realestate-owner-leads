@@ -31,6 +31,8 @@ export default async function ListingDetailPage({
 
   await incrementLeadViewCount(listingId);
 
+  const visiblePhotos = listing.photos.filter((photo) => Boolean(photo.viewUrl));
+
   return (
     <LocationGate>
       <div className="page-stack">
@@ -57,8 +59,15 @@ export default async function ListingDetailPage({
         </section>
 
         <section className="gallery-grid">
-          {listing.photos.length > 0 ? (
-            listing.photos.map((photo) => <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="detail-photo" />)
+          {visiblePhotos.length > 0 ? (
+            visiblePhotos.map((photo) =>
+              photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="detail-photo" /> : null,
+            )
+          ) : listing.photos.length > 0 ? (
+            <div className="empty-panel">
+              <strong>사진 미리보기를 준비하지 못했습니다</strong>
+              <p>S3 설정을 확인한 뒤 다시 시도해 주세요.</p>
+            </div>
           ) : (
             <div className="empty-panel">
               <strong>등록된 사진이 없습니다</strong>

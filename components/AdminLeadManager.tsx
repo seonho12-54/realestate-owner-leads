@@ -13,6 +13,8 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
   const [adminMemo, setAdminMemo] = useState(lead.adminMemo ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const visiblePhotos = lead.photos.filter((photo) => Boolean(photo.viewUrl));
+  const coverPhoto = visiblePhotos[0];
 
   async function handleSave() {
     setMessage(null);
@@ -50,8 +52,8 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
   return (
     <article className="admin-lead-card">
       <div className="admin-lead-media">
-        {lead.photos[0] ? (
-          <img src={lead.photos[0].viewUrl} alt={lead.listingTitle} className="admin-lead-thumb" />
+        {coverPhoto?.viewUrl ? (
+          <img src={coverPhoto.viewUrl} alt={lead.listingTitle} className="admin-lead-thumb" />
         ) : (
           <div className="admin-lead-thumb empty">사진 없음</div>
         )}
@@ -81,11 +83,15 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
           <span>사진 {lead.photoCount}장</span>
         </div>
 
-        {lead.photos.length > 1 ? (
+        {visiblePhotos.length > 1 ? (
           <div className="admin-photo-strip">
-            {lead.photos.slice(1, 6).map((photo) => (
-              <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="admin-photo-mini" />
-            ))}
+            {visiblePhotos.slice(1, 6).map((photo) =>
+              photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="admin-photo-mini" /> : null,
+            )}
+          </div>
+        ) : lead.photoCount > 0 ? (
+          <div className="admin-photo-strip">
+            <div className="muted-row">사진은 등록되었지만 현재 미리보기를 생성하지 못했습니다.</div>
           </div>
         ) : null}
 
