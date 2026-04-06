@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:standalone": "next build && node scripts/prepare-standalone.mjs",
     "start": "next start",
+    "start:standalone": "node .next/standalone/server.js",
     "create-admin": "node scripts/create-admin.mjs",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push"

@@ -66,6 +66,28 @@ npm run create-admin -- --email admin@example.com --name 관리자 --password St
 npm run dev
 ```
 
+## EC2 또는 수동 서버 실행
+
+`output: "standalone"`을 켜 둔 상태에서 `.next/standalone/server.js`만 바로 실행하면 CSS와 정적 파일이 누락될 수 있습니다.
+Next.js 공식 문서도 `public`과 `.next/static`을 standalone 폴더로 함께 복사해야 한다고 안내합니다.
+
+- 공식 문서: [Next.js output standalone](https://nextjs.org/docs/15/app/api-reference/config/next-config-js/output)
+
+이 프로젝트에서는 아래 명령으로 한 번에 준비할 수 있습니다.
+
+```bash
+npm install
+npm run build:standalone
+node .next/standalone/server.js
+```
+
+또는 아래처럼 사용할 수 있습니다.
+
+```bash
+npm run build:standalone
+npm run start:standalone
+```
+
 ## 배포 메모
 
 - App Runner 소스 코드 배포 시 공식 설정 파일인 `apprunner.yaml`을 사용할 수 있습니다.
