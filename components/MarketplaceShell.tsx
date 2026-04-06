@@ -69,13 +69,11 @@ export function MarketplaceShell({
 
   return (
     <div className="market-layout">
-      <section className="hero-panel compact">
-        <div>
+      <section className="hero-panel compact market-intro">
+        <div className="market-intro-copy">
           <span className="eyebrow">울산광역시 중구 한정</span>
-          <h1 className="page-title">전세, 월세, 매매를 한 화면에서 바로 찾는 지역형 매물 플랫폼</h1>
-          <p className="page-copy">
-            지도에서 매물을 고르고, 필터로 거래 유형을 좁히고, 상세 페이지에서 사진과 연락 정보를 바로 확인할 수 있도록 구성했습니다.
-          </p>
+          <h1 className="market-brand-title">다우니</h1>
+          <p className="market-brand-note">확인된 위치에서만 열리는 동네 매물 지도</p>
         </div>
         <div className="button-row">
           <Link href="/sell" className="button button-primary">
@@ -125,7 +123,7 @@ export function MarketplaceShell({
             className="input"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="동 이름이나 매물 제목으로 검색"
+            placeholder="동 이름, 아파트명, 매물 제목으로 검색"
           />
         </label>
       </section>
@@ -141,7 +139,7 @@ export function MarketplaceShell({
             {filteredListings.length === 0 ? (
               <div className="empty-panel">
                 <strong>조건에 맞는 매물이 없습니다</strong>
-                <p>필터를 바꾸거나 검색어를 지워 보세요.</p>
+                <p>필터를 바꾸거나 관리자가 공개한 새 매물을 기다려 주세요.</p>
               </div>
             ) : null}
 
@@ -223,4 +221,3 @@ export function MarketplaceShell({
     </div>
   );
 }
-

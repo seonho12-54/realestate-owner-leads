@@ -9,14 +9,14 @@ const CACHE_KEY = "junggu-location-approved-at";
 const CACHE_TTL_MS = 1000 * 60 * 30;
 
 function getInsecureContextMessage() {
-  return "현재 주소는 HTTP라서 브라우저 위치 권한이 차단될 수 있습니다. HTTPS 도메인으로 접속한 뒤 다시 시도해 주세요.";
+  return "현재 주소가 HTTP라서 브라우저 위치 권한이 제한될 수 있습니다. HTTPS 도메인으로 접속한 뒤 다시 시도해 주세요.";
 }
 
 export function LocationGate({
   children,
   bypass = false,
-  title = "울산 중구 내에서만 이용할 수 있어요",
-  description = "서비스 사용 전 위치 권한을 허용해 주세요. 현재 위치를 확인해 울산광역시 중구 접속만 허용합니다.",
+  title = "위치 확인 후 둘러볼 수 있어요",
+  description = "현재 위치를 확인해 울산광역시 중구 안에서 접속했는지 먼저 확인합니다.",
 }: {
   children: ReactNode;
   bypass?: boolean;
@@ -56,7 +56,7 @@ export function LocationGate({
 
     if (!navigator.geolocation) {
       setState("error");
-      setMessage("이 브라우저는 위치 서비스를 지원하지 않습니다.");
+      setMessage("이 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
       return;
     }
 
@@ -85,7 +85,7 @@ export function LocationGate({
 
           if (!result.allowed) {
             setState("blocked");
-            setMessage(`현재 위치(${result.addressName ?? "알 수 없음"})는 서비스 허용 지역이 아닙니다.`);
+            setMessage(`현재 위치(${result.addressName ?? "확인 불가"})에서는 서비스를 이용할 수 없습니다.`);
             return;
           }
 
@@ -130,7 +130,7 @@ export function LocationGate({
       <p className="page-copy">{message}</p>
       <div className="button-row">
         <button type="button" className="button button-primary" onClick={requestAccess} disabled={state === "checking"}>
-          {state === "checking" ? "확인 중..." : "위치 허용하고 시작"}
+          {state === "checking" ? "확인 중..." : "위치 확인하고 보기"}
         </button>
       </div>
     </div>

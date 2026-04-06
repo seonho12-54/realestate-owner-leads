@@ -7,8 +7,8 @@ import { getAdminSession, getUserSession } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "울산 중구 부동산 플랫폼",
-  description: "울산광역시 중구 한정 매물 등록과 조회를 지원하는 지도형 부동산 플랫폼",
+  title: "다우니",
+  description: "울산광역시 중구 지역형 매물 플랫폼",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -21,10 +21,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div className="site-shell">
           <header className="site-header">
             <div className="brand-cluster">
-              <Link href="/" className="site-brand">
-                중구 부동산 플랫폼
+              <Link href="/" className="site-brand" aria-label="다우니 홈">
+                다우니
               </Link>
-              <span className="site-caption">울산광역시 중구 한정 지도형 매물 서비스</span>
+              <span className="site-caption">울산 중구 동네 매물 플랫폼</span>
             </div>
 
             <nav className="site-nav">
@@ -39,6 +39,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <>
                   <span className="auth-greeting">{userSession.name}님</span>
                   <form action="/api/auth/logout" method="post">
+                    <button className="button button-ghost button-small" type="submit">
+                      로그아웃
+                    </button>
+                  </form>
+                </>
+              ) : adminSession ? (
+                <>
+                  <span className="auth-greeting">{adminSession.name} 관리자</span>
+                  <form action="/api/admin/logout" method="post">
                     <button className="button button-ghost button-small" type="submit">
                       로그아웃
                     </button>
@@ -63,4 +72,3 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
-

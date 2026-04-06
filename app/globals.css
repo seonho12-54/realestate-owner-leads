@@ -1,5 +1,6 @@
 :root {
   color-scheme: light;
+  --brand-font: "BM JUA_TTF", "Jua", "Cafe24Ssurround", "SUIT Variable", "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --bg: #eef3f8;
   --bg-2: #e6edf5;
   --panel: rgba(255, 255, 255, 0.82);
@@ -81,7 +82,10 @@ img {
 }
 
 .site-brand {
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--brand-font);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
   font-weight: 900;
   letter-spacing: -0.04em;
 }
@@ -186,6 +190,32 @@ img {
 .hero-panel.compact,
 .filter-panel {
   padding: 18px 20px;
+}
+
+.market-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.market-intro-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.market-brand-title {
+  margin: 0;
+  font-family: var(--brand-font);
+  font-size: clamp(2.1rem, 5vw, 3.6rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}
+
+.market-brand-note {
+  margin: 0;
+  color: var(--muted);
 }
 
 .eyebrow,
@@ -534,6 +564,11 @@ img {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.address-search-shell {
+  display: grid;
+  gap: 12px;
+}
+
 .address-results {
   grid-template-columns: 1fr;
 }
@@ -557,6 +592,10 @@ img {
   display: block;
   margin-top: 4px;
   color: var(--muted);
+}
+
+.address-result-line {
+  font-size: 0.92rem;
 }
 
 .photo-grid {
@@ -856,4 +895,3 @@ img {
     min-height: 420px;
   }
 }
-

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { LocationGate } from "@/components/LocationGate";
 import { MarketplaceShell } from "@/components/MarketplaceShell";
-import { getAdminSession, getUserSession } from "@/lib/auth";
+import { getUserSession } from "@/lib/auth";
 import { listPublishedListings, type PublicListing } from "@/lib/leads";
 
 export const dynamic = "force-dynamic";
@@ -18,14 +18,13 @@ export default async function HomePage() {
     listings = await listPublishedListings();
   } catch (error) {
     console.error("Failed to load published listings", error);
-    loadError = "매물 정보를 불러오지 못했습니다. 서버 설정이나 데이터베이스 마이그레이션 상태를 확인해 주세요.";
+    loadError = "매물 정보를 불러오지 못했습니다. 서버 설정이나 데이터베이스 상태를 확인해 주세요.";
   }
 
   const userSession = getUserSession();
-  const adminSession = getAdminSession();
 
   return (
-    <LocationGate bypass={Boolean(adminSession)}>
+    <LocationGate>
       {loadError ? (
         <div className="page-stack">
           <section className="hero-panel">

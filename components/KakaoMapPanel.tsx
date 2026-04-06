@@ -11,6 +11,8 @@ declare global {
   }
 }
 
+const KAKAO_SCRIPT_ID = "kakao-maps-sdk";
+
 let kakaoLoaderPromise: Promise<void> | null = null;
 
 function loadKakaoMapsSdk(appKey: string): Promise<void> {
@@ -27,13 +29,30 @@ function loadKakaoMapsSdk(appKey: string): Promise<void> {
   }
 
   kakaoLoaderPromise = new Promise((resolve, reject) => {
+    const existingScript = document.getElementById(KAKAO_SCRIPT_ID) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => {
+        window.kakao.maps.load(() => resolve());
+      });
+      existingScript.addEventListener("error", () => {
+        kakaoLoaderPromise = null;
+        reject(new Error("카카오 지도 SDK를 불러오지 못했습니다."));
+      });
+      return;
+    }
+
     const script = document.createElement("script");
+    script.id = KAKAO_SCRIPT_ID;
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false&libraries=services,clusterer`;
     script.async = true;
     script.onload = () => {
       window.kakao.maps.load(() => resolve());
     };
-    script.onerror = () => reject(new Error("카카오 지도 SDK를 불러오지 못했습니다."));
+    script.onerror = () => {
+      kakaoLoaderPromise = null;
+      reject(new Error("카카오 지도 SDK를 불러오지 못했습니다."));
+    };
     document.head.appendChild(script);
   });
 
@@ -127,11 +146,10 @@ export function KakaoMapPanel({
       <div className="map-fallback">
         <strong>지도 준비 필요</strong>
         <p>{error}</p>
-        <p>카카오 지도 Web API는 REST 키가 아니라 JavaScript 키와 등록 도메인이 필요합니다.</p>
+        <p>공개된 매물은 관리자 공개 처리와 좌표 저장이 끝나면 지도 마커로 표시됩니다.</p>
       </div>
     );
   }
 
   return <div ref={containerRef} className="map-canvas" />;
 }
-

@@ -14,12 +14,12 @@ export const SERVICE_DONGS = [
   "반구동",
   "성안동",
   "우정동",
-  "약사동",
-  "유곡동",
+  "옥교동",
   "태화동",
   "학산동",
-  "옥교동",
   "서동",
+  "약사동",
+  "유곡동",
   "남외동",
 ] as const;
 
@@ -30,4 +30,3 @@ export function isAllowedServiceArea(region1?: string | null, region2?: string |
 export function createCompactLocation(region2?: string | null, region3?: string | null): string {
   return [region2, region3].filter(Boolean).join(" ");
 }
-
