@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 
 import { SellMapPreview } from "@/components/SellMapPreview";
+import { prepareImageForUpload, resolveUploadContentType } from "@/lib/client-image";
 import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
 import type { OfficeOption } from "@/lib/offices";
 import { SERVICE_REGION_LABEL } from "@/lib/service-area";
@@ -15,6 +16,8 @@ type UploadedPhoto = {
   fileName: string;
   contentType: string;
   fileSize: number;
+  originalFileSize: number;
+  wasCompressed: boolean;
   previewUrl: string;
   s3Key: string | null;
   status: "uploading" | "uploaded" | "error";
@@ -289,21 +292,32 @@ export function SellLeadForm({
     }
 
     for (const file of selectedFiles) {
-      if (file.size > MAX_PHOTO_SIZE_MB * 1024 * 1024) {
+      const preparedImage = await prepareImageForUpload(file);
+      const uploadFile = preparedImage.file;
+      const contentType = resolveUploadContentType(uploadFile);
+
+      if (!contentType) {
+        setUploadError(`"${file.name}" 파일 형식을 확인하지 못했습니다. JPG, PNG, WEBP, HEIC 파일만 업로드해 주세요.`);
+        continue;
+      }
+
+      if (uploadFile.size > MAX_PHOTO_SIZE_MB * 1024 * 1024) {
         setUploadError(`사진 1장당 최대 ${MAX_PHOTO_SIZE_MB}MB까지 업로드할 수 있습니다.`);
         continue;
       }
 
       const localId = crypto.randomUUID();
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = URL.createObjectURL(uploadFile);
 
       setPhotos((current) => [
         ...current,
         {
           id: localId,
-          fileName: file.name,
-          contentType: file.type,
-          fileSize: file.size,
+          fileName: uploadFile.name,
+          contentType,
+          fileSize: uploadFile.size,
+          originalFileSize: preparedImage.originalFileSize,
+          wasCompressed: preparedImage.wasCompressed,
           previewUrl,
           s3Key: null,
           status: "uploading",
@@ -317,9 +331,9 @@ export function SellLeadForm({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            fileName: file.name,
-            contentType: file.type,
-            fileSize: file.size,
+            fileName: uploadFile.name,
+            contentType,
+            fileSize: uploadFile.size,
           }),
         });
 
@@ -332,9 +346,9 @@ export function SellLeadForm({
         const uploadResponse = await fetch(presignPayload.uploadUrl, {
           method: "PUT",
           headers: {
-            "Content-Type": file.type,
+            "Content-Type": contentType,
           },
-          body: file,
+          body: uploadFile,
         });
 
         if (!uploadResponse.ok) {
@@ -346,6 +360,8 @@ export function SellLeadForm({
             photo.id === localId
               ? {
                   ...photo,
+                  contentType,
+                  fileSize: uploadFile.size,
                   s3Key: presignPayload.key,
                   status: "uploaded",
                 }
@@ -722,6 +738,7 @@ export function SellLeadForm({
           <span className="muted-row">관리자가 공개 승인한 뒤에만 사진과 매물이 지도와 목록에 노출됩니다.</span>
         </div>
         {uploadError ? <div className="error-banner">{uploadError}</div> : null}
+        <p className="muted-row">사진은 업로드 전에 브라우저에서 자동 압축됩니다. HEIC/HEIF는 브라우저에 따라 원본으로 올라갈 수 있습니다.</p>
         {photos.length > 0 ? (
           <div className="photo-grid">
             {photos.map((photo) => (
