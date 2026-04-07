@@ -44,9 +44,9 @@ export function HomePage() {
     return (
       <div className="page-stack">
         <section className="hero-panel compact">
-          <span className="eyebrow">불러오는 중</span>
-          <h1 className="page-title page-title-medium">공개 매물 지도를 준비하고 있습니다</h1>
-          <p className="page-copy compact-copy">승인된 매물과 지도 데이터를 불러오는 중입니다.</p>
+          <span className="eyebrow">로딩 중</span>
+          <h1 className="page-title page-title-medium">지역 매물 데이터를 준비하고 있습니다</h1>
+          <p className="page-copy compact-copy">승인된 매물과 지도 데이터를 불러오는 동안 잠시만 기다려 주세요.</p>
         </section>
       </div>
     );
@@ -56,8 +56,8 @@ export function HomePage() {
     return (
       <div className="page-stack">
         <section className="hero-panel compact">
-          <span className="eyebrow">오류</span>
-          <h1 className="page-title page-title-medium">매물 목록을 불러오지 못했습니다</h1>
+          <span className="eyebrow">불러오기 실패</span>
+          <h1 className="page-title page-title-medium">매물 목록을 가져오지 못했습니다</h1>
           <p className="page-copy compact-copy">{error}</p>
         </section>
       </div>

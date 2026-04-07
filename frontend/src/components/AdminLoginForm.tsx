@@ -32,10 +32,13 @@ export function AdminLoginForm() {
   }
 
   return (
-    <form className="auth-card admin" onSubmit={handleSubmit}>
-      <span className="eyebrow">Admin Only</span>
-      <h1 className="page-title">관리자 전용 로그인</h1>
-      <p className="page-copy">관리자 계정으로 로그인하면 접수 목록, 공개 여부, 관리자 메모를 처리하는 전용 콘솔로 이동합니다.</p>
+    <form className="auth-card admin vibrant" onSubmit={handleSubmit}>
+      <span className="eyebrow">ADMIN ONLY</span>
+      <h1 className="page-title">관리자 로그인</h1>
+      <p className="page-copy">
+        승인 대기 매물 확인, 공개 상태 전환, 운영 메모 입력은 관리자 계정으로 로그인한 뒤에만 가능합니다.
+      </p>
+
       <div className="field">
         <label htmlFor="adminEmail">관리자 이메일</label>
         <input
@@ -60,10 +63,13 @@ export function AdminLoginForm() {
           placeholder="비밀번호"
         />
       </div>
+
       {error ? <div className="error-banner">{error}</div> : null}
+
       <button className="button button-primary" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "로그인 중.." : "관리자 로그인"}
+        {isSubmitting ? "로그인 중..." : "관리자 로그인"}
       </button>
+
       <div className="button-row">
         <Link href="/" className="button button-secondary button-small">
           공개 홈으로

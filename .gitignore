@@ -11,3 +11,6 @@ pnpm-debug.log*
 coverage
 dist
 Dockerfile.local
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/*.tsbuildinfo

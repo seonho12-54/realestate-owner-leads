@@ -2,6 +2,7 @@ import { Link, Outlet } from "react-router-dom";
 
 import { LogoutButton } from "@/components/LogoutButton";
 import { useSession } from "@/context/SessionContext";
+import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 
 export function SiteLayout() {
   const { session } = useSession();
@@ -9,41 +10,60 @@ export function SiteLayout() {
   const userSession = session.kind === "user" ? session.user : null;
 
   return (
-    <div className="site-shell">
-      <header className="site-header">
-        <div className="brand-cluster">
-          <Link to={adminSession ? "/admin/leads" : "/"} className="site-brand" aria-label="다우니 홈">
-            다우니
+    <div className="site-shell downy-shell">
+      <header className={`shell-header${adminSession ? " admin" : ""}`}>
+        <div className="shell-branding">
+          <Link to={adminSession ? "/admin/leads" : "/"} className="shell-brand-line" aria-label="다우니 홈">
+            <span className="shell-brand-word">다우니</span>
+            <span className="shell-brand-chip">{adminSession ? "운영 콘솔" : "WEB EDITION"}</span>
           </Link>
-          <span className="site-caption">{adminSession ? "관리자 전용 콘솔" : "다운동 · 포곡읍 전용 매물 플랫폼"}</span>
+          <div className="shell-brand-copy">
+            <span className="shell-brand-caption">
+              {adminSession
+                ? "승인 전환, 메모 관리, 공개 상태 변경까지 한 번에 관리하는 관리자 워크스페이스"
+                : `${SERVICE_REGION_LABEL} 중심 승인형 매물 접수 · 공개 플랫폼`}
+            </span>
+          </div>
         </div>
 
-        <nav className="site-nav">
+        <nav className="shell-nav" aria-label="주요 메뉴">
           {adminSession ? (
             <>
-              <Link to="/admin/leads">관리 콘솔</Link>
-              <Link to="/">공개 홈</Link>
-              <Link to="/privacy">개인정보</Link>
+              <Link to="/admin/leads" className="shell-nav-link">
+                관리자 콘솔
+              </Link>
+              <Link to="/" className="shell-nav-link">
+                공개 홈
+              </Link>
+              <Link to="/privacy" className="shell-nav-link">
+                개인정보
+              </Link>
             </>
           ) : (
             <>
-              <Link to="/">매물 보기</Link>
-              <Link to="/sell">매물 등록</Link>
-              <Link to="/privacy">개인정보</Link>
+              <Link to="/" className="shell-nav-link">
+                홈
+              </Link>
+              <Link to="/sell" className="shell-nav-link">
+                매물 등록
+              </Link>
+              <Link to="/privacy" className="shell-nav-link">
+                개인정보 처리방침
+              </Link>
             </>
           )}
         </nav>
 
-        <div className="auth-nav">
+        <div className="shell-userbar">
           {adminSession ? (
             <>
-              <span className="auth-greeting">{adminSession.name}</span>
-              <LogoutButton action="/api/admin/logout" redirectTo="/" />
+              <span className="shell-user-pill">{adminSession.name} 관리자</span>
+              <LogoutButton action="/api/admin/logout" redirectTo="/" label="로그아웃" className="button button-secondary button-small" />
             </>
           ) : userSession ? (
             <>
-              <span className="auth-greeting">{userSession.name}님</span>
-              <LogoutButton action="/api/auth/logout" redirectTo="/" />
+              <span className="shell-user-pill">{userSession.name}님</span>
+              <LogoutButton action="/api/auth/logout" redirectTo="/" label="로그아웃" className="button button-secondary button-small" />
             </>
           ) : (
             <>
@@ -54,7 +74,7 @@ export function SiteLayout() {
                 회원가입
               </Link>
               <Link to="/admin/login" className="button button-secondary button-small">
-                관리자 전용
+                관리자
               </Link>
             </>
           )}

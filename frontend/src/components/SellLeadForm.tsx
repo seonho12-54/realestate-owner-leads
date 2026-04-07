@@ -1,8 +1,8 @@
 "use client";
 
-import { Link } from "@/components/RouterLink";
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 
+import { Link } from "@/components/RouterLink";
 import { SellMapPreview } from "@/components/SellMapPreview";
 import { prepareImageForUpload, resolveUploadContentType } from "@/lib/client-image";
 import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
@@ -109,9 +109,7 @@ export function SellLeadForm({
   const [addressQuery, setAddressQuery] = useState("");
   const [addressResults, setAddressResults] = useState<AddressCandidate[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<AddressCandidate | null>(null);
-  const [locationMessage, setLocationMessage] = useState(
-    `매물 접수 전에 현재 위치가 ${SERVICE_REGION_LABEL} 중 한 곳인지 먼저 확인해 주세요.`,
-  );
+  const [locationMessage, setLocationMessage] = useState(`매물 접수 전 현재 위치가 ${SERVICE_REGION_LABEL} 중 한 곳인지 먼저 확인해 주세요.`);
   const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -137,8 +135,8 @@ export function SellLeadForm({
     });
     setLocationMessage(
       cached.addressName
-        ? `${cached.addressName}에서 위치 인증이 완료된 사용자입니다. 저장된 인증을 사용합니다.`
-        : "이미 위치 인증이 완료된 사용자입니다. 저장된 인증을 사용합니다.",
+        ? `${cached.addressName}에서 위치 인증을 완료한 사용자입니다. 저장된 인증 상태를 그대로 사용합니다.`
+        : "이미 위치 인증을 마친 사용자입니다. 저장된 인증 상태를 그대로 사용합니다.",
     );
   }, []);
 
@@ -151,7 +149,7 @@ export function SellLeadForm({
 
   async function handleLocationCheck() {
     if (!navigator.geolocation) {
-      setLocationMessage("현재 브라우저에서는 위치 서비스를 사용할 수 없습니다.");
+      setLocationMessage("현재 브라우저에서는 위치 서비스를 지원하지 않습니다.");
       return;
     }
 
@@ -180,7 +178,7 @@ export function SellLeadForm({
 
           if (!result.allowed) {
             setBrowserCoords(null);
-            setLocationMessage(`현재 위치(${result.addressName ?? "확인 불가"})에서는 매물 등록을 할 수 없습니다.`);
+            setLocationMessage(`현재 위치(${result.addressName ?? "확인 불가"})에서는 매물 등록을 진행할 수 없습니다.`);
             return;
           }
 
@@ -194,7 +192,7 @@ export function SellLeadForm({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
-          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 접속한 것이 확인되었습니다.`);
+          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 접속한 것이 확인되었습니다. 이후에는 이 인증을 재사용합니다.`);
         } catch (error) {
           setBrowserCoords(null);
           setLocationMessage(error instanceof Error ? error.message : "위치 확인에 실패했습니다.");
@@ -400,7 +398,7 @@ export function SellLeadForm({
     setSubmitError(null);
 
     if (!browserCoords) {
-      setSubmitError("현재 위치 확인 후에만 매물 등록을 진행할 수 있습니다.");
+      setSubmitError("현재 위치 확인을 먼저 완료해 주세요.");
       return;
     }
 
@@ -410,7 +408,7 @@ export function SellLeadForm({
     }
 
     if (hasUploadingPhoto) {
-      setSubmitError("사진 업로드가 끝난 뒤 등록해 주세요.");
+      setSubmitError("사진 업로드가 끝난 뒤 다시 등록해 주세요.");
       return;
     }
 
@@ -502,7 +500,7 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">1. 위치 확인</span>
-            <h1 className="page-title page-title-medium">허용 지역인지 한 번만 확인하면 됩니다</h1>
+            <h1 className="page-title page-title-medium">인증된 사용자인지 먼저 확인합니다</h1>
           </div>
           <button type="button" className="button button-secondary" onClick={handleLocationCheck} disabled={isCheckingLocation}>
             {isCheckingLocation ? "확인 중..." : isLocationVerified ? "다시 확인" : "현재 위치 확인"}
@@ -513,7 +511,7 @@ export function SellLeadForm({
           <span className={`inline-note${isLocationVerified ? " success" : ""}`}>
             {isLocationVerified ? "위치 인증 완료" : `허용 지역: ${SERVICE_REGION_LABEL}`}
           </span>
-          {isLocationVerified ? <span className="inline-note success">인증된 사용자입니다. 저장된 인증을 사용합니다.</span> : null}
+          {isLocationVerified ? <span className="inline-note success">인증 상태는 저장되어 다음 접수에도 재사용됩니다.</span> : null}
         </div>
       </section>
 
@@ -521,7 +519,7 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">2. 기본 정보</span>
-            <h2 className="section-title">등록자와 매물 기본 정보를 입력해 주세요</h2>
+            <h2 className="section-title">집주인 연락처와 매물 기본 정보를 입력해 주세요</h2>
           </div>
         </div>
         <div className="form-grid">
@@ -572,12 +570,12 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">3. 주소 찾기</span>
-            <h2 className="section-title">도로명주소, 지번, 건물명으로 검색해 바로 선택하세요</h2>
+            <h2 className="section-title">도로명 주소, 지번 주소, 건물명으로 검색해 바로 선택해 주세요</h2>
           </div>
         </div>
 
         <div className="address-search-shell">
-          <p className="muted-row">예: 다운로 120, 다운동 123-4, 포곡로 85, 포곡읍 전대리, 건물명</p>
+          <p className="muted-row">예: 다운로 120, 다운동 123-4, 포곡로 85, 포곡읍 전대리</p>
           <div className="address-search-row">
             <input
               className="input"
@@ -593,7 +591,7 @@ export function SellLeadForm({
           {addressSearchError ? <div className="error-banner">{addressSearchError}</div> : null}
           {selectedAddress ? (
             <div className="address-selected-summary">
-              <strong>선택된 주소</strong>
+              <strong>선택한 주소</strong>
               <span>{selectedAddress.roadAddress ?? selectedAddress.addressName}</span>
               <span>
                 {selectedAddress.region2DepthName} {selectedAddress.region3DepthName}
@@ -646,7 +644,7 @@ export function SellLeadForm({
               className="input"
               value={form.addressLine2}
               onChange={(event) => handleFieldChange("addressLine2", event.target.value)}
-              placeholder="동, 호수, 층수를 입력해 주세요"
+              placeholder="예: 101동 802호"
             />
           </label>
           <label className="field">
@@ -660,7 +658,7 @@ export function SellLeadForm({
         <div className="section-heading">
           <div>
             <span className="eyebrow">4. 거래 정보</span>
-            <h2 className="section-title">가격, 면적, 설명을 입력해 주세요</h2>
+            <h2 className="section-title">가격, 면적, 특징을 입력해 주세요</h2>
           </div>
         </div>
         <div className="form-grid">
@@ -698,12 +696,7 @@ export function SellLeadForm({
           </label>
           <label className="field">
             <span>월세</span>
-            <input
-              className="input"
-              value={form.monthlyRentKrw}
-              onChange={(event) => handleFieldChange("monthlyRentKrw", event.target.value)}
-              inputMode="numeric"
-            />
+            <input className="input" value={form.monthlyRentKrw} onChange={(event) => handleFieldChange("monthlyRentKrw", event.target.value)} inputMode="numeric" />
           </label>
           <label className="field">
             <span>입주 가능 시기</span>
@@ -721,7 +714,7 @@ export function SellLeadForm({
             className="textarea"
             value={form.description}
             onChange={(event) => handleFieldChange("description", event.target.value)}
-            placeholder="층수, 방향, 옵션, 주차 가능 여부 등 실제 정보를 적어 주세요"
+            placeholder="층수, 방향, 옵션, 주차 여부 등 실제 확인에 필요한 내용을 적어 주세요."
           />
         </label>
       </section>
@@ -735,10 +728,12 @@ export function SellLeadForm({
         </div>
         <div className="field">
           <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple onChange={handleFileChange} />
-          <span className="muted-row">관리자가 공개 승인한 뒤에만 사진과 매물이 지도와 목록에 노출됩니다.</span>
+          <span className="muted-row">관리자가 공개 승인한 뒤에만 사진과 매물 카드가 지도 및 목록에 노출됩니다.</span>
         </div>
         {uploadError ? <div className="error-banner">{uploadError}</div> : null}
-        <p className="muted-row">사진은 업로드 전에 브라우저에서 자동 압축됩니다. HEIC/HEIF는 브라우저에 따라 원본으로 올라갈 수 있습니다.</p>
+        <p className="muted-row">
+          사진은 업로드 전에 브라우저에서 자동 압축됩니다. HEIC/HEIF는 브라우저에 따라 원본으로 올라갈 수 있습니다.
+        </p>
         {photos.length > 0 ? (
           <div className="photo-grid">
             {photos.map((photo) => (
@@ -746,12 +741,14 @@ export function SellLeadForm({
                 <img src={photo.previewUrl} alt={photo.fileName} className="photo-upload-preview" />
                 <div className="photo-upload-meta">
                   <strong>{photo.fileName}</strong>
+                  <span>{photo.status === "uploaded" ? "업로드 완료" : photo.status === "uploading" ? "업로드 중..." : photo.error ?? "업로드 실패"}</span>
                   <span>
-                    {photo.status === "uploaded" ? "업로드 완료" : photo.status === "uploading" ? "업로드 중" : photo.error ?? "업로드 실패"}
+                    {Math.round(photo.fileSize / 1024)}KB
+                    {photo.wasCompressed ? ` · 압축 전 ${Math.round(photo.originalFileSize / 1024)}KB` : ""}
                   </span>
                 </div>
                 <button type="button" className="button button-ghost button-small" onClick={() => removePhoto(photo.id)}>
-                  삭제
+                  제거
                 </button>
               </div>
             ))}

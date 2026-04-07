@@ -60,7 +60,7 @@ export function ListingDetailPage() {
       <div className="page-stack">
         <section className="hero-panel compact">
           <span className="eyebrow">상세 준비 중</span>
-          <h1 className="page-title page-title-medium">매물 상세를 불러오고 있습니다</h1>
+          <h1 className="page-title page-title-medium">매물 상세를 불러오는 중입니다</h1>
         </section>
       </div>
     );
@@ -70,8 +70,8 @@ export function ListingDetailPage() {
     return (
       <div className="page-stack">
         <section className="hero-panel compact">
-          <span className="eyebrow">오류</span>
-          <h1 className="page-title page-title-medium">매물 상세를 불러오지 못했습니다</h1>
+          <span className="eyebrow">불러오기 실패</span>
+          <h1 className="page-title page-title-medium">매물 상세를 가져오지 못했습니다</h1>
           <p className="page-copy compact-copy">{error ?? "해당 매물을 찾을 수 없습니다."}</p>
         </section>
       </div>
@@ -112,7 +112,7 @@ export function ListingDetailPage() {
         ) : listing.photos.length > 0 ? (
           <div className="empty-panel">
             <strong>사진 미리보기를 준비하지 못했습니다</strong>
-            <p>S3 설정을 확인한 뒤 다시 시도해 주세요.</p>
+            <p>S3 설정과 미리보기 URL 생성 여부를 확인한 뒤 다시 시도해 주세요.</p>
           </div>
         ) : (
           <div className="empty-panel">
@@ -138,7 +138,7 @@ export function ListingDetailPage() {
               <strong>{formatArea(listing.areaM2)}</strong>
             </div>
             <div>
-              <span>입주 가능</span>
+              <span>입주 가능 시기</span>
               <strong>{listing.moveInDate || "-"}</strong>
             </div>
             <div>

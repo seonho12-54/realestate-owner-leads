@@ -42,7 +42,7 @@ export function LogoutButton({
 
   return (
     <button className={className} type="button" onClick={handleLogout} disabled={isPending}>
-      {isPending ? "로그아웃 중.." : label}
+      {isPending ? "로그아웃 중..." : label}
     </button>
   );
 }

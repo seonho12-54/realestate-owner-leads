@@ -9,26 +9,26 @@ import { SERVICE_MAP_POINTS } from "@/lib/service-area";
 
 function getMarkerColor(transactionType: PublicListing["transactionType"]) {
   if (transactionType === "sale") {
-    return "#f97316";
+    return "#ff7a45";
   }
 
   if (transactionType === "jeonse") {
-    return "#0f766e";
+    return "#00a88f";
   }
 
   if (transactionType === "monthly") {
-    return "#2563eb";
+    return "#4376ff";
   }
 
   return "#7c3aed";
 }
 
 function createMarkerImage(kakao: any, transactionType: PublicListing["transactionType"], selected: boolean) {
-  const size = selected ? 22 : 16;
-  const outline = selected ? "#ffffff" : "rgba(255,255,255,0.88)";
-  const shadow = selected ? "rgba(15, 118, 110, 0.34)" : "rgba(17, 36, 58, 0.16)";
+  const size = selected ? 24 : 18;
+  const outline = selected ? "#ffffff" : "rgba(255,255,255,0.92)";
+  const shadow = selected ? "rgba(67, 118, 255, 0.34)" : "rgba(15, 23, 42, 0.16)";
   const fill = getMarkerColor(transactionType);
-  const radius = selected ? 9 : 6;
+  const radius = selected ? 9 : 7;
 
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
@@ -87,40 +87,40 @@ export function KakaoMapPanel({
           disableClickZoom: true,
           styles: [
             {
-              width: "44px",
-              height: "44px",
-              background: "rgba(77, 113, 255, 0.88)",
-              borderRadius: "22px",
+              width: "46px",
+              height: "46px",
+              background: "linear-gradient(135deg, rgba(86, 125, 255, 0.96), rgba(63, 98, 223, 0.96))",
+              borderRadius: "23px",
               color: "#ffffff",
               textAlign: "center",
               fontWeight: "800",
-              lineHeight: "44px",
-              border: "2px solid rgba(255, 255, 255, 0.94)",
-              boxShadow: "0 12px 28px rgba(70, 99, 219, 0.24)",
+              lineHeight: "46px",
+              border: "3px solid rgba(255, 255, 255, 0.96)",
+              boxShadow: "0 14px 30px rgba(63, 98, 223, 0.3)",
             },
             {
-              width: "52px",
-              height: "52px",
-              background: "rgba(70, 99, 219, 0.92)",
-              borderRadius: "26px",
+              width: "54px",
+              height: "54px",
+              background: "linear-gradient(135deg, rgba(74, 109, 248, 0.98), rgba(50, 82, 202, 0.98))",
+              borderRadius: "27px",
               color: "#ffffff",
               textAlign: "center",
               fontWeight: "800",
-              lineHeight: "52px",
-              border: "2px solid rgba(255, 255, 255, 0.96)",
-              boxShadow: "0 14px 30px rgba(58, 82, 184, 0.28)",
+              lineHeight: "54px",
+              border: "3px solid rgba(255, 255, 255, 0.98)",
+              boxShadow: "0 16px 34px rgba(48, 76, 183, 0.34)",
             },
             {
-              width: "60px",
-              height: "60px",
-              background: "rgba(50, 79, 194, 0.95)",
-              borderRadius: "30px",
+              width: "62px",
+              height: "62px",
+              background: "linear-gradient(135deg, rgba(53, 87, 214, 0.98), rgba(31, 61, 169, 0.98))",
+              borderRadius: "31px",
               color: "#ffffff",
               textAlign: "center",
               fontWeight: "900",
-              lineHeight: "60px",
-              border: "2px solid rgba(255, 255, 255, 0.98)",
-              boxShadow: "0 16px 34px rgba(41, 65, 160, 0.3)",
+              lineHeight: "62px",
+              border: "3px solid rgba(255, 255, 255, 0.98)",
+              boxShadow: "0 18px 40px rgba(32, 57, 153, 0.36)",
             },
           ],
           calculator: [6, 12, 24],
@@ -137,7 +137,7 @@ export function KakaoMapPanel({
         setReady(true);
       })
       .catch((loadError) => {
-        setError(loadError instanceof Error ? loadError.message : "카카오 지도 SDK를 불러오지 못했습니다.");
+        setError(loadError instanceof Error ? loadError.message : "카카오 지도를 불러오지 못했습니다.");
       });
 
     return () => {
@@ -206,9 +206,9 @@ export function KakaoMapPanel({
     return (
       <div className="market-map-shell">
         <div className="map-fallback">
-          <strong>지도 준비 필요</strong>
+          <strong>지도를 불러오지 못했습니다</strong>
           <p>{error}</p>
-          <p>지도에는 승인 매물의 대략 위치와 묶음 개수만 먼저 표시됩니다.</p>
+          <p>현재는 리스트로만 공개 매물 흐름을 볼 수 있습니다.</p>
         </div>
       </div>
     );
@@ -218,7 +218,7 @@ export function KakaoMapPanel({
     <div className="market-map-shell">
       <div className="map-legend">
         <span className="map-legend-title">지도 안내</span>
-        <span className="map-legend-item neutral">가까운 매물은 자동으로 묶여서 표시됩니다</span>
+        <span className="map-legend-item neutral">가까운 매물은 클러스터로 묶어 표시합니다</span>
         <span className="map-legend-item sale">매매</span>
         <span className="map-legend-item jeonse">전세</span>
         <span className="map-legend-item monthly">월세</span>

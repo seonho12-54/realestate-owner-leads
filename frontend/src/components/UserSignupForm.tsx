@@ -21,7 +21,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [locationMessage, setLocationMessage] = useState(`회원가입 전에 허용 지역(${SERVICE_REGION_LABEL}) 위치 인증을 한 번만 완료해 주세요.`);
+  const [locationMessage, setLocationMessage] = useState(`회원가입 전 허용 지역(${SERVICE_REGION_LABEL}) 위치 인증을 한 번만 완료해 주세요.`);
   const [isLocationVerified, setIsLocationVerified] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,8 +36,8 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
     setIsLocationVerified(true);
     setLocationMessage(
       cached.addressName
-        ? `${cached.addressName}에서 인증된 사용자입니다. 다시 위치 인증할 필요 없이 계속 진행할 수 있어요.`
-        : "이미 위치 인증이 완료된 사용자입니다. 다시 인증할 필요 없이 계속 진행할 수 있어요.",
+        ? `${cached.addressName}에서 인증된 사용자입니다. 저장된 위치 인증을 재사용하므로 다시 확인할 필요가 없습니다.`
+        : "이미 위치 인증을 마친 사용자입니다. 저장된 인증 상태를 그대로 사용합니다.",
     );
   }, []);
 
@@ -48,7 +48,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
     }
 
     if (!navigator.geolocation) {
-      setLocationMessage("현재 브라우저에서 위치 서비스를 지원하지 않습니다.");
+      setLocationMessage("현재 브라우저에서는 위치 서비스를 지원하지 않습니다.");
       return;
     }
 
@@ -90,7 +90,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           });
 
           setIsLocationVerified(true);
-          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 인증이 완료되었습니다. 이후에는 다시 위치 인증이 필요 없습니다.`);
+          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 인증이 완료되었습니다. 이후에는 다시 위치 인증할 필요가 없습니다.`);
         } catch (locationError) {
           setIsLocationVerified(false);
           setLocationMessage(locationError instanceof Error ? locationError.message : "위치 인증에 실패했습니다.");
@@ -108,7 +108,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
         }
 
         if (geoError.code === geoError.TIMEOUT) {
-          setLocationMessage("위치 확인 시간이 초과되었습니다. 잠시 뒤 다시 시도해 주세요.");
+          setLocationMessage("위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
           return;
         }
 
@@ -144,27 +144,29 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   }
 
   return (
-    <form className="auth-card signup-card" onSubmit={handleSubmit}>
-      <span className="eyebrow">회원가입</span>
-      <h1 className="page-title">다우니 회원가입</h1>
-      <p className="page-copy">비회원은 공개 매물 흐름만 볼 수 있고, 회원가입을 마치면 상세 확인과 매물 등록까지 이어집니다.</p>
+    <form className="auth-card signup-card vibrant" onSubmit={handleSubmit}>
+      <span className="eyebrow">JOIN DOWNY</span>
+      <h1 className="page-title">회원가입</h1>
+      <p className="page-copy">
+        지도와 공개 목록은 비회원도 볼 수 있지만, 상세 페이지와 매물 접수는 회원가입 후 이용할 수 있습니다.
+      </p>
 
       <section className="signup-verify-panel">
         <div className="section-heading">
           <div>
             <span className="eyebrow">1. 위치 인증</span>
-            <h2 className="section-title">회원가입 전에 한 번만 위치를 확인합니다</h2>
+            <h2 className="section-title">처음 한 번만 위치를 확인합니다</h2>
           </div>
           <button type="button" className="button button-secondary" onClick={handleLocationVerification} disabled={isCheckingLocation}>
-            {isCheckingLocation ? "확인 중.." : isLocationVerified ? "다시 확인" : "현재 위치 확인"}
+            {isCheckingLocation ? "확인 중..." : isLocationVerified ? "다시 확인" : "현재 위치 인증"}
           </button>
         </div>
         <p className="page-copy compact-copy">{locationMessage}</p>
         <div className="inline-note-list">
           <span className={`inline-note${isLocationVerified ? " success" : ""}`}>
-            {isLocationVerified ? "인증된 사용자입니다" : `허용 지역 ${SERVICE_REGION_LABEL}`}
+            {isLocationVerified ? "인증된 사용자입니다" : `허용 지역: ${SERVICE_REGION_LABEL}`}
           </span>
-          {isLocationVerified ? <span className="inline-note success">위치 인증은 저장되며 매번 다시 하지 않아도 됩니다.</span> : null}
+          {isLocationVerified ? <span className="inline-note success">위치 인증은 저장되어 이후에도 재사용됩니다.</span> : null}
         </div>
       </section>
 
@@ -205,10 +207,13 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           placeholder="영문과 숫자를 포함한 8자 이상"
         />
       </div>
+
       {error ? <div className="error-banner">{error}</div> : null}
+
       <button className="button button-primary" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "가입 중.." : "회원가입"}
+        {isSubmitting ? "가입 중..." : "회원가입"}
       </button>
+
       <div className="button-row">
         <Link href={`/login?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
           로그인

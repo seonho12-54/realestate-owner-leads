@@ -32,10 +32,13 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
   }
 
   return (
-    <form className="auth-card" onSubmit={handleSubmit}>
-      <span className="eyebrow">회원 로그인</span>
-      <h1 className="page-title">일반 회원 로그인</h1>
-      <p className="page-copy">매물 등록, 접수 완료 확인, 상세 페이지 진입을 위해 로그인해 주세요.</p>
+    <form className="auth-card vibrant" onSubmit={handleSubmit}>
+      <span className="eyebrow">MEMBER LOGIN</span>
+      <h1 className="page-title">회원 로그인</h1>
+      <p className="page-copy">
+        상세 페이지 확인, 매물 접수, 접수 결과 확인은 회원 로그인 후 이어집니다. 지도와 공개 리스트는 비회원도 미리 볼 수 있습니다.
+      </p>
+
       <div className="field">
         <label htmlFor="loginEmail">이메일</label>
         <input
@@ -60,10 +63,13 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
           placeholder="비밀번호"
         />
       </div>
+
       {error ? <div className="error-banner">{error}</div> : null}
+
       <button className="button button-primary" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "로그인 중.." : "로그인"}
+        {isSubmitting ? "로그인 중..." : "로그인"}
       </button>
+
       <div className="button-row">
         <Link href={`/signup?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
           회원가입

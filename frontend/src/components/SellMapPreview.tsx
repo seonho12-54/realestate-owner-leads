@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { getTransactionTypeLabel } from "@/lib/format";
 import { loadKakaoMapsSdk } from "@/lib/kakao-map-client";
 import { SERVICE_MAP_POINTS } from "@/lib/service-area";
-import { getTransactionTypeLabel } from "@/lib/format";
 
 type Coordinates = {
   latitude: number;
@@ -111,12 +111,9 @@ export function SellMapPreview({
 
       if (browserCoords) {
         lineRef.current = new kakao.maps.Polyline({
-          path: [
-            new kakao.maps.LatLng(browserCoords.latitude, browserCoords.longitude),
-            addressPosition,
-          ],
+          path: [new kakao.maps.LatLng(browserCoords.latitude, browserCoords.longitude), addressPosition],
           strokeWeight: 3,
-          strokeColor: "#0f766e",
+          strokeColor: "#2d6dff",
           strokeOpacity: 0.7,
           strokeStyle: "ShortDash",
         });
@@ -180,18 +177,13 @@ export function SellMapPreview({
       <div className="sell-map-toolbar">
         <div className="sell-map-status">
           <strong>등록 위치 미리보기</strong>
-          <span>내 위치와 선택한 주소를 한 번에 확인할 수 있습니다.</span>
+          <span>내 위치와 선택한 주소를 한 번에 비교하며 등록 위치를 확인할 수 있습니다.</span>
         </div>
         <div className="button-row">
           <button type="button" className="button button-secondary button-small" onClick={focusCurrentLocation} disabled={!browserCoords}>
             내 위치로 이동
           </button>
-          <button
-            type="button"
-            className="button button-secondary button-small"
-            onClick={focusSelectedAddress}
-            disabled={!selectedAddress}
-          >
+          <button type="button" className="button button-secondary button-small" onClick={focusSelectedAddress} disabled={!selectedAddress}>
             선택 주소로 이동
           </button>
         </div>
@@ -200,7 +192,7 @@ export function SellMapPreview({
       {!browserCoords && !selectedAddress ? (
         <div className="sell-map-empty">
           <strong>아직 표시할 위치가 없습니다</strong>
-          <p>먼저 현재 위치를 확인하고, 아래에서 주소 검색 결과를 하나 선택해 주세요.</p>
+          <p>먼저 현재 위치를 확인하고, 아래 주소 검색 결과에서 등록할 주소를 선택해 주세요.</p>
         </div>
       ) : null}
     </div>
