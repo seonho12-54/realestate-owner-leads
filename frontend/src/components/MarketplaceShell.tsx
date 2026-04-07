@@ -70,6 +70,7 @@ export function MarketplaceShell({
   listings: PublicListing[];
   canUseMemberFeatures: boolean;
 }) {
+  const safeListings = Array.isArray(listings) ? listings : [];
   const [transactionFilter, setTransactionFilter] = useState<string>("all");
   const [propertyFilter, setPropertyFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,7 +80,7 @@ export function MarketplaceShell({
   const filteredListings = useMemo(() => {
     const normalizedQuery = deferredSearchTerm.trim().toLowerCase();
 
-    return listings.filter((listing) => {
+    return safeListings.filter((listing) => {
       if (transactionFilter !== "all" && listing.transactionType !== transactionFilter) {
         return false;
       }
@@ -105,7 +106,7 @@ export function MarketplaceShell({
 
       return haystack.includes(normalizedQuery);
     });
-  }, [deferredSearchTerm, listings, propertyFilter, transactionFilter]);
+  }, [deferredSearchTerm, propertyFilter, safeListings, transactionFilter]);
 
   const [selectedListingId, setSelectedListingId] = useState<number | null>(filteredListings[0]?.id ?? null);
 
@@ -124,12 +125,12 @@ export function MarketplaceShell({
   const spotlightListings = filteredListings.slice(0, 4);
 
   const stats = useMemo(() => {
-    const saleCount = listings.filter((listing) => listing.transactionType === "sale").length;
-    const jeonseCount = listings.filter((listing) => listing.transactionType === "jeonse").length;
-    const monthlyCount = listings.filter((listing) => listing.transactionType === "monthly").length;
+    const saleCount = safeListings.filter((listing) => listing.transactionType === "sale").length;
+    const jeonseCount = safeListings.filter((listing) => listing.transactionType === "jeonse").length;
+    const monthlyCount = safeListings.filter((listing) => listing.transactionType === "monthly").length;
 
     return { saleCount, jeonseCount, monthlyCount };
-  }, [listings]);
+  }, [safeListings]);
 
   function requireMemberAccess(title: string, description: string, nextUrl = "/") {
     if (canUseMemberFeatures) {
@@ -214,7 +215,7 @@ export function MarketplaceShell({
             <div className="home-stage-stat-grid">
               <div className="home-stage-stat">
                 <span>전체 공개</span>
-                <strong>{listings.length}</strong>
+                <strong>{safeListings.length}</strong>
               </div>
               <div className="home-stage-stat">
                 <span>매매</span>
