@@ -786,6 +786,20 @@ img {
   border: 1px solid transparent;
 }
 
+.map-legend-item.interactive {
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.map-legend-item.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.map-legend-item.interactive.active {
+  border-color: rgba(20, 35, 67, 0.14);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
 .map-legend-item.sale {
   background: rgba(249, 115, 22, 0.1);
   color: #c25d11;

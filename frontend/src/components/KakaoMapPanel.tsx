@@ -54,10 +54,14 @@ export function KakaoMapPanel({
   listings,
   selectedListingId,
   onSelect,
+  transactionFilter,
+  onTransactionFilterChange,
 }: {
   listings: PublicListing[];
   selectedListingId: number | null;
   onSelect: (listingId: number) => void;
+  transactionFilter: string;
+  onTransactionFilterChange: (nextValue: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -243,9 +247,27 @@ export function KakaoMapPanel({
       <div className="map-legend">
         <span className="map-legend-title">지도 안내</span>
         <span className="map-legend-item neutral">가까운 매물은 클러스터로 묶여 표시됩니다.</span>
-        <span className="map-legend-item sale">매매</span>
-        <span className="map-legend-item jeonse">전세</span>
-        <span className="map-legend-item monthly">월세</span>
+        <button
+          type="button"
+          className={`map-legend-item interactive sale${transactionFilter === "sale" ? " active" : ""}`}
+          onClick={() => onTransactionFilterChange(transactionFilter === "sale" ? "all" : "sale")}
+        >
+          매매
+        </button>
+        <button
+          type="button"
+          className={`map-legend-item interactive jeonse${transactionFilter === "jeonse" ? " active" : ""}`}
+          onClick={() => onTransactionFilterChange(transactionFilter === "jeonse" ? "all" : "jeonse")}
+        >
+          전세
+        </button>
+        <button
+          type="button"
+          className={`map-legend-item interactive monthly${transactionFilter === "monthly" ? " active" : ""}`}
+          onClick={() => onTransactionFilterChange(transactionFilter === "monthly" ? "all" : "monthly")}
+        >
+          월세
+        </button>
       </div>
       <div ref={containerRef} className="map-canvas market-map-canvas" />
     </div>

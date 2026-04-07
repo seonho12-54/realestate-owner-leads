@@ -37,17 +37,18 @@ export type AdminLoginPayload = {
 
 type AuthSuccessResponse = {
   ok: boolean;
-  kind: Exclude<SessionKind, null>;
-  accessToken: string;
+  kind?: Exclude<SessionKind, null>;
+  accessToken?: string | null;
   userId?: number;
 };
 
 function storeAccessToken(response: AuthSuccessResponse) {
-  if (!response.accessToken) {
-    throw new Error("로그인 토큰을 받지 못했습니다.");
+  if (typeof response.accessToken === "string" && response.accessToken.length > 0) {
+    writeAccessToken(response.accessToken);
+    return response;
   }
 
-  writeAccessToken(response.accessToken);
+  clearAccessToken();
   return response;
 }
 

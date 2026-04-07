@@ -382,7 +382,13 @@ export function MarketplaceShell({
 
         <div className="home-browser-grid">
           <div className="home-map-card">
-            <KakaoMapPanel listings={filteredListings} selectedListingId={selectedListingId} onSelect={setSelectedListingId} />
+            <KakaoMapPanel
+              listings={filteredListings}
+              selectedListingId={selectedListingId}
+              onSelect={setSelectedListingId}
+              transactionFilter={transactionFilter}
+              onTransactionFilterChange={setTransactionFilter}
+            />
           </div>
 
           <div className="home-list-panel">
