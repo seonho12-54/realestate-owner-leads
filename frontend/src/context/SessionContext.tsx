@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { fetchSession, type CurrentSessionResponse } from "@/lib/auth";
+import { clearAccessToken } from "@/lib/token";
 
 type SessionState = CurrentSessionResponse & {
   isLoading: boolean;
@@ -35,12 +36,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refreshSession = useCallback(async () => {
     try {
       const nextSession = await fetchSession();
+      if (!nextSession.authenticated) {
+        clearAccessToken();
+      }
       applyKakaoKey(nextSession.kakaoJsKey);
       setSession({
         ...nextSession,
         isLoading: false,
       });
     } catch {
+      clearAccessToken();
       applyKakaoKey(null);
       setSession({
         ...defaultSession,

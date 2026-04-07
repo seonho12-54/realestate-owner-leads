@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
+import { apiFetch } from "@/lib/api";
 import { signupUser } from "@/lib/auth";
 import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
 import { useRouter } from "@/lib/router";
@@ -59,15 +60,12 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          const response = await fetch("/api/location/verify", {
+          const response = await apiFetch("/api/location/verify", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+            json: {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
-            }),
+            },
           });
 
           const result = await response.json();

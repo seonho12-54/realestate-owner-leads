@@ -33,16 +33,16 @@ public class AuthController {
             RequestMeta.from(httpRequest)
         );
         sessionService.clearAdminSession(response);
-        sessionService.setUserSession(response, session.userId(), session.email(), session.name());
-        return Map.of("ok", true, "userId", session.userId());
+        String accessToken = sessionService.setUserSession(response, session.userId(), session.email(), session.name());
+        return Map.of("ok", true, "kind", "user", "accessToken", accessToken, "userId", session.userId());
     }
 
     @PostMapping("/login")
     public Map<String, Object> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         var session = authService.login(new AuthService.UserLoginRequest(request.email(), request.password()), RequestMeta.from(httpRequest));
         sessionService.clearAdminSession(response);
-        sessionService.setUserSession(response, session.userId(), session.email(), session.name());
-        return Map.of("ok", true);
+        String accessToken = sessionService.setUserSession(response, session.userId(), session.email(), session.name());
+        return Map.of("ok", true, "kind", "user", "accessToken", accessToken);
     }
 
     @PostMapping("/logout")

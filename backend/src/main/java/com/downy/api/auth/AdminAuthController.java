@@ -29,8 +29,8 @@ public class AdminAuthController {
     public Map<String, Object> login(@Valid @RequestBody AdminLoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         var session = authService.loginAdmin(new AuthService.AdminLoginRequest(request.email(), request.password()), RequestMeta.from(httpRequest));
         sessionService.clearUserSession(response);
-        sessionService.setAdminSession(response, session.adminId(), session.officeId(), session.email(), session.name(), session.role());
-        return Map.of("ok", true);
+        String accessToken = sessionService.setAdminSession(response, session.adminId(), session.officeId(), session.email(), session.name(), session.role());
+        return Map.of("ok", true, "kind", "admin", "accessToken", accessToken);
     }
 
     @PostMapping("/logout")

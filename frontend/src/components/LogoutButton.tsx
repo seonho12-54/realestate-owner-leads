@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useSession } from "@/context/SessionContext";
+import { logoutAdmin, logoutUser } from "@/lib/auth";
 
 export function LogoutButton({
   action,
@@ -22,14 +23,10 @@ export function LogoutButton({
     try {
       setIsPending(true);
 
-      const response = await fetch(action, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("로그아웃 처리에 실패했습니다.");
+      if (action === "/api/admin/logout") {
+        await logoutAdmin();
+      } else {
+        await logoutUser();
       }
 
       await refreshSession();

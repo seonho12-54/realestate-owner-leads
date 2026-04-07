@@ -12,9 +12,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Clock;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -38,12 +40,12 @@ public class SessionService {
     }
 
     public AdminSession readAdminSession(HttpServletRequest request) {
-        String token = readCookie(request, ADMIN_SESSION_COOKIE);
+        String token = readToken(request, ADMIN_SESSION_COOKIE);
         return token == null ? null : parseAdminSession(token);
     }
 
     public UserSession readUserSession(HttpServletRequest request) {
-        String token = readCookie(request, USER_SESSION_COOKIE);
+        String token = readToken(request, USER_SESSION_COOKIE);
         return token == null ? null : parseUserSession(token);
     }
 
@@ -51,22 +53,26 @@ public class SessionService {
         return new SessionSnapshot(readAdminSession(request), readUserSession(request));
     }
 
-    public void setAdminSession(HttpServletResponse response, long adminId, Long officeId, String email, String name, String role) {
+    public String setAdminSession(HttpServletResponse response, long adminId, Long officeId, String email, String name, String role) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("adminId", adminId);
         payload.put("officeId", officeId);
         payload.put("email", email);
         payload.put("name", name);
         payload.put("role", role);
-        setCookie(response, ADMIN_SESSION_COOKIE, createToken(SessionKind.ADMIN, payload));
+        String token = createToken(SessionKind.ADMIN, payload);
+        setCookie(response, ADMIN_SESSION_COOKIE, token);
+        return token;
     }
 
-    public void setUserSession(HttpServletResponse response, long userId, String email, String name) {
+    public String setUserSession(HttpServletResponse response, long userId, String email, String name) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("userId", userId);
         payload.put("email", email);
         payload.put("name", name);
-        setCookie(response, USER_SESSION_COOKIE, createToken(SessionKind.USER, payload));
+        String token = createToken(SessionKind.USER, payload);
+        setCookie(response, USER_SESSION_COOKIE, token);
+        return token;
     }
 
     public void clearAdminSession(HttpServletResponse response) {
@@ -99,13 +105,21 @@ public class SessionService {
     }
 
     private String createToken(SessionKind kind, Map<String, Object> payload) {
-        payload.put("exp", clock.millis() + properties.getSessionDurationDays() * 24L * 60L * 60L * 1000L);
+        long issuedAt = clock.instant().getEpochSecond();
+        long expiresAt = issuedAt + properties.getSessionDurationDays() * 24L * 60L * 60L;
+
+        Map<String, Object> claims = new LinkedHashMap<>(payload);
+        claims.put("kind", kind.name().toLowerCase(Locale.ROOT));
+        claims.put("iat", issuedAt);
+        claims.put("exp", expiresAt);
 
         try {
+            String encodedHeader = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(objectMapper.writeValueAsBytes(Map.of("alg", "HS256", "typ", "JWT")));
             String encodedPayload = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(objectMapper.writeValueAsBytes(payload));
-            String signature = sign(kind, encodedPayload);
-            return encodedPayload + "." + signature;
+                .encodeToString(objectMapper.writeValueAsBytes(claims));
+            String signingInput = encodedHeader + "." + encodedPayload;
+            return signingInput + "." + sign(kind, signingInput);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("세션 토큰을 만들지 못했습니다.", exception);
         }
@@ -123,7 +137,7 @@ public class SessionService {
             asString(payload.get("email")),
             asString(payload.get("name")),
             asString(payload.get("role")),
-            asLong(payload.get("exp"))
+            asExpirationMillis(payload.get("exp"))
         );
     }
 
@@ -137,19 +151,50 @@ public class SessionService {
             asLong(payload.get("userId")),
             asString(payload.get("email")),
             asString(payload.get("name")),
-            asLong(payload.get("exp"))
+            asExpirationMillis(payload.get("exp"))
         );
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> verify(SessionKind kind, String token) {
         String[] parts = token.split("\\.");
-        if (parts.length != 2) {
+        return switch (parts.length) {
+            case 2 -> verifyLegacyToken(kind, parts);
+            case 3 -> verifyJwtToken(kind, parts);
+            default -> null;
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> verifyJwtToken(SessionKind kind, String[] parts) {
+        String signingInput = parts[0] + "." + parts[1];
+        String expected = sign(kind, signingInput);
+        if (!secureEquals(expected, parts[2])) {
             return null;
         }
 
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(parts[1]);
+            Map<String, Object> payload = objectMapper.readValue(decoded, Map.class);
+            if (!kind.name().equalsIgnoreCase(asString(payload.get("kind")))) {
+                return null;
+            }
+
+            Number exp = (Number) payload.get("exp");
+            if (exp == null || exp.longValue() <= clock.instant().getEpochSecond()) {
+                return null;
+            }
+
+            return payload;
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> verifyLegacyToken(SessionKind kind, String[] parts) {
         String expected = sign(kind, parts[0]);
-        if (!expected.equals(parts[1])) {
+        if (!secureEquals(expected, parts[1])) {
             return null;
         }
 
@@ -166,11 +211,11 @@ public class SessionService {
         }
     }
 
-    private String sign(SessionKind kind, String encodedPayload) {
+    private String sign(SessionKind kind, String signingInput) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(secret(kind).getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(encodedPayload.getBytes(StandardCharsets.UTF_8)));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(signingInput.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {
             throw new IllegalStateException("세션 서명을 만들지 못했습니다.", exception);
         }
@@ -178,6 +223,29 @@ public class SessionService {
 
     private String secret(SessionKind kind) {
         return kind == SessionKind.ADMIN ? properties.getAdminSessionSecret() : properties.getUserSessionSecret();
+    }
+
+    private String readToken(HttpServletRequest request, String cookieName) {
+        String bearerToken = readBearerToken(request);
+        if (bearerToken != null) {
+            return bearerToken;
+        }
+
+        return readCookie(request, cookieName);
+    }
+
+    private String readBearerToken(HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        if (authorization == null || authorization.isBlank()) {
+            return null;
+        }
+
+        if (!authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return null;
+        }
+
+        String token = authorization.substring(7).trim();
+        return token.isEmpty() ? null : token;
     }
 
     private String readCookie(HttpServletRequest request, String name) {
@@ -227,5 +295,14 @@ public class SessionService {
         }
 
         return Long.parseLong(String.valueOf(value));
+    }
+
+    private long asExpirationMillis(Object value) {
+        long rawValue = asLong(value);
+        return rawValue >= 1_000_000_000_000L ? rawValue : rawValue * 1000L;
+    }
+
+    private boolean secureEquals(String left, String right) {
+        return MessageDigest.isEqual(left.getBytes(StandardCharsets.UTF_8), right.getBytes(StandardCharsets.UTF_8));
     }
 }

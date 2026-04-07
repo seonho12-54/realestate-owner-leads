@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type Ke
 
 import { Link } from "@/components/RouterLink";
 import { SellMapPreview } from "@/components/SellMapPreview";
+import { apiFetch } from "@/lib/api";
 import { prepareImageForUpload, resolveUploadContentType } from "@/lib/client-image";
 import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
 import type { OfficeOption } from "@/lib/offices";
@@ -159,15 +160,12 @@ export function SellLeadForm({
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          const response = await fetch("/api/location/verify", {
+          const response = await apiFetch("/api/location/verify", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+            json: {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
-            }),
+            },
           });
 
           const result = await response.json();
@@ -239,7 +237,7 @@ export function SellLeadForm({
     setIsSearchingAddress(true);
 
     try {
-      const response = await fetch(`/api/location/address-search?query=${encodeURIComponent(query)}`);
+      const response = await apiFetch(`/api/location/address-search?query=${encodeURIComponent(query)}`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -323,16 +321,13 @@ export function SellLeadForm({
       ]);
 
       try {
-        const presignResponse = await fetch("/api/uploads/presign", {
+        const presignResponse = await apiFetch("/api/uploads/presign", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+          json: {
             fileName: uploadFile.name,
             contentType,
             fileSize: uploadFile.size,
-          }),
+          },
         });
 
         const presignPayload = await presignResponse.json();
@@ -463,12 +458,9 @@ export function SellLeadForm({
     try {
       setIsSubmitting(true);
 
-      const response = await fetch("/api/leads", {
+      const response = await apiFetch("/api/leads", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        json: payload,
       });
 
       const result = await response.json();

@@ -1,3 +1,5 @@
+import { readAccessToken } from "@/lib/token";
+
 type JsonBody = Record<string, unknown> | Array<unknown> | null;
 
 function buildUrl(path: string) {
@@ -5,8 +7,19 @@ function buildUrl(path: string) {
   return `${baseUrl}${path}`;
 }
 
-export async function apiRequest<T>(path: string, init?: RequestInit & { json?: JsonBody }): Promise<T> {
-  const headers = new Headers(init?.headers);
+export function createApiHeaders(initHeaders?: HeadersInit) {
+  const headers = new Headers(initHeaders);
+  const accessToken = readAccessToken();
+
+  if (accessToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  return headers;
+}
+
+export async function apiFetch(path: string, init?: RequestInit & { json?: JsonBody }) {
+  const headers = createApiHeaders(init?.headers);
 
   let body = init?.body;
   if (init?.json !== undefined) {
@@ -14,12 +27,16 @@ export async function apiRequest<T>(path: string, init?: RequestInit & { json?: 
     body = JSON.stringify(init.json);
   }
 
-  const response = await fetch(buildUrl(path), {
+  return fetch(buildUrl(path), {
     credentials: "include",
     ...init,
     headers,
     body,
   });
+}
+
+export async function apiRequest<T>(path: string, init?: RequestInit & { json?: JsonBody }): Promise<T> {
+  const response = await apiFetch(path, init);
 
   const contentType = response.headers.get("content-type") ?? "";
   const data = contentType.includes("application/json") ? await response.json() : null;

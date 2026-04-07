@@ -1,9 +1,9 @@
 package com.downy.api.config;
 
+import com.downy.api.auth.LegacyCompatiblePasswordEncoder;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -19,7 +19,7 @@ public class AppConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new LegacyCompatiblePasswordEncoder();
     }
 
     @Bean

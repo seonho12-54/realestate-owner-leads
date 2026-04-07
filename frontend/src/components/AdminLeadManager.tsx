@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Link } from "@/components/RouterLink";
+import { apiFetch } from "@/lib/api";
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel } from "@/lib/format";
 import type { AdminLeadSummary } from "@/lib/leads";
 import type { LeadStatus } from "@/lib/validation";
@@ -23,16 +24,13 @@ function LeadAdminCard({ lead }: { lead: AdminLeadSummary }) {
     try {
       setIsSaving(true);
 
-      const response = await fetch(`/api/admin/leads/${lead.id}`, {
+      const response = await apiFetch(`/api/admin/leads/${lead.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        json: {
           status,
           isPublished,
           adminMemo,
-        }),
+        },
       });
 
       const result = await response.json();

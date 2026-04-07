@@ -1,4 +1,5 @@
 import { apiRequest } from "@/lib/api";
+import { clearAccessToken, writeAccessToken } from "@/lib/token";
 
 export type SessionKind = "admin" | "user" | null;
 
@@ -34,39 +35,66 @@ export type AdminLoginPayload = {
   password: string;
 };
 
+type AuthSuccessResponse = {
+  ok: boolean;
+  kind: Exclude<SessionKind, null>;
+  accessToken: string;
+  userId?: number;
+};
+
+function storeAccessToken(response: AuthSuccessResponse) {
+  if (!response.accessToken) {
+    throw new Error("로그인 토큰을 받지 못했습니다.");
+  }
+
+  writeAccessToken(response.accessToken);
+  return response;
+}
+
 export async function fetchSession() {
   return apiRequest<CurrentSessionResponse>("/api/session");
 }
 
 export async function signupUser(payload: UserSignupPayload) {
-  return apiRequest<{ ok: boolean; userId: number }>("/api/auth/signup", {
+  const response = await apiRequest<AuthSuccessResponse>("/api/auth/signup", {
     method: "POST",
     json: payload,
   });
+  return storeAccessToken(response);
 }
 
 export async function loginUser(payload: UserLoginPayload) {
-  return apiRequest<{ ok: boolean }>("/api/auth/login", {
+  const response = await apiRequest<AuthSuccessResponse>("/api/auth/login", {
     method: "POST",
     json: payload,
   });
+  return storeAccessToken(response);
 }
 
 export async function loginAdmin(payload: AdminLoginPayload) {
-  return apiRequest<{ ok: boolean }>("/api/admin/login", {
+  const response = await apiRequest<AuthSuccessResponse>("/api/admin/login", {
     method: "POST",
     json: payload,
   });
+  return storeAccessToken(response);
 }
 
 export async function logoutUser() {
-  return apiRequest<{ ok: boolean }>("/api/auth/logout", {
-    method: "POST",
-  });
+  try {
+    return await apiRequest<{ ok: boolean }>("/api/auth/logout", {
+      method: "POST",
+    });
+  } finally {
+    clearAccessToken();
+  }
 }
 
 export async function logoutAdmin() {
-  return apiRequest<{ ok: boolean }>("/api/admin/logout", {
-    method: "POST",
-  });
+  try {
+    return await apiRequest<{ ok: boolean }>("/api/admin/logout", {
+      method: "POST",
+    });
+  } finally {
+    clearAccessToken();
+  }
 }
