@@ -134,20 +134,41 @@ public class KakaoLocationService {
     }
 
     private AddressSearchResult toAddressResult(KakaoAddressDocument document) {
-        KakaoRegionAddress source = document.roadAddress() != null ? document.roadAddress() : document.address();
-        if (source == null || !StringUtils.hasText(document.y()) || !StringUtils.hasText(document.x())) {
+        if (!StringUtils.hasText(document.y()) || !StringUtils.hasText(document.x())) {
+            return null;
+        }
+
+        String region1DepthName;
+        String region2DepthName;
+        String region3DepthName;
+        String roadAddress = null;
+        String postalCode = null;
+
+        if (document.roadAddress() != null) {
+            KakaoRoadAddress road = document.roadAddress();
+            region1DepthName = road.region1DepthName();
+            region2DepthName = road.region2DepthName();
+            region3DepthName = road.region3DepthName();
+            roadAddress = road.addressName();
+            postalCode = road.zoneNo();
+        } else if (document.address() != null) {
+            KakaoRegionAddress address = document.address();
+            region1DepthName = address.region1DepthName();
+            region2DepthName = address.region2DepthName();
+            region3DepthName = address.region3DepthName();
+        } else {
             return null;
         }
 
         return new AddressSearchResult(
             document.addressName(),
-            document.roadAddress() != null ? document.roadAddress().addressName() : null,
-            document.roadAddress() != null ? document.roadAddress().zoneNo() : null,
+            roadAddress,
+            postalCode,
             Double.parseDouble(document.y()),
             Double.parseDouble(document.x()),
-            source.region1DepthName(),
-            source.region2DepthName(),
-            source.region3DepthName()
+            region1DepthName,
+            region2DepthName,
+            region3DepthName
         );
     }
 
