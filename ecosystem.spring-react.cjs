@@ -1,0 +1,42 @@
+module.exports = {
+  apps: [
+    {
+      name: "downy-api",
+      cwd: "./backend",
+      script: "java",
+      args: "-jar target/downy-api-0.0.1-SNAPSHOT.jar",
+      interpreter: "none",
+      autorestart: true,
+      max_memory_restart: "512M",
+      env: {
+        SERVER_PORT: process.env.SERVER_PORT || "8080",
+        APP_BASE_URL: process.env.APP_BASE_URL,
+        SPRING_DATASOURCE_URL: process.env.SPRING_DATASOURCE_URL,
+        SPRING_DATASOURCE_USERNAME: process.env.SPRING_DATASOURCE_USERNAME,
+        SPRING_DATASOURCE_PASSWORD: process.env.SPRING_DATASOURCE_PASSWORD,
+        ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
+        USER_SESSION_SECRET: process.env.USER_SESSION_SECRET,
+        KAKAO_REST_API_KEY: process.env.KAKAO_REST_API_KEY,
+        KAKAO_JS_KEY: process.env.KAKAO_JS_KEY,
+        MAX_PHOTO_SIZE_MB: process.env.MAX_PHOTO_SIZE_MB || "20",
+        MAX_PHOTO_COUNT: process.env.MAX_PHOTO_COUNT || "10",
+        S3_BUCKET: process.env.S3_BUCKET,
+        S3_REGION: process.env.S3_REGION,
+        S3_UPLOAD_PREFIX: process.env.S3_UPLOAD_PREFIX || "leads",
+        AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+        FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN,
+      },
+    },
+    {
+      name: "downy-web",
+      script: "serve",
+      env: {
+        PM2_SERVE_PATH: "frontend/dist",
+        PM2_SERVE_PORT: "3000",
+        PM2_SERVE_SPA: "true",
+        PM2_SERVE_HOMEPAGE: "/index.html",
+      },
+    },
+  ],
+};
