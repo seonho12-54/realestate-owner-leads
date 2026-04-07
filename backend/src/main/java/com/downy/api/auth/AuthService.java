@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,9 +30,11 @@ public class AuthService {
     }
 
     public UserSession signup(UserSignupRequest request, RequestMeta requestMeta) {
-        UserRecord existing = findUserByEmail(request.email());
+        String normalizedEmail = normalizeEmail(request.email());
+        String normalizedName = normalizeName(request.name());
+        UserRecord existing = findUserByEmail(normalizedEmail);
         if (existing != null) {
-            throw new ApiException(HttpStatus.CONFLICT, "이미 가입된 이메일입니다.");
+            throw new ApiException(HttpStatus.CONFLICT, "이미 가입한 이메일입니다.");
         }
 
         jdbcTemplate.update(
@@ -44,24 +47,29 @@ public class AuthService {
                     is_active
                 ) VALUES (?, ?, ?, ?, 1)
                 """,
-            request.email(),
+            normalizedEmail,
             passwordEncoder.encode(request.password()),
-            request.name(),
+            normalizedName,
             blankToNull(request.phone())
         );
 
-        Long userId = jdbcTemplate.queryForObject("SELECT id FROM users WHERE email = ?", Long.class, request.email());
+        Long userId = jdbcTemplate.queryForObject("SELECT id FROM users WHERE LOWER(email) = ?", Long.class, normalizedEmail);
         if (userId == null) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "회원 정보를 만들지 못했습니다.");
         }
 
-        auditLogService.write(null, "user.signup", "user", userId, requestMeta, Map.of("email", request.email()));
-        return new UserSession(userId, request.email(), request.name(), 0L);
+        auditLogService.write(null, "user.signup", "user", userId, requestMeta, Map.of("email", normalizedEmail));
+        return new UserSession(userId, normalizedEmail, normalizedName, 0L);
     }
 
     public UserSession login(UserLoginRequest request, RequestMeta requestMeta) {
-        UserRecord user = findUserByEmail(request.email());
+        String normalizedEmail = normalizeEmail(request.email());
+        UserRecord user = findUserByEmail(normalizedEmail);
         if (user == null || !Boolean.TRUE.equals(user.active())) {
+            AdminRecord admin = findAdminByEmail(normalizedEmail);
+            if (admin != null && Boolean.TRUE.equals(admin.active())) {
+                throw new ApiException(HttpStatus.UNAUTHORIZED, "이 이메일은 관리자 계정입니다. 관리자 로그인으로 접속해 주세요.");
+            }
             throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해 주세요.");
         }
 
@@ -75,7 +83,7 @@ public class AuthService {
     }
 
     public AdminSession loginAdmin(AdminLoginRequest request, RequestMeta requestMeta) {
-        AdminRecord admin = findAdminByEmail(request.email());
+        AdminRecord admin = findAdminByEmail(normalizeEmail(request.email()));
         if (admin == null || !Boolean.TRUE.equals(admin.active())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해 주세요.");
         }
@@ -119,7 +127,7 @@ public class AuthService {
             """
                 SELECT id, email, password_hash, name, is_active
                 FROM users
-                WHERE email = ?
+                WHERE LOWER(email) = ?
                 LIMIT 1
                 """,
             (rs, rowNum) -> mapUser(rs),
@@ -132,7 +140,7 @@ public class AuthService {
             """
                 SELECT id, office_id, email, password_hash, name, role, is_active
                 FROM admins
-                WHERE email = ?
+                WHERE LOWER(email) = ?
                 LIMIT 1
                 """,
             (rs, rowNum) -> mapAdmin(rs),
@@ -163,8 +171,25 @@ public class AuthService {
         );
     }
 
+    private String normalizeEmail(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeName(String value) {
+        return value == null ? "" : value.trim();
+    }
+
     private String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value;
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private record UserRecord(long id, String email, String passwordHash, String name, Boolean active) {

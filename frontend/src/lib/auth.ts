@@ -42,6 +42,18 @@ type AuthSuccessResponse = {
   userId?: number;
 };
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function normalizePhone(value: string) {
+  return value.trim();
+}
+
+function normalizeName(value: string) {
+  return value.trim();
+}
+
 function storeAccessToken(response: AuthSuccessResponse) {
   if (typeof response.accessToken === "string" && response.accessToken.length > 0) {
     writeAccessToken(response.accessToken);
@@ -59,7 +71,12 @@ export async function fetchSession() {
 export async function signupUser(payload: UserSignupPayload) {
   const response = await apiRequest<AuthSuccessResponse>("/api/auth/signup", {
     method: "POST",
-    json: payload,
+    json: {
+      ...payload,
+      name: normalizeName(payload.name),
+      email: normalizeEmail(payload.email),
+      phone: normalizePhone(payload.phone),
+    },
   });
   return storeAccessToken(response);
 }
@@ -67,7 +84,10 @@ export async function signupUser(payload: UserSignupPayload) {
 export async function loginUser(payload: UserLoginPayload) {
   const response = await apiRequest<AuthSuccessResponse>("/api/auth/login", {
     method: "POST",
-    json: payload,
+    json: {
+      ...payload,
+      email: normalizeEmail(payload.email),
+    },
   });
   return storeAccessToken(response);
 }
@@ -75,7 +95,10 @@ export async function loginUser(payload: UserLoginPayload) {
 export async function loginAdmin(payload: AdminLoginPayload) {
   const response = await apiRequest<AuthSuccessResponse>("/api/admin/login", {
     method: "POST",
-    json: payload,
+    json: {
+      ...payload,
+      email: normalizeEmail(payload.email),
+    },
   });
   return storeAccessToken(response);
 }
