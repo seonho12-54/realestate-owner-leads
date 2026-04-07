@@ -8,9 +8,9 @@ export function SellDonePage() {
     <div className="page-stack">
       <section className="hero-panel">
         <span className="eyebrow">접수 완료</span>
-        <h1 className="page-title">매물 접수가 정상적으로 완료되었습니다</h1>
+        <h1 className="page-title">매물 접수가 정상적으로 완료되었습니다.</h1>
         <p className="page-copy">
-          운영자가 내용을 검토한 뒤 공개 여부를 결정합니다.
+          운영팀이 내용을 검토한 뒤 공개 여부를 결정합니다.
           {leadId ? ` 접수 번호는 #${leadId} 입니다.` : ""}
         </p>
         <div className="button-row">

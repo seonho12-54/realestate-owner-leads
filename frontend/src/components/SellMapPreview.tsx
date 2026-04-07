@@ -166,7 +166,7 @@ export function SellMapPreview({
   if (error) {
     return (
       <div className="sell-map-empty">
-        <strong>지도를 불러오지 못했습니다</strong>
+        <strong>지도를 불러오지 못했습니다.</strong>
         <p>{error}</p>
       </div>
     );
@@ -177,7 +177,7 @@ export function SellMapPreview({
       <div className="sell-map-toolbar">
         <div className="sell-map-status">
           <strong>등록 위치 미리보기</strong>
-          <span>내 위치와 선택한 주소를 한 번에 비교하며 등록 위치를 확인할 수 있습니다.</span>
+          <span>내 위치와 선택한 주소를 한 화면에서 비교해 보며 등록 위치를 확인할 수 있습니다.</span>
         </div>
         <div className="button-row">
           <button type="button" className="button button-secondary button-small" onClick={focusCurrentLocation} disabled={!browserCoords}>
@@ -191,7 +191,7 @@ export function SellMapPreview({
       <div ref={containerRef} className="sell-map-canvas" />
       {!browserCoords && !selectedAddress ? (
         <div className="sell-map-empty">
-          <strong>아직 표시할 위치가 없습니다</strong>
+          <strong>아직 표시할 위치가 없습니다.</strong>
           <p>먼저 현재 위치를 확인하고, 아래 주소 검색 결과에서 등록할 주소를 선택해 주세요.</p>
         </div>
       ) : null}

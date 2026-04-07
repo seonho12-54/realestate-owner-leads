@@ -172,9 +172,7 @@ export function KakaoMapPanel({
       const kakao = window.kakao;
       const map = mapRef.current;
       const clusterer = clustererRef.current;
-      const safeListings = listings.filter(
-        (listing) => Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude),
-      );
+      const safeListings = listings.filter((listing) => Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude));
 
       if (clusterer) {
         clusterer.clear();
@@ -216,7 +214,6 @@ export function KakaoMapPanel({
 
       if (selectedListingId) {
         const selectedListing = safeListings.find((listing) => listing.id === selectedListingId);
-
         if (selectedListing) {
           map.panTo(new kakao.maps.LatLng(selectedListing.latitude, selectedListing.longitude));
           return;
@@ -236,7 +233,7 @@ export function KakaoMapPanel({
         <div className="map-fallback">
           <strong>지도를 불러오지 못했습니다.</strong>
           <p>{error}</p>
-          <p>현재는 리스트로만 공개 매물을 볼 수 있습니다.</p>
+          <p>현재는 리스트 기반으로만 공개 매물을 둘러볼 수 있습니다.</p>
         </div>
       </div>
     );

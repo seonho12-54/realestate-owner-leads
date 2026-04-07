@@ -1,89 +1,142 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 
 import { LogoutButton } from "@/components/LogoutButton";
 import { useSession } from "@/context/SessionContext";
 import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 
+type NavItem = {
+  label: string;
+  to: string;
+  badge: string;
+};
+
+function getNavItems(isAdmin: boolean): NavItem[] {
+  if (isAdmin) {
+    return [
+      { label: "Dashboard", to: "/admin/leads", badge: "DB" },
+      { label: "Lead Queue", to: "/admin/leads", badge: "LD" },
+      { label: "Public Map", to: "/", badge: "MP" },
+      { label: "Privacy", to: "/privacy", badge: "PV" },
+    ];
+  }
+
+  return [
+    { label: "Dashboard", to: "/", badge: "DB" },
+    { label: "Lead Intake", to: "/sell", badge: "IN" },
+    { label: "Privacy", to: "/privacy", badge: "PV" },
+    { label: "Admin", to: "/admin/login", badge: "AD" },
+  ];
+}
+
+function isActive(pathname: string, item: NavItem) {
+  if (item.to === "/") {
+    return pathname === "/";
+  }
+
+  return pathname.startsWith(item.to);
+}
+
 export function SiteLayout() {
+  const location = useLocation();
   const { session } = useSession();
   const adminSession = session.kind === "admin" ? session.user : null;
   const userSession = session.kind === "user" ? session.user : null;
+  const navItems = getNavItems(Boolean(adminSession));
 
   return (
-    <div className="site-shell downy-shell">
-      <header className={`shell-header${adminSession ? " admin" : ""}`}>
-        <div className="shell-branding">
-          <Link to={adminSession ? "/admin/leads" : "/"} className="shell-brand-line" aria-label="다우니 홈">
-            <span className="shell-brand-word">다우니</span>
-            <span className="shell-brand-chip">{adminSession ? "운영 콘솔" : "WEB EDITION"}</span>
+    <div className={`stitch-shell${adminSession ? " admin" : ""}`}>
+      <aside className="stitch-sidebar">
+        <div className="stitch-brand-block">
+          <Link to={adminSession ? "/admin/leads" : "/"} className="stitch-brand-mark" aria-label="다우니 홈">
+            <span className="stitch-brand-kicker">REAL ESTATE</span>
+            <strong>INTELLIGENCE</strong>
           </Link>
-          <div className="shell-brand-copy">
-            <span className="shell-brand-caption">
-              {adminSession
-                ? "승인 전환, 메모 관리, 공개 상태 변경까지 한 번에 관리하는 관리자 워크스페이스"
-                : `${SERVICE_REGION_LABEL} 중심 승인형 매물 접수 · 공개 플랫폼`}
-            </span>
-          </div>
+          <p className="stitch-brand-note">{adminSession ? "Architectural Ledger Console" : SERVICE_REGION_LABEL}</p>
         </div>
 
-        <nav className="shell-nav" aria-label="주요 메뉴">
-          {adminSession ? (
-            <>
-              <Link to="/admin/leads" className="shell-nav-link">
-                관리자 콘솔
-              </Link>
-              <Link to="/" className="shell-nav-link">
-                공개 홈
-              </Link>
-              <Link to="/privacy" className="shell-nav-link">
-                개인정보
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link to="/" className="shell-nav-link">
-                홈
-              </Link>
-              <Link to="/sell" className="shell-nav-link">
-                매물 등록
-              </Link>
-              <Link to="/privacy" className="shell-nav-link">
-                개인정보 처리방침
-              </Link>
-            </>
-          )}
+        <nav className="stitch-side-nav" aria-label="주요 메뉴">
+          {navItems.map((item) => (
+            <Link key={item.label} to={item.to} className={`stitch-side-link${isActive(location.pathname, item) ? " active" : ""}`}>
+              <span className="stitch-side-badge">{item.badge}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
         </nav>
 
-        <div className="shell-userbar">
-          {adminSession ? (
-            <>
-              <span className="shell-user-pill">{adminSession.name} 관리자</span>
+        <div className="stitch-side-footer">
+          <Link to={adminSession ? "/admin/leads" : "/sell"} className="stitch-primary-action">
+            <span className="stitch-plus">+</span>
+            {adminSession ? "Review Pipeline" : "Add Lead"}
+          </Link>
+          <div className="stitch-support-link">
+            <span className="stitch-support-icon">?</span>
+            <span>Support</span>
+          </div>
+        </div>
+      </aside>
+
+      <div className="stitch-main">
+        <header className="stitch-topbar">
+          <label className="stitch-topbar-search" aria-label="검색">
+            <span className="stitch-topbar-icon">⌕</span>
+            <input
+              type="text"
+              placeholder={adminSession ? "Search owner, property, or lead ID..." : "Search address, owner, or listing keyword..."}
+              readOnly
+            />
+          </label>
+
+          <div className="stitch-topbar-actions">
+            <button type="button" className="stitch-icon-button" aria-label="알림">
+              •
+            </button>
+            <button type="button" className="stitch-icon-button" aria-label="최근 활동">
+              ↺
+            </button>
+
+            {adminSession ? (
+              <div className="stitch-user-card">
+                <div>
+                  <strong>{adminSession.name}</strong>
+                  <span>Admin Console</span>
+                </div>
+                <div className="stitch-user-avatar">{adminSession.name.slice(0, 1)}</div>
+              </div>
+            ) : userSession ? (
+              <div className="stitch-user-card">
+                <div>
+                  <strong>{userSession.name}</strong>
+                  <span>Member Workspace</span>
+                </div>
+                <div className="stitch-user-avatar">{userSession.name.slice(0, 1)}</div>
+              </div>
+            ) : (
+              <div className="stitch-auth-actions">
+                <Link to="/login" className="button button-secondary button-small">
+                  로그인
+                </Link>
+                <Link to="/signup" className="button button-primary button-small">
+                  회원가입
+                </Link>
+              </div>
+            )}
+
+            {adminSession ? (
               <LogoutButton action="/api/admin/logout" redirectTo="/" label="로그아웃" className="button button-secondary button-small" />
-            </>
-          ) : userSession ? (
-            <>
-              <span className="shell-user-pill">{userSession.name}님</span>
+            ) : userSession ? (
               <LogoutButton action="/api/auth/logout" redirectTo="/" label="로그아웃" className="button button-secondary button-small" />
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="button button-ghost button-small">
-                로그인
-              </Link>
-              <Link to="/signup" className="button button-primary button-small">
-                회원가입
-              </Link>
-              <Link to="/admin/login" className="button button-secondary button-small">
+            ) : (
+              <Link to="/admin/login" className="button button-ghost button-small">
                 관리자
               </Link>
-            </>
-          )}
-        </div>
-      </header>
+            )}
+          </div>
+        </header>
 
-      <main className="page-shell">
-        <Outlet />
-      </main>
+        <main className="stitch-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

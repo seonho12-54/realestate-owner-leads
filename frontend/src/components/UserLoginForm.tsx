@@ -36,7 +36,7 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
       <span className="eyebrow">MEMBER LOGIN</span>
       <h1 className="page-title">회원 로그인</h1>
       <p className="page-copy">
-        상세 페이지 확인, 매물 접수, 접수 결과 확인은 회원 로그인 후 이어집니다. 지도와 공개 리스트는 비회원도 미리 볼 수 있습니다.
+        상세 페이지 확인, 매물 접수, 접수 결과 확인은 회원 로그인 이후 이어집니다. 지도와 공개 리스트는 비회원도 먼저 볼 수 있습니다.
       </p>
 
       <div className="field">

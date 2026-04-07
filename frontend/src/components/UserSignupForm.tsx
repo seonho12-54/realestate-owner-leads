@@ -22,7 +22,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [locationMessage, setLocationMessage] = useState(`회원가입 전 허용 지역(${SERVICE_REGION_LABEL}) 위치 인증을 한 번만 완료해 주세요.`);
+  const [locationMessage, setLocationMessage] = useState(`회원가입 전에 허용 지역(${SERVICE_REGION_LABEL}) 위치 인증을 먼저 마쳐 주세요.`);
   const [isLocationVerified, setIsLocationVerified] = useState(false);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +37,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
     setIsLocationVerified(true);
     setLocationMessage(
       cached.addressName
-        ? `${cached.addressName}에서 인증된 사용자입니다. 저장된 위치 인증을 재사용하므로 다시 확인할 필요가 없습니다.`
+        ? `${cached.addressName}에서 인증된 사용자입니다. 저장된 위치 인증을 그대로 사용하므로 다시 확인할 필요가 없습니다.`
         : "이미 위치 인증을 마친 사용자입니다. 저장된 인증 상태를 그대로 사용합니다.",
     );
   }, []);
@@ -49,7 +49,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
     }
 
     if (!navigator.geolocation) {
-      setLocationMessage("현재 브라우저에서는 위치 서비스를 지원하지 않습니다.");
+      setLocationMessage("현재 브라우저에서 위치 서비스를 지원하지 않습니다.");
       return;
     }
 
@@ -88,7 +88,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           });
 
           setIsLocationVerified(true);
-          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 인증이 완료되었습니다. 이후에는 다시 위치 인증할 필요가 없습니다.`);
+          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 인증이 완료되었습니다. 이후에는 다시 위치 인증을 할 필요가 없습니다.`);
         } catch (locationError) {
           setIsLocationVerified(false);
           setLocationMessage(locationError instanceof Error ? locationError.message : "위치 인증에 실패했습니다.");
@@ -106,7 +106,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
         }
 
         if (geoError.code === geoError.TIMEOUT) {
-          setLocationMessage("위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+          setLocationMessage("위치 확인 시간이 초과되었습니다. 잠시 뒤 다시 시도해 주세요.");
           return;
         }
 
@@ -146,14 +146,14 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
       <span className="eyebrow">JOIN DOWNY</span>
       <h1 className="page-title">회원가입</h1>
       <p className="page-copy">
-        지도와 공개 목록은 비회원도 볼 수 있지만, 상세 페이지와 매물 접수는 회원가입 후 이용할 수 있습니다.
+        지도와 공개 목록은 비회원도 확인할 수 있지만, 상세 열람과 매물 접수는 회원가입 후 사용할 수 있습니다.
       </p>
 
       <section className="signup-verify-panel">
         <div className="section-heading">
           <div>
             <span className="eyebrow">1. 위치 인증</span>
-            <h2 className="section-title">처음 한 번만 위치를 확인합니다</h2>
+            <h2 className="section-title">처음 한 번만 위치를 확인합니다.</h2>
           </div>
           <button type="button" className="button button-secondary" onClick={handleLocationVerification} disabled={isCheckingLocation}>
             {isCheckingLocation ? "확인 중..." : isLocationVerified ? "다시 확인" : "현재 위치 인증"}
@@ -164,7 +164,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           <span className={`inline-note${isLocationVerified ? " success" : ""}`}>
             {isLocationVerified ? "인증된 사용자입니다" : `허용 지역: ${SERVICE_REGION_LABEL}`}
           </span>
-          {isLocationVerified ? <span className="inline-note success">위치 인증은 저장되어 이후에도 재사용됩니다.</span> : null}
+          {isLocationVerified ? <span className="inline-note success">위치 인증은 저장되며, 로그아웃 후에도 유지됩니다.</span> : null}
         </div>
       </section>
 
@@ -202,7 +202,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="영문과 숫자를 포함한 8자 이상"
+          placeholder="영문과 숫자를 포함해 8자 이상"
         />
       </div>
 

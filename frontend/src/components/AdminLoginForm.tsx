@@ -36,7 +36,7 @@ export function AdminLoginForm() {
       <span className="eyebrow">ADMIN ONLY</span>
       <h1 className="page-title">관리자 로그인</h1>
       <p className="page-copy">
-        승인 대기 매물 확인, 공개 상태 전환, 운영 메모 입력은 관리자 계정으로 로그인한 뒤에만 가능합니다.
+        접수 검토, 공개 전환, 메모 기록은 관리자 계정으로 로그인한 뒤에만 사용할 수 있습니다.
       </p>
 
       <div className="field">
@@ -75,7 +75,7 @@ export function AdminLoginForm() {
           공개 홈으로
         </Link>
         <Link href="/login" className="button button-ghost button-small">
-          일반 회원 로그인
+          회원 로그인
         </Link>
       </div>
     </form>

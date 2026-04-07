@@ -132,7 +132,7 @@ export const userSignupSchema = z.object({
     .string()
     .min(8, "비밀번호는 8자 이상이어야 합니다.")
     .max(128)
-    .regex(/[A-Za-z]/, "비밀번호에 영문자를 포함해 주세요.")
+    .regex(/[A-Za-z]/, "비밀번호에 영문을 포함해 주세요.")
     .regex(/[0-9]/, "비밀번호에 숫자를 포함해 주세요."),
 });
 

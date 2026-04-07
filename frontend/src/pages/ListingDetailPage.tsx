@@ -60,7 +60,7 @@ export function ListingDetailPage() {
       <div className="page-stack">
         <section className="hero-panel compact">
           <span className="eyebrow">상세 준비 중</span>
-          <h1 className="page-title page-title-medium">매물 상세를 불러오는 중입니다</h1>
+          <h1 className="page-title page-title-medium">매물 상세를 불러오는 중입니다.</h1>
         </section>
       </div>
     );
@@ -71,7 +71,7 @@ export function ListingDetailPage() {
       <div className="page-stack">
         <section className="hero-panel compact">
           <span className="eyebrow">불러오기 실패</span>
-          <h1 className="page-title page-title-medium">매물 상세를 가져오지 못했습니다</h1>
+          <h1 className="page-title page-title-medium">매물 상세를 가져오지 못했습니다.</h1>
           <p className="page-copy compact-copy">{error ?? "해당 매물을 찾을 수 없습니다."}</p>
         </section>
       </div>
@@ -111,12 +111,12 @@ export function ListingDetailPage() {
           )
         ) : listing.photos.length > 0 ? (
           <div className="empty-panel">
-            <strong>사진 미리보기를 준비하지 못했습니다</strong>
+            <strong>사진 미리보기를 준비하지 못했습니다.</strong>
             <p>S3 설정과 미리보기 URL 생성 여부를 확인한 뒤 다시 시도해 주세요.</p>
           </div>
         ) : (
           <div className="empty-panel">
-            <strong>등록된 사진이 없습니다</strong>
+            <strong>등록된 사진이 없습니다.</strong>
           </div>
         )}
       </section>

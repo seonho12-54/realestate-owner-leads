@@ -52,6 +52,7 @@ export function AdminLeadsPage() {
 
   const publishedCount = useMemo(() => leads.filter((lead) => lead.isPublished).length, [leads]);
   const locationVerifiedCount = useMemo(() => leads.filter((lead) => lead.locationVerified).length, [leads]);
+  const pendingCount = useMemo(() => leads.filter((lead) => !lead.isPublished).length, [leads]);
 
   if (!session.isLoading && session.kind !== "admin") {
     return <Navigate to="/admin/login" replace />;
@@ -60,9 +61,13 @@ export function AdminLeadsPage() {
   if (isLoading) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
-          <span className="eyebrow">관리자 콘솔</span>
-          <h1 className="page-title page-title-medium">운영 데이터를 불러오는 중입니다</h1>
+        <section className="stitch-data-panel">
+          <div className="stitch-panel-header">
+            <div>
+              <span className="stitch-panel-kicker">Admin Dashboard</span>
+              <h2>관리 콘솔을 준비하고 있습니다.</h2>
+            </div>
+          </div>
         </section>
       </div>
     );
@@ -71,65 +76,80 @@ export function AdminLeadsPage() {
   if (error) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
-          <span className="eyebrow">불러오기 실패</span>
-          <h1 className="page-title page-title-medium">관리자 목록을 가져오지 못했습니다</h1>
-          <p className="page-copy compact-copy">{error}</p>
+        <section className="stitch-data-panel">
+          <div className="stitch-panel-header">
+            <div>
+              <span className="stitch-panel-kicker">Load Failed</span>
+              <h2>관리자 목록을 가져오지 못했습니다.</h2>
+            </div>
+            <p>{error}</p>
+          </div>
         </section>
       </div>
     );
   }
 
   return (
-    <div className="page-stack console-shell">
-      <section className="console-hero">
-        <div className="console-hero-copy">
-          <span className="eyebrow">CONTROL ROOM</span>
-          <h1 className="console-hero-title">접수 검토, 공개 승인, 메모 관리까지 한 화면에서</h1>
-          <p className="console-hero-description">
-            {session.user?.name} 관리자 계정으로 로그인되어 있습니다. 접수 상태를 바꾸고, 사진을 확인하고, 공개 여부를 결정하는 모든
-            흐름을 이 화면에서 처리할 수 있습니다.
-          </p>
+    <div className="console-shell">
+      <section className="stitch-data-panel">
+        <div className="stitch-panel-header">
+          <div>
+            <span className="stitch-panel-kicker">Control Room</span>
+            <h2>접수 검토, 공개 전환, 관리자 메모를 한 화면에서 처리합니다.</h2>
+          </div>
           <div className="button-row">
-            <Link to="/" className="button button-secondary">
+            <Link to="/" className="button button-secondary button-small">
               공개 홈 보기
             </Link>
-            <LogoutButton action="/api/admin/logout" redirectTo="/" className="button button-primary" label="관리자 로그아웃" />
+            <LogoutButton action="/api/admin/logout" redirectTo="/" className="button button-primary button-small" label="관리자 로그아웃" />
           </div>
         </div>
       </section>
 
-      <section className="console-overview-grid">
-        <article className="console-overview-card">
-          <span>전체 접수</span>
-          <strong>{leads.length}</strong>
+      <section className="stitch-metrics-grid admin">
+        <article className="stitch-metric-card">
+          <span>TOTAL LEADS</span>
+          <strong>{leads.length.toLocaleString("ko-KR")}</strong>
+          <p>전체 접수 건수</p>
         </article>
-        <article className="console-overview-card">
-          <span>현재 공개</span>
-          <strong>{publishedCount}</strong>
+        <article className="stitch-metric-card emphasis">
+          <span>PUBLISHED</span>
+          <strong>{publishedCount.toLocaleString("ko-KR")}</strong>
+          <p>현재 공개 중인 매물</p>
         </article>
-        <article className="console-overview-card">
-          <span>위치 검증 완료</span>
-          <strong>{locationVerifiedCount}</strong>
+        <article className="stitch-metric-card">
+          <span>PENDING REVIEW</span>
+          <strong>{pendingCount.toLocaleString("ko-KR")}</strong>
+          <p>검토가 남은 접수</p>
+        </article>
+        <article className="stitch-metric-card">
+          <span>LOCATION VERIFIED</span>
+          <strong>{locationVerifiedCount.toLocaleString("ko-KR")}</strong>
+          <p>위치 검증이 끝난 접수</p>
         </article>
       </section>
 
-      <section className="filter-panel console-tab-row">
-        <Link to="/admin/leads" className={`filter-chip link${!statusFilter ? " active" : ""}`}>
-          전체
-        </Link>
-        {leadStatusOptions.map((option) => (
-          <Link
-            key={option.value}
-            to={`/admin/leads?status=${option.value}`}
-            className={`filter-chip link${statusFilter === option.value ? " active" : ""}`}
-          >
-            {option.label}
-          </Link>
-        ))}
-      </section>
+      <section className="stitch-data-panel">
+        <div className="stitch-panel-toolbar">
+          <div className="stitch-toolbar-tabs">
+            <Link to="/admin/leads" className={`stitch-toolbar-tab${!statusFilter ? " active" : ""}`}>
+              전체
+            </Link>
+            {leadStatusOptions.map((option) => (
+              <Link
+                key={option.value}
+                to={`/admin/leads?status=${option.value}`}
+                className={`stitch-toolbar-tab${statusFilter === option.value ? " active" : ""}`}
+              >
+                {option.label}
+              </Link>
+            ))}
+          </div>
+          <p className="stitch-toolbar-note">관리자만 공개 전환과 상태 변경을 할 수 있습니다.</p>
+        </div>
 
-      <AdminLeadManager leads={leads} />
+        <AdminLeadManager leads={leads} />
+      </section>
     </div>
   );
 }
