@@ -11,7 +11,7 @@ function canUseDirectApiFallback() {
     return false;
   }
 
-  return ["3000", "4173", "5173"].includes(window.location.port);
+  return ["3000", "3001", "4173", "5173"].includes(window.location.port);
 }
 
 function buildUrl(path: string, options?: { directApi?: boolean }) {
@@ -48,21 +48,18 @@ export async function apiFetch(path: string, init?: RequestInit & { json?: JsonB
     body = JSON.stringify(init.json);
   }
 
-  const response = await fetch(buildUrl(path), {
+  const requestInit: RequestInit = {
     credentials: "include",
     ...init,
     headers,
     body,
-  });
+  };
 
+  const response = await fetch(buildUrl(path), requestInit);
   const contentType = response.headers.get("content-type") ?? "";
+
   if (response.ok && path.startsWith("/api/") && contentType.includes("text/html") && canUseDirectApiFallback()) {
-    return fetch(buildUrl(path, { directApi: true }), {
-      credentials: "include",
-      ...init,
-      headers,
-      body,
-    });
+    return fetch(buildUrl(path, { directApi: true }), requestInit);
   }
 
   return response;
@@ -70,7 +67,6 @@ export async function apiFetch(path: string, init?: RequestInit & { json?: JsonB
 
 export async function apiRequest<T>(path: string, init?: RequestInit & { json?: JsonBody }): Promise<T> {
   const response = await apiFetch(path, init);
-
   const contentType = response.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
   const data = isJson ? await response.json() : null;
@@ -80,11 +76,12 @@ export async function apiRequest<T>(path: string, init?: RequestInit & { json?: 
       data && typeof data === "object" && "error" in data && typeof data.error === "string"
         ? data.error
         : "요청을 처리하지 못했습니다.";
+
     throw new Error(message);
   }
 
   if (!isJson && path.startsWith("/api/")) {
-    throw new Error("API 응답이 JSON이 아니어서 로그인 상태를 읽지 못했습니다. 프론트 서버만 열려 있거나 /api 프록시가 빠졌는지 확인해 주세요.");
+    throw new Error("API 응답이 JSON이 아닙니다. 프론트 서버만 열려 있거나 /api 프록시가 빠졌는지 확인해 주세요.");
   }
 
   return data as T;

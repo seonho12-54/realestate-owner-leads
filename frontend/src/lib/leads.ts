@@ -81,6 +81,35 @@ export type AdminLeadSummary = {
   photos: LeadPhotoAsset[];
 };
 
+export type MyLeadSummary = {
+  id: number;
+  officeId: number;
+  officeName: string;
+  listingTitle: string;
+  ownerName: string;
+  phone: string;
+  email: string | null;
+  propertyType: string;
+  transactionType: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  postalCode: string | null;
+  region2DepthName: string | null;
+  region3DepthName: string | null;
+  areaM2: number | null;
+  priceKrw: number | null;
+  depositKrw: number | null;
+  monthlyRentKrw: number | null;
+  moveInDate: string | null;
+  contactTime: string | null;
+  description: string | null;
+  status: LeadStatus;
+  isPublished: boolean;
+  createdAt: string;
+  photoCount: number;
+  photos: LeadPhotoAsset[];
+};
+
 export type CreateLeadPayload = {
   officeId: number;
   listingTitle: string;
@@ -117,6 +146,28 @@ export type CreateLeadPayload = {
     fileSize: number;
     displayOrder: number;
   }>;
+};
+
+export type UpdateMyLeadPayload = {
+  officeId: number;
+  listingTitle: string;
+  ownerName: string;
+  phone: string;
+  email: string | null;
+  propertyType: string;
+  transactionType: string;
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  areaM2: number | null;
+  priceKrw: number | null;
+  depositKrw: number | null;
+  monthlyRentKrw: number | null;
+  moveInDate: string;
+  contactTime: string;
+  description: string;
+  browserLatitude: number;
+  browserLongitude: number;
 };
 
 function normalizePhotoAsset(photo: Partial<LeadPhotoAsset> | null | undefined): LeadPhotoAsset | null {
@@ -283,6 +334,64 @@ function normalizeAdminLeadArray(value: unknown): AdminLeadSummary[] {
   return value.map((lead) => normalizeAdminLead(lead)).filter((lead): lead is AdminLeadSummary => Boolean(lead));
 }
 
+function normalizeMyLead(value: unknown): MyLeadSummary | null {
+  const lead = (value ?? {}) as Partial<MyLeadSummary>;
+
+  if (
+    typeof lead.id !== "number" ||
+    typeof lead.officeId !== "number" ||
+    typeof lead.officeName !== "string" ||
+    typeof lead.listingTitle !== "string" ||
+    typeof lead.ownerName !== "string" ||
+    typeof lead.phone !== "string" ||
+    typeof lead.propertyType !== "string" ||
+    typeof lead.transactionType !== "string" ||
+    typeof lead.addressLine1 !== "string" ||
+    typeof lead.status !== "string" ||
+    typeof lead.isPublished !== "boolean" ||
+    typeof lead.createdAt !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: lead.id,
+    officeId: lead.officeId,
+    officeName: lead.officeName,
+    listingTitle: lead.listingTitle,
+    ownerName: lead.ownerName,
+    phone: lead.phone,
+    email: typeof lead.email === "string" ? lead.email : null,
+    propertyType: lead.propertyType,
+    transactionType: lead.transactionType,
+    addressLine1: lead.addressLine1,
+    addressLine2: typeof lead.addressLine2 === "string" ? lead.addressLine2 : null,
+    postalCode: typeof lead.postalCode === "string" ? lead.postalCode : null,
+    region2DepthName: typeof lead.region2DepthName === "string" ? lead.region2DepthName : null,
+    region3DepthName: typeof lead.region3DepthName === "string" ? lead.region3DepthName : null,
+    areaM2: typeof lead.areaM2 === "number" ? lead.areaM2 : null,
+    priceKrw: typeof lead.priceKrw === "number" ? lead.priceKrw : null,
+    depositKrw: typeof lead.depositKrw === "number" ? lead.depositKrw : null,
+    monthlyRentKrw: typeof lead.monthlyRentKrw === "number" ? lead.monthlyRentKrw : null,
+    moveInDate: typeof lead.moveInDate === "string" ? lead.moveInDate : null,
+    contactTime: typeof lead.contactTime === "string" ? lead.contactTime : null,
+    description: typeof lead.description === "string" ? lead.description : null,
+    status: lead.status as LeadStatus,
+    isPublished: lead.isPublished,
+    createdAt: lead.createdAt,
+    photoCount: typeof lead.photoCount === "number" ? lead.photoCount : 0,
+    photos: normalizePhotoArray(lead.photos),
+  };
+}
+
+function normalizeMyLeadArray(value: unknown): MyLeadSummary[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((lead) => normalizeMyLead(lead)).filter((lead): lead is MyLeadSummary => Boolean(lead));
+}
+
 export async function listPublishedListings() {
   const response = await apiRequest<unknown>("/api/public/listings");
   return normalizePublicListingArray(response);
@@ -296,6 +405,18 @@ export async function getPublishedListingDetail(listingId: number) {
 export async function createLead(payload: CreateLeadPayload) {
   return apiRequest<{ id: number }>("/api/leads", {
     method: "POST",
+    json: payload,
+  });
+}
+
+export async function listMyLeads() {
+  const response = await apiRequest<unknown>("/api/me/leads");
+  return normalizeMyLeadArray(response);
+}
+
+export async function updateMyLead(leadId: number, payload: UpdateMyLeadPayload) {
+  return apiRequest<{ ok: boolean }>(`/api/me/leads/${leadId}`, {
+    method: "PATCH",
     json: payload,
   });
 }

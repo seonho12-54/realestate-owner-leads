@@ -6,19 +6,16 @@ export function SellDonePage() {
 
   return (
     <div className="page-stack">
-      <section className="hero-panel">
+      <section className="success-panel">
         <span className="eyebrow">접수 완료</span>
-        <h1 className="page-title">매물 접수가 정상적으로 완료되었습니다.</h1>
-        <p className="page-copy">
-          운영팀이 내용을 검토한 뒤 공개 여부를 결정합니다.
+        <h1 className="page-title page-title-medium">매물 접수가 완료되었습니다.</h1>
+        <p className="page-copy compact-copy">
+          관리자가 접수 내용을 확인한 뒤 연락드릴 예정입니다.
           {leadId ? ` 접수 번호는 #${leadId} 입니다.` : ""}
         </p>
         <div className="button-row">
           <Link to="/" className="button button-primary">
-            공개 홈으로
-          </Link>
-          <Link to="/sell" className="button button-secondary">
-            다른 매물 접수
+            홈으로 이동
           </Link>
         </div>
       </section>

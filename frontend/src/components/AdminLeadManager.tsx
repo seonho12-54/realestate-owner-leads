@@ -1,11 +1,9 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 
 import { Link } from "@/components/RouterLink";
-import { apiFetch } from "@/lib/api";
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel } from "@/lib/format";
 import type { AdminLeadSummary } from "@/lib/leads";
+import { updateLeadAdminFields } from "@/lib/leads";
 import type { LeadStatus } from "@/lib/validation";
 import { leadStatusOptions } from "@/lib/validation";
 
@@ -13,211 +11,183 @@ function getStatusLabel(status: LeadStatus) {
   return leadStatusOptions.find((option) => option.value === status)?.label ?? status;
 }
 
-function LeadDetailPanel({ lead }: { lead: AdminLeadSummary }) {
-  const [status, setStatus] = useState<LeadStatus>(lead.status);
-  const [isPublished, setIsPublished] = useState(lead.isPublished);
-  const [adminMemo, setAdminMemo] = useState(lead.adminMemo ?? "");
+export function AdminLeadManager({ leads }: { leads: AdminLeadSummary[] }) {
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(leads[0]?.id ?? null);
+  const [status, setStatus] = useState<LeadStatus>(leads[0]?.status ?? "new");
+  const [isPublished, setIsPublished] = useState(leads[0]?.isPublished ?? false);
+  const [adminMemo, setAdminMemo] = useState(leads[0]?.adminMemo ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const visiblePhotos = lead.photos.filter((photo) => Boolean(photo.viewUrl));
-  const coverPhoto = visiblePhotos[0];
+
+  const selectedLead = useMemo(() => leads.find((lead) => lead.id === selectedLeadId) ?? leads[0] ?? null, [leads, selectedLeadId]);
 
   useEffect(() => {
-    setStatus(lead.status);
-    setIsPublished(lead.isPublished);
-    setAdminMemo(lead.adminMemo ?? "");
+    if (!selectedLead) {
+      return;
+    }
+
+    setStatus(selectedLead.status);
+    setIsPublished(selectedLead.isPublished);
+    setAdminMemo(selectedLead.adminMemo ?? "");
     setMessage(null);
-  }, [lead]);
+  }, [selectedLead]);
 
   async function handleSave() {
-    setMessage(null);
+    if (!selectedLead) {
+      return;
+    }
 
     try {
       setIsSaving(true);
-      const response = await apiFetch(`/api/admin/leads/${lead.id}`, {
-        method: "PATCH",
-        json: {
-          status,
-          isPublished,
-          adminMemo,
-        },
+      setMessage(null);
+
+      await updateLeadAdminFields(selectedLead.id, {
+        status,
+        isPublished,
+        adminMemo,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "변경 사항을 저장하지 못했습니다.");
-      }
-
-      setMessage("변경 사항을 저장했습니다.");
+      setMessage("변경 사항이 저장되었습니다. 최신 상태를 다시 반영합니다.");
       window.location.reload();
-    } catch (saveError) {
-      setMessage(saveError instanceof Error ? saveError.message : "변경 사항 저장에 실패했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "저장에 실패했습니다.");
     } finally {
       setIsSaving(false);
     }
   }
 
-  return (
-    <aside className="stitch-detail-panel">
-      <div className="stitch-panel-header compact">
-        <div>
-          <span className="stitch-panel-kicker">Selected Lead</span>
-          <h2>{lead.listingTitle}</h2>
-        </div>
-        <span className={`stitch-status-chip ${lead.transactionType}`}>{formatTradeLabel(lead)}</span>
-      </div>
-
-      {coverPhoto?.viewUrl ? (
-        <img src={coverPhoto.viewUrl} alt={lead.listingTitle} className="stitch-selected-image" />
-      ) : (
-        <div className="stitch-image-fallback">{lead.photoCount > 0 ? "S3 PREVIEW" : "NO PHOTO"}</div>
-      )}
-
-      <div className="stitch-detail-facts">
-        <span>{getPropertyTypeLabel(lead.propertyType)}</span>
-        <span>{formatArea(lead.areaM2)}</span>
-        <span>{lead.region2DepthName ?? "허용 지역"} {lead.region3DepthName ?? ""}</span>
-      </div>
-
-      <div className="stitch-detail-meta">
-        <div>
-          <strong>접수자</strong>
-          <span>{lead.ownerName} / {lead.phone}</span>
-        </div>
-        <div>
-          <strong>회원 계정</strong>
-          <span>{lead.userEmail ?? "비회원 접수"}</span>
-        </div>
-        <div>
-          <strong>현재 상태</strong>
-          <span>{getStatusLabel(lead.status)}</span>
-        </div>
-        <div>
-          <strong>접수 시점</strong>
-          <span>{formatDateTime(lead.createdAt)}</span>
-        </div>
-      </div>
-
-      <label className="field">
-        <span>접수 상태</span>
-        <select className="input" value={status} onChange={(event) => setStatus(event.target.value as LeadStatus)}>
-          {leadStatusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="toggle-field">
-        <span>공개 게시</span>
-        <input type="checkbox" checked={isPublished} onChange={(event) => setIsPublished(event.target.checked)} />
-      </label>
-
-      <label className="field">
-        <span>관리자 메모</span>
-        <textarea
-          className="textarea"
-          value={adminMemo}
-          onChange={(event) => setAdminMemo(event.target.value)}
-          placeholder="보완 요청, 공개 여부 판단 근거, 후속 메모를 기록하세요."
-        />
-      </label>
-
-      <div className="stitch-detail-footer">
-        <div className="stitch-detail-notes">
-          <span>위치 검증 {lead.locationVerified ? "완료" : "미완료"}</span>
-          <span>사진 수 {lead.photoCount}장</span>
-          <span>UTM: {[lead.utmSource, lead.utmMedium, lead.utmCampaign].filter(Boolean).join(" / ") || "-"}</span>
-        </div>
-        <div className="button-row">
-          {lead.isPublished ? (
-            <Link href={`/listings/${lead.id}`} className="button button-secondary button-small">
-              공개 상세 보기
-            </Link>
-          ) : null}
-          <button type="button" className="button button-primary button-small" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "저장 중..." : "변경 저장"}
-          </button>
-        </div>
-        {message ? <div className="muted-row">{message}</div> : null}
-      </div>
-    </aside>
-  );
-}
-
-export function AdminLeadManager({ leads }: { leads: AdminLeadSummary[] }) {
-  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(leads[0]?.id ?? null);
-
-  useEffect(() => {
-    if (leads.length === 0) {
-      setSelectedLeadId(null);
-      return;
-    }
-
-    if (!leads.some((lead) => lead.id === selectedLeadId)) {
-      setSelectedLeadId(leads[0]?.id ?? null);
-    }
-  }, [leads, selectedLeadId]);
-
-  const selectedLead = useMemo(() => leads.find((lead) => lead.id === selectedLeadId) ?? leads[0] ?? null, [leads, selectedLeadId]);
-
   if (leads.length === 0) {
     return (
-      <div className="stitch-empty-state">
+      <div className="empty-panel">
         <strong>접수된 매물이 없습니다.</strong>
-        <p>새 접수가 들어오면 여기에서 검토 상태와 공개 여부를 관리하게 됩니다.</p>
+        <p>새 접수가 들어오면 이 화면에서 상태 변경과 공개 여부를 관리할 수 있습니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="stitch-admin-grid">
-      <section className="stitch-data-panel">
-        <div className="stitch-panel-header compact">
-          <div>
-            <span className="stitch-panel-kicker">Lead Ledger</span>
-            <h2>접수 목록</h2>
-          </div>
-          <p>{leads.length.toLocaleString("ko-KR")}건의 접수</p>
-        </div>
-
-        <div className="stitch-table-shell admin">
-          <div className="stitch-table-head admin">
-            <span>Owner</span>
-            <span>Property Address</span>
-            <span>Estimated Value</span>
-            <span>Status</span>
-            <span>Date Added</span>
-          </div>
-
+    <div className="admin-grid">
+      <section className="page-panel admin-list-panel">
+        <div className="admin-list">
           {leads.map((lead) => (
             <button
               key={lead.id}
               type="button"
-              className={`stitch-table-row admin${selectedLeadId === lead.id ? " active" : ""}`}
+              className={`admin-lead-card${selectedLeadId === lead.id ? " active" : ""}`}
               onClick={() => setSelectedLeadId(lead.id)}
             >
-              <span className="stitch-lead-cell stitch-lead-title">
-                <span className="stitch-avatar">{lead.ownerName.slice(0, 2).toUpperCase()}</span>
-                <span>
-                  <strong>{lead.ownerName}</strong>
-                  <small>{lead.userName ?? "비회원 접수"}</small>
-                </span>
-              </span>
-              <span className="stitch-lead-address">{lead.addressLine1}</span>
-              <span className="stitch-lead-value">{formatTradeLabel(lead)}</span>
-              <span className={`stitch-status-chip ${lead.isPublished ? lead.transactionType : "draft"}`}>
-                {lead.isPublished ? getStatusLabel(lead.status) : "검토 중"}
-              </span>
-              <span className="stitch-lead-date">{formatDateTime(lead.createdAt)}</span>
+              <div className="admin-lead-card-top">
+                <div>
+                  <strong>{lead.listingTitle}</strong>
+                  <span>{lead.ownerName}</span>
+                </div>
+                <span className={`status-badge transaction-${lead.transactionType}`}>{getStatusLabel(lead.status)}</span>
+              </div>
+
+              <div className="admin-lead-card-meta">
+                <span>{lead.region3DepthName || lead.addressLine1}</span>
+                <span>{formatTradeLabel(lead)}</span>
+                <span>{formatDateTime(lead.createdAt)}</span>
+              </div>
             </button>
           ))}
         </div>
       </section>
 
-      {selectedLead ? <LeadDetailPanel lead={selectedLead} /> : null}
+      {selectedLead ? (
+        <section className="page-panel admin-detail-panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">관리자 검토</span>
+              <h2 className="section-title">{selectedLead.listingTitle}</h2>
+            </div>
+
+            {selectedLead.isPublished ? (
+              <Link href={`/listings/${selectedLead.id}`} className="button button-secondary button-small">
+                공개 상세 보기
+              </Link>
+            ) : null}
+          </div>
+
+          <div className="detail-info-grid">
+            <div>
+              <span>집주인</span>
+              <strong>{selectedLead.ownerName}</strong>
+            </div>
+            <div>
+              <span>연락처</span>
+              <strong>{selectedLead.phone}</strong>
+            </div>
+            <div>
+              <span>회원 계정</span>
+              <strong>{selectedLead.userEmail ?? "비회원 접수"}</strong>
+            </div>
+            <div>
+              <span>매물 유형</span>
+              <strong>{getPropertyTypeLabel(selectedLead.propertyType)}</strong>
+            </div>
+            <div>
+              <span>거래 정보</span>
+              <strong>{formatTradeLabel(selectedLead)}</strong>
+            </div>
+            <div>
+              <span>면적</span>
+              <strong>{formatArea(selectedLead.areaM2)}</strong>
+            </div>
+            <div>
+              <span>주소</span>
+              <strong>{selectedLead.addressLine1}</strong>
+            </div>
+            <div>
+              <span>사진</span>
+              <strong>{selectedLead.photoCount}장</strong>
+            </div>
+          </div>
+
+          <div className="form-grid two-column">
+            <label className="field">
+              <span>상태</span>
+              <select className="input" value={status} onChange={(event) => setStatus(event.target.value as LeadStatus)}>
+                {leadStatusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="check-item check-item-inline">
+              <input type="checkbox" checked={isPublished} onChange={(event) => setIsPublished(event.target.checked)} />
+              <span>공개 게시</span>
+            </label>
+          </div>
+
+          <label className="field">
+            <span>관리자 메모</span>
+            <textarea
+              className="textarea"
+              value={adminMemo}
+              onChange={(event) => setAdminMemo(event.target.value)}
+              placeholder="보완 요청, 공개 보류 사유, 연락 메모 등을 적어 주세요."
+            />
+          </label>
+
+          <div className="inline-note-list">
+            <span className={`inline-note${selectedLead.locationVerified ? " success" : ""}`}>
+              {selectedLead.locationVerified ? "위치 인증 완료" : "위치 인증 미완료"}
+            </span>
+            <span className="inline-note">{selectedLead.officeName}</span>
+          </div>
+
+          {message ? <div className="success-banner">{message}</div> : null}
+
+          <div className="button-row">
+            <button type="button" className="button button-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "저장 중..." : "변경 저장"}
+            </button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -26,6 +26,7 @@ export function ListingDetailPage() {
         if (!isMounted) {
           return;
         }
+
         setListing(response);
         setError(null);
       })
@@ -33,6 +34,7 @@ export function ListingDetailPage() {
         if (!isMounted) {
           return;
         }
+
         setListing(null);
         setError(loadError instanceof Error ? loadError.message : "매물 상세를 불러오지 못했습니다.");
       })
@@ -58,9 +60,9 @@ export function ListingDetailPage() {
   if (isLoading) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact">
-          <span className="eyebrow">상세 준비 중</span>
-          <h1 className="page-title page-title-medium">매물 상세를 불러오는 중입니다.</h1>
+        <section className="page-panel">
+          <span className="eyebrow">매물 상세</span>
+          <h1 className="page-title page-title-medium">매물 정보를 불러오는 중입니다.</h1>
         </section>
       </div>
     );
@@ -69,7 +71,7 @@ export function ListingDetailPage() {
   if (!listing || error) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact">
+        <section className="page-panel">
           <span className="eyebrow">불러오기 실패</span>
           <h1 className="page-title page-title-medium">매물 상세를 가져오지 못했습니다.</h1>
           <p className="page-copy compact-copy">{error ?? "해당 매물을 찾을 수 없습니다."}</p>
@@ -83,36 +85,25 @@ export function ListingDetailPage() {
   return (
     <div className="page-stack">
       <section className="detail-hero">
-        <div className="detail-copy">
+        <div>
           <span className="eyebrow">{getTransactionTypeLabel(listing.transactionType)}</span>
-          <h1 className="page-title">{listing.listingTitle}</h1>
-          <p className="page-copy">{listing.addressLine1}</p>
-          <div className="detail-highlight-row">
-            <strong>{formatTradeLabel(listing)}</strong>
-            <span>{formatArea(listing.areaM2)}</span>
-            <span>{getPropertyTypeLabel(listing.propertyType)}</span>
-            <span>{formatDateTime(listing.createdAt)}</span>
-          </div>
+          <h1 className="page-title page-title-medium">{listing.listingTitle}</h1>
+          <p className="page-copy compact-copy">{listing.addressLine1}</p>
         </div>
-        <div className="button-row">
-          <Link to="/" className="button button-secondary">
-            목록으로
-          </Link>
-          <Link to="/sell" className="button button-primary">
-            매물 등록하기
-          </Link>
+        <div className="detail-highlight-row">
+          <span>{formatTradeLabel(listing)}</span>
+          <span>{formatArea(listing.areaM2)}</span>
+          <span>{getPropertyTypeLabel(listing.propertyType)}</span>
+          <span>{formatDateTime(listing.createdAt)}</span>
         </div>
       </section>
 
-      <section className="gallery-grid">
+      <section className="page-panel">
         {visiblePhotos.length > 0 ? (
-          visiblePhotos.map((photo) =>
-            photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="detail-photo" /> : null,
-          )
-        ) : listing.photos.length > 0 ? (
-          <div className="empty-panel">
-            <strong>사진 미리보기를 준비하지 못했습니다.</strong>
-            <p>S3 설정과 미리보기 URL 생성 여부를 확인한 뒤 다시 시도해 주세요.</p>
+          <div className="gallery-grid">
+            {visiblePhotos.map((photo) =>
+              photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="detail-photo" /> : null,
+            )}
           </div>
         ) : (
           <div className="empty-panel">
@@ -147,26 +138,26 @@ export function ListingDetailPage() {
             </div>
             <div>
               <span>지역</span>
-              <strong>{listing.region3DepthName || "허용 지역"}</strong>
+              <strong>{listing.region3DepthName || "허용 지역 인근"}</strong>
             </div>
           </div>
         </div>
 
         <div className="detail-card">
-          <h2 className="section-title">설명</h2>
+          <h2 className="section-title">상세 설명</h2>
           <p className="page-copy">{listing.description || "등록된 상세 설명이 없습니다."}</p>
         </div>
 
         <div className="detail-card">
-          <h2 className="section-title">연락 정보</h2>
+          <h2 className="section-title">중개사무소</h2>
           <div className="detail-info-grid">
             <div>
-              <span>중개사무소</span>
+              <span>상호명</span>
               <strong>{listing.officeName}</strong>
             </div>
             <div>
-              <span>전화</span>
-              <strong>{listing.officePhone || "준비 중"}</strong>
+              <span>연락처</span>
+              <strong>{listing.officePhone || "-"}</strong>
             </div>
             <div>
               <span>사무소 주소</span>
@@ -175,6 +166,15 @@ export function ListingDetailPage() {
           </div>
         </div>
       </section>
+
+      <div className="button-row">
+        <Link to="/" className="button button-secondary">
+          홈으로
+        </Link>
+        <Link to="/sell" className="button button-primary">
+          매물 접수
+        </Link>
+      </div>
     </div>
   );
 }

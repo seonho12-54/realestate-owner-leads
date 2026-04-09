@@ -8,7 +8,7 @@ export const propertyTypeOptions = [
   { value: "apartment", label: "아파트" },
   { value: "officetel", label: "오피스텔" },
   { value: "villa", label: "빌라/연립" },
-  { value: "house", label: "단독/다가구" },
+  { value: "house", label: "주택/단독" },
   { value: "commercial", label: "상가/사무실" },
   { value: "land", label: "토지" },
   { value: "other", label: "기타" },
@@ -47,7 +47,7 @@ function optionalPositiveNumber() {
       return Number.isFinite(parsed) ? parsed : Number.NaN;
     })
     .nullable()
-    .refine((value) => value === null || (Number.isFinite(value) && value >= 0), "숫자 형식이 올바르지 않습니다.")
+    .refine((value) => value === null || (Number.isFinite(value) && value >= 0), "숫자 형식을 확인해 주세요.")
     .transform((value) => value ?? null);
 }
 
@@ -56,10 +56,7 @@ export const uploadPresignSchema = z.object({
   contentType: z
     .string()
     .min(1)
-    .refine(
-      (value) => ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].includes(value),
-      "지원하지 않는 이미지 형식입니다.",
-    ),
+    .refine((value) => ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].includes(value), "지원하지 않는 이미지 형식입니다."),
   fileSize: z.number().int().positive(),
 });
 
@@ -84,13 +81,8 @@ export const leadCreateSchema = z.object({
   officeId: z.number().int().positive(),
   listingTitle: z.string().trim().min(4, "매물 제목을 입력해 주세요.").max(160),
   ownerName: z.string().trim().min(2, "이름을 입력해 주세요.").max(100),
-  phone: z
-    .string()
-    .trim()
-    .min(9, "연락처를 입력해 주세요.")
-    .max(30)
-    .regex(/^[0-9+\-() ]+$/, "연락처 형식이 올바르지 않습니다."),
-  email: z.string().trim().max(191).email("이메일 형식이 올바르지 않습니다.").or(z.literal("")).transform((value) => value || null),
+  phone: z.string().trim().min(9, "연락처를 입력해 주세요.").max(30).regex(/^[0-9+\-() ]+$/, "연락처 형식을 확인해 주세요."),
+  email: z.string().trim().max(191).email("이메일 형식을 확인해 주세요.").or(z.literal("")).transform((value) => value || null),
   propertyType: z.enum(propertyTypeValues),
   transactionType: z.enum(transactionTypeValues),
   addressLine1: z.string().trim().min(5, "주소를 입력해 주세요.").max(255),
@@ -117,6 +109,28 @@ export const leadCreateSchema = z.object({
   browserLatitude: z.number().min(33).max(39),
   browserLongitude: z.number().min(124).max(132),
   photos: z.array(leadPhotoSchema).max(20).default([]),
+});
+
+export const leadUpdateSchema = z.object({
+  officeId: z.number().int().positive(),
+  listingTitle: z.string().trim().min(4, "매물 제목을 입력해 주세요.").max(160),
+  ownerName: z.string().trim().min(2, "이름을 입력해 주세요.").max(100),
+  phone: z.string().trim().min(9, "연락처를 입력해 주세요.").max(30).regex(/^[0-9+\-() ]+$/, "연락처 형식을 확인해 주세요."),
+  email: z.string().trim().max(191).email("이메일 형식을 확인해 주세요.").or(z.literal("")).transform((value) => value || null),
+  propertyType: z.enum(propertyTypeValues),
+  transactionType: z.enum(transactionTypeValues),
+  addressLine1: z.string().trim().min(5, "주소를 입력해 주세요.").max(255),
+  addressLine2: z.string().trim().max(255).optional().default(""),
+  postalCode: z.string().trim().max(20).optional().default(""),
+  areaM2: optionalPositiveNumber(),
+  priceKrw: optionalPositiveNumber(),
+  depositKrw: optionalPositiveNumber(),
+  monthlyRentKrw: optionalPositiveNumber(),
+  moveInDate: z.string().trim().max(50).optional().default(""),
+  contactTime: z.string().trim().max(100).optional().default(""),
+  description: z.string().trim().max(3000).optional().default(""),
+  browserLatitude: z.number().min(33).max(39),
+  browserLongitude: z.number().min(124).max(132),
 });
 
 export const adminLoginSchema = z.object({
@@ -151,6 +165,7 @@ export type PropertyType = (typeof propertyTypeValues)[number];
 export type TransactionType = (typeof transactionTypeValues)[number];
 export type LeadStatus = (typeof leadStatusValues)[number];
 export type LeadCreateInput = z.infer<typeof leadCreateSchema>;
+export type LeadUpdateInput = z.infer<typeof leadUpdateSchema>;
 export type LeadPhotoInput = z.infer<typeof leadPhotoSchema>;
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type UserSignupInput = z.infer<typeof userSignupSchema>;

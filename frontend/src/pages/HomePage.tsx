@@ -19,6 +19,7 @@ export function HomePage() {
         if (!isMounted) {
           return;
         }
+
         setListings(response);
         setError(null);
       })
@@ -26,6 +27,7 @@ export function HomePage() {
         if (!isMounted) {
           return;
         }
+
         setListings([]);
         setError(loadError instanceof Error ? loadError.message : "매물 목록을 불러오지 못했습니다.");
       })
@@ -40,32 +42,24 @@ export function HomePage() {
     };
   }, []);
 
-  if (session.isLoading || (isLoading && listings.length === 0)) {
+  if (session.isLoading || (isLoading && listings.length === 0 && !error)) {
     return (
       <div className="page-stack">
-        <section className="stitch-data-panel">
-          <div className="stitch-panel-header">
-            <div>
-              <span className="stitch-panel-kicker">Loading</span>
-              <h2>공개 매물 인텔리전스를 준비하고 있습니다.</h2>
-            </div>
-          </div>
+        <section className="page-panel">
+          <span className="eyebrow">LOADING</span>
+          <h1 className="page-title page-title-medium">공개 매물 화면을 준비하고 있습니다.</h1>
         </section>
       </div>
     );
   }
 
-  if (error) {
+  if (error && listings.length === 0) {
     return (
       <div className="page-stack">
-        <section className="stitch-data-panel">
-          <div className="stitch-panel-header">
-            <div>
-              <span className="stitch-panel-kicker">Load Failed</span>
-              <h2>매물 목록을 가져오지 못했습니다.</h2>
-            </div>
-            <p>{error}</p>
-          </div>
+        <section className="page-panel">
+          <span className="eyebrow">불러오기 실패</span>
+          <h1 className="page-title page-title-medium">매물 목록을 가져오지 못했습니다.</h1>
+          <p className="page-copy compact-copy">{error}</p>
         </section>
       </div>
     );

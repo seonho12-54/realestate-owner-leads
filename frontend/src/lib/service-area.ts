@@ -41,11 +41,7 @@ export const SERVICE_MAP_CENTER = {
 
 export const SERVICE_MAP_POINTS = SERVICE_AREAS.map((area) => area.center);
 
-export function isAllowedServiceArea(region1?: string | null, region2?: string | null, region3?: string | null): boolean {
-  return SERVICE_AREAS.some((area) => area.region1 === region1 && area.region2 === region2 && area.region3 === region3);
-}
-
-export function createCompactLocation(region2?: string | null, region3?: string | null): string {
+export function createCompactLocation(region2?: string | null, region3?: string | null) {
   return [region2, region3].filter(Boolean).join(" ");
 }
 

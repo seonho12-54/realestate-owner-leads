@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { SellLeadForm } from "@/components/SellLeadForm";
 import { useSession } from "@/context/SessionContext";
+import { readLocationAccessCache } from "@/lib/location-access";
 import { listActiveOffices, type OfficeOption } from "@/lib/offices";
 
 export function SellPage() {
@@ -10,6 +11,20 @@ export function SellPage() {
   const [offices, setOffices] = useState<OfficeOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [verifiedLocation, setVerifiedLocation] = useState(readLocationAccessCache());
+
+  useEffect(() => {
+    const syncVerification = () => {
+      setVerifiedLocation(readLocationAccessCache());
+    };
+
+    syncVerification();
+    window.addEventListener("focus", syncVerification);
+
+    return () => {
+      window.removeEventListener("focus", syncVerification);
+    };
+  }, []);
 
   useEffect(() => {
     if (!session.authenticated) {
@@ -25,6 +40,7 @@ export function SellPage() {
         if (!isMounted) {
           return;
         }
+
         setOffices(response);
         setError(null);
       })
@@ -32,6 +48,7 @@ export function SellPage() {
         if (!isMounted) {
           return;
         }
+
         setError(loadError instanceof Error ? loadError.message : "중개사무소 목록을 불러오지 못했습니다.");
       })
       .finally(() => {
@@ -45,12 +62,23 @@ export function SellPage() {
     };
   }, [session.authenticated]);
 
+  const browserCoords = useMemo(
+    () =>
+      verifiedLocation
+        ? {
+            latitude: verifiedLocation.latitude,
+            longitude: verifiedLocation.longitude,
+          }
+        : null,
+    [verifiedLocation],
+  );
+
   if (session.isLoading) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
-          <span className="eyebrow">매물 접수</span>
-          <h1 className="page-title page-title-medium">등록 화면을 준비하고 있습니다.</h1>
+        <section className="page-panel">
+          <span className="eyebrow">LOADING</span>
+          <h1 className="page-title page-title-medium">매물 접수 화면을 준비하고 있습니다.</h1>
         </section>
       </div>
     );
@@ -59,34 +87,37 @@ export function SellPage() {
   if (!session.authenticated) {
     return (
       <div className="page-stack">
-        <section className="sell-stage sell-auth-gate">
-          <div className="sell-stage-copy">
-            <span className="eyebrow">접수 전용 공간</span>
-            <h1 className="sell-stage-title">집주인 매물 접수는 로그인 뒤에 이어집니다.</h1>
-            <p className="sell-stage-description">
-              공개 홈에서는 분위기와 공개 매물 흐름만 확인하고, 실제 접수는 회원 또는 관리자 계정으로 로그인한 뒤 시작합니다.
-            </p>
-            <div className="button-row">
-              <Link to="/login?next=/sell" className="button button-primary">
-                회원 로그인
-              </Link>
-              <Link to="/signup?next=/sell" className="button button-secondary">
-                회원가입
-              </Link>
-              <Link to="/admin/login" className="button button-ghost">
-                관리자 로그인
-              </Link>
-            </div>
+        <section className="page-panel centered-panel">
+          <span className="eyebrow">회원 전용</span>
+          <h1 className="page-title page-title-medium">매물 접수는 로그인 후 이용할 수 있습니다.</h1>
+          <p className="page-copy compact-copy">회원가입 후 마이페이지에서 위치 인증을 한 번만 완료하면 이후에는 접수와 수정 기능을 계속 사용할 수 있습니다.</p>
+          <div className="button-row">
+            <Link to="/login?next=/sell" className="button button-primary">
+              로그인
+            </Link>
+            <Link to="/signup?next=/me" className="button button-secondary">
+              회원가입
+            </Link>
           </div>
-          <div className="sell-stage-panels">
-            <article className="sell-stage-card">
-              <strong>1. 위치 인증은 한 번만</strong>
-              <p>회원가입 또는 첫 접수 과정에서 인증하면 이후에는 저장된 위치 상태를 그대로 사용합니다.</p>
-            </article>
-            <article className="sell-stage-card accent">
-              <strong>2. 접수 후 관리자 승인</strong>
-              <p>등록 즉시 공개되지 않고, 검토를 마친 뒤 지도와 공개 목록에 노출됩니다.</p>
-            </article>
+        </section>
+      </div>
+    );
+  }
+
+  if (session.kind !== "admin" && !verifiedLocation) {
+    return (
+      <div className="page-stack">
+        <section className="page-panel centered-panel">
+          <span className="eyebrow">위치 인증 필요</span>
+          <h1 className="page-title page-title-medium">마이페이지에서 위치 인증을 먼저 완료해 주세요.</h1>
+          <p className="page-copy compact-copy">위치 인증은 한 번만 완료하면 되고, 저장된 인증 상태는 이후 접속에서도 그대로 유지됩니다.</p>
+          <div className="button-row">
+            <Link to="/me" className="button button-primary">
+              마이페이지로 이동
+            </Link>
+            <Link to="/" className="button button-secondary">
+              홈으로 이동
+            </Link>
           </div>
         </section>
       </div>
@@ -96,9 +127,9 @@ export function SellPage() {
   if (isLoading) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
-          <span className="eyebrow">매물 접수</span>
-          <h1 className="page-title page-title-medium">등록에 필요한 사무소 정보를 불러오는 중입니다.</h1>
+        <section className="page-panel">
+          <span className="eyebrow">LOADING</span>
+          <h1 className="page-title page-title-medium">접수에 필요한 중개사무소 정보를 불러오고 있습니다.</h1>
         </section>
       </div>
     );
@@ -107,9 +138,9 @@ export function SellPage() {
   if (error) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
+        <section className="page-panel">
           <span className="eyebrow">불러오기 실패</span>
-          <h1 className="page-title page-title-medium">중개사무소 정보를 가져오지 못했습니다.</h1>
+          <h1 className="page-title page-title-medium">중개사무소 정보를 불러오지 못했습니다.</h1>
           <p className="page-copy compact-copy">{error}</p>
         </section>
       </div>
@@ -118,24 +149,9 @@ export function SellPage() {
 
   return (
     <div className="page-stack">
-      <section className="sell-stage">
-        <div className="sell-stage-copy">
-          <span className="eyebrow">SELLER DESK</span>
-          <h1 className="sell-stage-title">접수는 간단하게, 공개는 승인형으로.</h1>
-          <p className="sell-stage-description">
-            주소 검색, 위치 확인, 사진 업로드, 개인정보 동의를 하나의 흐름으로 묶은 접수 화면입니다. 관리자 검토를 마친 매물만 공개 홈과 지도에 노출됩니다.
-          </p>
-        </div>
-        <div className="sell-stage-panels">
-          <article className="sell-stage-card">
-            <strong>브라우저 압축 업로드</strong>
-            <p>S3 전송 전 이미지 용량을 브라우저에서 먼저 줄여 저장 비용과 트래픽 부담을 낮춥니다.</p>
-          </article>
-          <article className="sell-stage-card accent">
-            <strong>위치 + 주소 이중 검증</strong>
-            <p>현재 위치와 검색한 주소가 허용 지역과 맞는지 함께 확인한 뒤 접수가 완료됩니다.</p>
-          </article>
-        </div>
+      <section className="page-panel compact-page-header">
+        <span className="eyebrow">매물 접수</span>
+        <h1 className="page-title page-title-medium">집주인 매물 접수</h1>
       </section>
 
       <SellLeadForm
@@ -143,6 +159,8 @@ export function SellPage() {
         initialOfficeId={session.user?.officeId ?? offices[0]?.id ?? null}
         userName={session.user?.name ?? null}
         userEmail={session.user?.email ?? null}
+        browserCoords={browserCoords}
+        isAdmin={session.kind === "admin"}
       />
     </div>
   );
