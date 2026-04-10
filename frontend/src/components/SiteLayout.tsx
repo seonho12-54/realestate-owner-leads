@@ -16,7 +16,7 @@ export function SiteLayout() {
         <div className="brand-row">
           <Link href={isAdmin ? "/admin/leads" : "/"} className="brand-link">
             <span className="brand-badge">LOCAL HOME</span>
-            <strong>동네집</strong>
+            <strong>다우니</strong>
           </Link>
           <div className="region-pill">
             <span>인증 지역</span>
