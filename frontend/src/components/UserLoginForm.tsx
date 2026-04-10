@@ -37,9 +37,9 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
 
   return (
     <form className="auth-card" onSubmit={handleSubmit}>
-      <span className="eyebrow">로그인</span>
-      <h1 className="page-title page-title-medium">우리 동네 매물을 다시 이어서 둘러보세요</h1>
-      <p className="page-copy compact-copy">로그인하면 인증한 지역 잠금 상태와 등록한 매물 정보를 그대로 이어서 볼 수 있어요.</p>
+      <span className="eyebrow">공용 로그인</span>
+      <h1 className="page-title page-title-medium">일반 회원과 관리자가 같은 창에서 로그인해요</h1>
+      <p className="page-copy compact-copy">관리자 계정은 이메일 전체 주소 또는 `@` 앞 아이디만 입력해도 관리자 모드로 바로 들어가요.</p>
 
       <label className="field">
         <span>이메일</span>
@@ -74,9 +74,6 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
       <div className="button-row button-row-compact">
         <Link href={`/signup?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
           회원가입
-        </Link>
-        <Link href="/admin/login" className="button button-ghost button-small">
-          관리자 로그인
         </Link>
       </div>
     </form>

@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 
-import { AdminLoginForm } from "@/components/AdminLoginForm";
+import { UserLoginForm } from "@/components/UserLoginForm";
 import { useSession } from "@/context/SessionContext";
 
 export function AdminLoginPage() {
@@ -16,7 +16,7 @@ export function AdminLoginPage() {
 
   return (
     <div className="auth-page">
-      <AdminLoginForm />
+      <UserLoginForm nextUrl="/admin/leads" />
     </div>
   );
 }

@@ -94,7 +94,7 @@ public class AuthController {
     }
 
     public record LoginRequest(
-        @NotBlank @Email String email,
+        @NotBlank @Size(max = 191) String email,
         @NotBlank @Size(min = 8, max = 128) String password
     ) {
     }

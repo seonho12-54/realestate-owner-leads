@@ -66,9 +66,9 @@ public class AuthService {
     }
 
     public LoginResult login(UserLoginRequest request, RequestMeta requestMeta) {
-        String normalizedEmail = normalizeEmail(request.email());
+        String normalizedIdentifier = normalizeIdentifier(request.email());
 
-        AdminRecord admin = findAdminByEmail(normalizedEmail);
+        AdminRecord admin = findAdminByIdentifier(normalizedIdentifier);
         if (admin != null && Boolean.TRUE.equals(admin.active()) && passwordEncoder.matches(request.password(), admin.passwordHash())) {
             jdbcTemplate.update("UPDATE admins SET last_login_at = ? WHERE id = ?", Instant.now(), admin.id());
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -78,7 +78,7 @@ public class AuthService {
             return LoginResult.admin(new AdminSession(admin.id(), admin.officeId(), admin.email(), admin.name(), admin.role(), 0L));
         }
 
-        UserRecord user = findUserByEmail(normalizedEmail);
+        UserRecord user = findUserByIdentifier(normalizedIdentifier);
         if (user == null || !Boolean.TRUE.equals(user.active())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해주세요.");
         }
@@ -104,7 +104,7 @@ public class AuthService {
     }
 
     public AdminSession loginAdmin(AdminLoginRequest request, RequestMeta requestMeta) {
-        AdminRecord admin = findAdminByEmail(normalizeEmail(request.email()));
+        AdminRecord admin = findAdminByIdentifier(normalizeIdentifier(request.email()));
         if (admin == null || !Boolean.TRUE.equals(admin.active())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해주세요.");
         }
@@ -172,6 +172,14 @@ public class AuthService {
         ).stream().findFirst().orElse(null);
     }
 
+    private UserRecord findUserByIdentifier(String identifier) {
+        if (!identifier.contains("@")) {
+            return null;
+        }
+
+        return findUserByEmail(identifier);
+    }
+
     private AdminRecord findAdminByEmail(String email) {
         return jdbcTemplate.query(
             """
@@ -182,6 +190,23 @@ public class AuthService {
                 """,
             (rs, rowNum) -> mapAdmin(rs),
             email
+        ).stream().findFirst().orElse(null);
+    }
+
+    private AdminRecord findAdminByIdentifier(String identifier) {
+        if (identifier.contains("@")) {
+            return findAdminByEmail(identifier);
+        }
+
+        return jdbcTemplate.query(
+            """
+                SELECT id, office_id, email, password_hash, name, role, is_active
+                FROM admins
+                WHERE LOWER(SUBSTRING_INDEX(email, '@', 1)) = ?
+                LIMIT 1
+                """,
+            (rs, rowNum) -> mapAdmin(rs),
+            identifier
         ).stream().findFirst().orElse(null);
     }
 
@@ -219,6 +244,10 @@ public class AuthService {
         }
 
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeIdentifier(String value) {
+        return normalizeEmail(value);
     }
 
     private String normalizeName(String value) {

@@ -36,11 +36,12 @@ public class AdminAuthController {
     @PostMapping("/logout")
     public Map<String, Object> logout(HttpServletResponse response) {
         sessionService.clearAdminSession(response);
+        sessionService.clearUserSession(response);
         return Map.of("ok", true);
     }
 
     public record AdminLoginRequest(
-        @NotBlank @Email String email,
+        @NotBlank @Size(max = 191) String email,
         @NotBlank @Size(min = 8, max = 128) String password
     ) {
     }

@@ -23,6 +23,17 @@ export const SERVICE_AREAS: ServiceArea[] = [
     },
   },
   {
+    slug: "yongin-cheoin-pogok",
+    name: "경기도 용인시 처인구 포곡읍",
+    city: "경기도",
+    district: "용인시 처인구",
+    neighborhood: "포곡읍",
+    center: {
+      lat: 37.2778,
+      lng: 127.2308,
+    },
+  },
+  {
     slug: "yongin-cheoin-yubang",
     name: "경기도 용인시 처인구 유방동",
     city: "경기도",

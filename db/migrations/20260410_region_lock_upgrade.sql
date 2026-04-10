@@ -112,6 +112,10 @@ CREATE TABLE IF NOT EXISTS location_verification_logs (
 UPDATE leads
 SET region_slug = CASE
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%울산%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%중구%' AND REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%다운%' THEN 'ulsan-junggu-daun'
+  WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%경기%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%처인구%' AND (
+    REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%포곡%' OR
+    REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%영문%'
+  ) THEN 'yongin-cheoin-pogok'
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%경기%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%처인구%' AND REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%유방%' THEN 'yongin-cheoin-yubang'
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%경기%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%처인구%' AND REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%역북%' THEN 'yongin-cheoin-yeokbuk'
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%서울%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%마포구%' AND (

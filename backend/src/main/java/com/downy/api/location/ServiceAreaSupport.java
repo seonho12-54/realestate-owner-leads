@@ -27,6 +27,20 @@ public class ServiceAreaSupport {
             900
         ),
         new ServiceArea(
+            "yongin-cheoin-pogok",
+            "경기도 용인시 처인구 포곡읍",
+            "경기도",
+            "용인시 처인구",
+            "포곡읍",
+            List.of("경기", "경기도"),
+            List.of("용인시처인구", "처인구", "용인시"),
+            List.of("포곡읍", "포곡읍영문리", "영문리", "포곡"),
+            true,
+            37.2778,
+            127.2308,
+            4500
+        ),
+        new ServiceArea(
             "yongin-cheoin-yubang",
             "경기도 용인시 처인구 유방동",
             "경기도",

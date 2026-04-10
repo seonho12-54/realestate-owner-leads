@@ -37,6 +37,14 @@ class ServiceAreaSupportTest {
     }
 
     @Test
+    void resolvesPogokFromCoordinates() {
+        ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolveByCoordinates(37.2709846, 127.2088124);
+
+        assertNotNull(area);
+        assertEquals("yongin-cheoin-pogok", area.slug());
+    }
+
+    @Test
     void returnsNullForUnsupportedArea() {
         ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolve("부산광역시", "해운대구", "우동");
 
