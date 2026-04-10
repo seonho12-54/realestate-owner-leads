@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
 
-import { UserLoginForm } from "@/components/UserLoginForm";
 import { useSession } from "@/context/SessionContext";
 
 export function AdminLoginPage() {
@@ -14,9 +13,5 @@ export function AdminLoginPage() {
     return <Navigate to="/manage" replace />;
   }
 
-  return (
-    <div className="auth-page">
-      <UserLoginForm nextUrl="/admin/leads" />
-    </div>
-  );
+  return <Navigate to="/login?next=%2Fadmin%2Fleads" replace />;
 }
