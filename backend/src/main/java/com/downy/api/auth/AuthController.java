@@ -22,17 +22,46 @@ public class AuthController {
     private final AuthService authService;
     private final SessionService sessionService;
     private final RegionAccessService regionAccessService;
+    private final PhoneVerificationService phoneVerificationService;
 
-    public AuthController(AuthService authService, SessionService sessionService, RegionAccessService regionAccessService) {
+    public AuthController(
+        AuthService authService,
+        SessionService sessionService,
+        RegionAccessService regionAccessService,
+        PhoneVerificationService phoneVerificationService
+    ) {
         this.authService = authService;
         this.sessionService = sessionService;
         this.regionAccessService = regionAccessService;
+        this.phoneVerificationService = phoneVerificationService;
+    }
+
+    @PostMapping("/phone-verification/request")
+    public PhoneVerificationRequestResponse requestPhoneVerification(
+        @Valid @RequestBody PhoneVerificationRequest request,
+        HttpServletRequest httpRequest
+    ) {
+        PhoneVerificationService.StartPhoneVerificationResult result = phoneVerificationService.startSignupVerification(
+            request.phone(),
+            RequestMeta.from(httpRequest)
+        );
+        return new PhoneVerificationRequestResponse(result.ok(), result.verificationKey(), result.expiresInSeconds());
+    }
+
+    @PostMapping("/phone-verification/confirm")
+    public Map<String, Object> confirmPhoneVerification(@Valid @RequestBody PhoneVerificationConfirmRequest request) {
+        PhoneVerificationService.ConfirmPhoneVerificationResult result = phoneVerificationService.confirmSignupVerification(
+            request.phone(),
+            request.verificationKey(),
+            request.code()
+        );
+        return Map.of("ok", result.ok());
     }
 
     @PostMapping("/signup")
     public Map<String, Object> signup(@Valid @RequestBody SignupRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         var session = authService.signup(
-            new AuthService.UserSignupRequest(request.name(), request.email(), request.phone(), request.password()),
+            new AuthService.UserSignupRequest(request.name(), request.email(), request.phone(), request.password(), request.phoneVerificationKey()),
             RequestMeta.from(httpRequest)
         );
         var synced = regionAccessService.syncAuthenticatedRegion(session, httpRequest);
@@ -85,10 +114,26 @@ public class AuthController {
         return Map.of("ok", true);
     }
 
+    public record PhoneVerificationRequest(
+        @NotBlank @Size(min = 10, max = 30) @Pattern(regexp = "^[0-9+\\-() ]+$", message = "휴대전화 번호를 확인해 주세요.") String phone
+    ) {
+    }
+
+    public record PhoneVerificationConfirmRequest(
+        @NotBlank @Size(min = 10, max = 30) @Pattern(regexp = "^[0-9+\\-() ]+$", message = "휴대전화 번호를 확인해 주세요.") String phone,
+        @NotBlank @Size(max = 64) String verificationKey,
+        @NotBlank @Pattern(regexp = "^\\d{4,8}$", message = "인증번호를 확인해 주세요.") String code
+    ) {
+    }
+
+    public record PhoneVerificationRequestResponse(boolean ok, String verificationKey, long expiresInSeconds) {
+    }
+
     public record SignupRequest(
         @NotBlank @Size(min = 2, max = 100) String name,
         @NotBlank @Email @Size(max = 191) String email,
-        @Size(max = 30) String phone,
+        @NotBlank @Size(min = 10, max = 30) @Pattern(regexp = "^[0-9+\\-() ]+$", message = "휴대전화 번호를 확인해 주세요.") String phone,
+        @NotBlank @Size(max = 64) String phoneVerificationKey,
         @NotBlank @Size(min = 8, max = 128) @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", message = "비밀번호는 영문과 숫자를 모두 포함해야 합니다.") String password
     ) {
     }

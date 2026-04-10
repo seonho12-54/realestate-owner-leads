@@ -41,6 +41,7 @@ export type UserSignupPayload = {
   email: string;
   phone: string;
   password: string;
+  phoneVerificationKey: string;
 };
 
 export type UserLoginPayload = {
@@ -51,6 +52,12 @@ export type UserLoginPayload = {
 export type AdminLoginPayload = {
   email: string;
   password: string;
+};
+
+export type SignupPhoneVerificationRequest = {
+  ok: boolean;
+  verificationKey: string;
+  expiresInSeconds: number;
 };
 
 type AuthSuccessResponse = {
@@ -86,6 +93,26 @@ export async function fetchSession() {
   return apiRequest<CurrentSessionResponse>("/api/session");
 }
 
+export async function requestSignupPhoneVerification(phone: string) {
+  return apiRequest<SignupPhoneVerificationRequest>("/api/auth/phone-verification/request", {
+    method: "POST",
+    json: {
+      phone: normalizePhone(phone),
+    },
+  });
+}
+
+export async function confirmSignupPhoneVerification(phone: string, verificationKey: string, code: string) {
+  return apiRequest<{ ok: boolean }>("/api/auth/phone-verification/confirm", {
+    method: "POST",
+    json: {
+      phone: normalizePhone(phone),
+      verificationKey,
+      code: code.trim(),
+    },
+  });
+}
+
 export async function signupUser(payload: UserSignupPayload) {
   const response = await apiRequest<AuthSuccessResponse>("/api/auth/signup", {
     method: "POST",
@@ -94,6 +121,7 @@ export async function signupUser(payload: UserSignupPayload) {
       name: normalizeName(payload.name),
       email: normalizeEmail(payload.email),
       phone: normalizePhone(payload.phone),
+      phoneVerificationKey: payload.phoneVerificationKey,
     },
   });
   return storeAccessToken(response);

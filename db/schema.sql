@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(100) NOT NULL,
   phone VARCHAR(30) NULL,
+  phone_normalized VARCHAR(20) NULL,
+  phone_verified_at DATETIME NULL,
   verified_region_slug VARCHAR(80) NULL,
   verified_region_name VARCHAR(120) NULL,
   region_verified_at DATETIME NULL,
@@ -27,7 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_users_email (email)
+  UNIQUE KEY uq_users_email (email),
+  KEY idx_users_phone_normalized (phone_normalized)
 );
 
 CREATE TABLE IF NOT EXISTS admins (
@@ -154,4 +157,24 @@ CREATE TABLE IF NOT EXISTS location_verification_logs (
   KEY idx_location_verification_logs_region (resolved_region_slug),
   KEY idx_location_verification_logs_created_at (created_at),
   CONSTRAINT fk_location_verification_logs_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS phone_verification_challenges (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  verification_key VARCHAR(64) NOT NULL,
+  purpose VARCHAR(30) NOT NULL DEFAULT 'signup',
+  phone_normalized VARCHAR(20) NOT NULL,
+  verification_code VARCHAR(8) NOT NULL,
+  request_ip VARCHAR(64) NULL,
+  user_agent VARCHAR(500) NULL,
+  expires_at DATETIME NOT NULL,
+  verified_at DATETIME NULL,
+  consumed_at DATETIME NULL,
+  consumed_by_user_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_phone_verification_key (verification_key),
+  KEY idx_phone_verification_lookup (phone_normalized, purpose, created_at),
+  KEY idx_phone_verification_consumed_by (consumed_by_user_id),
+  CONSTRAINT fk_phone_verification_consumed_by FOREIGN KEY (consumed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
 );

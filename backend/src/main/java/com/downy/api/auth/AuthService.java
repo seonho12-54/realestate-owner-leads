@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -24,20 +25,32 @@ public class AuthService {
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final PhoneVerificationService phoneVerificationService;
 
-    public AuthService(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder, AuditLogService auditLogService) {
+    public AuthService(
+        JdbcTemplate jdbcTemplate,
+        PasswordEncoder passwordEncoder,
+        AuditLogService auditLogService,
+        PhoneVerificationService phoneVerificationService
+    ) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.auditLogService = auditLogService;
+        this.phoneVerificationService = phoneVerificationService;
     }
 
+    @Transactional
     public UserSession signup(UserSignupRequest request, RequestMeta requestMeta) {
         String normalizedEmail = normalizeEmail(request.email());
         String normalizedName = normalizeName(request.name());
         UserRecord existing = findUserByEmail(normalizedEmail);
+        PhoneVerificationService.VerifiedPhoneClaim verifiedPhone = phoneVerificationService.requireVerifiedSignupPhone(
+            request.phone(),
+            request.phoneVerificationKey()
+        );
 
         if (existing != null) {
-            throw new ApiException(HttpStatus.CONFLICT, "이미 가입한 이메일입니다.");
+            throw new ApiException(HttpStatus.CONFLICT, "이미 가입된 이메일입니다.");
         }
 
         jdbcTemplate.update(
@@ -47,13 +60,17 @@ public class AuthService {
                     password_hash,
                     name,
                     phone,
+                    phone_normalized,
+                    phone_verified_at,
                     is_active
-                ) VALUES (?, ?, ?, ?, 1)
+                ) VALUES (?, ?, ?, ?, ?, ?, 1)
                 """,
             normalizedEmail,
             passwordEncoder.encode(request.password()),
             normalizedName,
-            blankToNull(request.phone())
+            phoneVerificationService.formatPhoneForStorage(verifiedPhone.normalizedPhone()),
+            verifiedPhone.normalizedPhone(),
+            Timestamp.from(verifiedPhone.verifiedAt())
         );
 
         Long userId = jdbcTemplate.queryForObject("SELECT id FROM users WHERE LOWER(email) = ?", Long.class, normalizedEmail);
@@ -61,7 +78,8 @@ public class AuthService {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "회원 정보를 저장하지 못했습니다.");
         }
 
-        auditLogService.write(null, "user.signup", "user", userId, requestMeta, Map.of("email", normalizedEmail));
+        phoneVerificationService.markSignupVerificationConsumed(request.phoneVerificationKey(), userId);
+        auditLogService.write(null, "user.signup", "user", userId, requestMeta, Map.of("email", normalizedEmail, "phone", verifiedPhone.normalizedPhone()));
         return new UserSession(userId, normalizedEmail, normalizedName, null, null, false, 0L, 0L);
     }
 
@@ -80,11 +98,11 @@ public class AuthService {
 
         UserRecord user = findUserByIdentifier(normalizedIdentifier);
         if (user == null || !Boolean.TRUE.equals(user.active())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해주세요.");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해 주세요.");
         }
 
         if (!passwordEncoder.matches(request.password(), user.passwordHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해주세요.");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해 주세요.");
         }
 
         jdbcTemplate.update("UPDATE users SET last_login_at = ? WHERE id = ?", Instant.now(), user.id());
@@ -106,11 +124,11 @@ public class AuthService {
     public AdminSession loginAdmin(AdminLoginRequest request, RequestMeta requestMeta) {
         AdminRecord admin = findAdminByIdentifier(normalizeIdentifier(request.email()));
         if (admin == null || !Boolean.TRUE.equals(admin.active())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해주세요.");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해 주세요.");
         }
 
         if (!passwordEncoder.matches(request.password(), admin.passwordHash())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해주세요.");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해 주세요.");
         }
 
         jdbcTemplate.update("UPDATE admins SET last_login_at = ? WHERE id = ?", Instant.now(), admin.id());
@@ -254,15 +272,6 @@ public class AuthService {
         return value == null ? "" : value.trim();
     }
 
-    private String blankToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     private record UserRecord(
         long id,
         String email,
@@ -279,7 +288,7 @@ public class AuthService {
     private record AdminRecord(long id, Long officeId, String email, String passwordHash, String name, String role, Boolean active) {
     }
 
-    public record UserSignupRequest(String name, String email, String phone, String password) {
+    public record UserSignupRequest(String name, String email, String phone, String password, String phoneVerificationKey) {
     }
 
     public record UserLoginRequest(String email, String password) {

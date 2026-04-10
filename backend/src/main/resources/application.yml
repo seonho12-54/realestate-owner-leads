@@ -32,6 +32,13 @@ app:
     password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:admin}
     name: ${APP_BOOTSTRAP_ADMIN_NAME:admin}
     role: ${APP_BOOTSTRAP_ADMIN_ROLE:super}
+  phone-verification:
+    enabled: ${APP_PHONE_VERIFICATION_ENABLED:true}
+    region: ${APP_PHONE_VERIFICATION_REGION:ap-northeast-2}
+    sender-id: ${APP_PHONE_VERIFICATION_SENDER_ID:}
+    code-length: ${APP_PHONE_VERIFICATION_CODE_LENGTH:6}
+    expires-minutes: ${APP_PHONE_VERIFICATION_EXPIRES_MINUTES:5}
+    request-cooldown-seconds: ${APP_PHONE_VERIFICATION_REQUEST_COOLDOWN_SECONDS:60}
   kakao-rest-api-key: ${KAKAO_REST_API_KEY:}
   kakao-js-key: ${KAKAO_JS_KEY:}
   max-photo-size-mb: ${MAX_PHOTO_SIZE_MB:20}

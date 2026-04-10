@@ -18,6 +18,7 @@ public class AppProperties {
     private CorsProperties cors = new CorsProperties();
     private CookieProperties cookie = new CookieProperties();
     private BootstrapAdminProperties bootstrapAdmin = new BootstrapAdminProperties();
+    private PhoneVerificationProperties phoneVerification = new PhoneVerificationProperties();
 
     public String getBaseUrl() {
         return baseUrl;
@@ -113,6 +114,14 @@ public class AppProperties {
 
     public void setBootstrapAdmin(BootstrapAdminProperties bootstrapAdmin) {
         this.bootstrapAdmin = bootstrapAdmin;
+    }
+
+    public PhoneVerificationProperties getPhoneVerification() {
+        return phoneVerification;
+    }
+
+    public void setPhoneVerification(PhoneVerificationProperties phoneVerification) {
+        this.phoneVerification = phoneVerification;
     }
 
     public static class S3Properties {
@@ -254,6 +263,64 @@ public class AppProperties {
 
         public void setRole(String role) {
             this.role = role;
+        }
+    }
+
+    public static class PhoneVerificationProperties {
+
+        private boolean enabled = true;
+        private String region = "ap-northeast-2";
+        private String senderId;
+        private int codeLength = 6;
+        private int expiresMinutes = 5;
+        private int requestCooldownSeconds = 60;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getRegion() {
+            return region;
+        }
+
+        public void setRegion(String region) {
+            this.region = region;
+        }
+
+        public String getSenderId() {
+            return senderId;
+        }
+
+        public void setSenderId(String senderId) {
+            this.senderId = senderId;
+        }
+
+        public int getCodeLength() {
+            return codeLength;
+        }
+
+        public void setCodeLength(int codeLength) {
+            this.codeLength = codeLength;
+        }
+
+        public int getExpiresMinutes() {
+            return expiresMinutes;
+        }
+
+        public void setExpiresMinutes(int expiresMinutes) {
+            this.expiresMinutes = expiresMinutes;
+        }
+
+        public int getRequestCooldownSeconds() {
+            return requestCooldownSeconds;
+        }
+
+        public void setRequestCooldownSeconds(int requestCooldownSeconds) {
+            this.requestCooldownSeconds = requestCooldownSeconds;
         }
     }
 }

@@ -141,7 +141,7 @@ export const adminLoginSchema = z.object({
 export const userSignupSchema = z.object({
   name: z.string().trim().min(2, "이름을 입력해 주세요.").max(100),
   email: z.string().trim().email("이메일을 확인해 주세요.").max(191),
-  phone: z.string().trim().max(30).optional().default(""),
+  phone: z.string().trim().min(10, "휴대전화 번호를 입력해 주세요.").max(30),
   password: z
     .string()
     .min(8, "비밀번호는 8자 이상이어야 합니다.")
