@@ -127,6 +127,10 @@ img {
   align-items: center;
 }
 
+.brand-row {
+  flex-wrap: wrap;
+}
+
 .brand-link {
   display: grid;
   gap: 6px;
@@ -154,6 +158,46 @@ img {
   padding: 12px 16px;
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(14, 43, 96, 0.06), rgba(14, 43, 96, 0.12));
+}
+
+.contact-pill {
+  display: grid;
+  gap: 4px;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(17, 63, 125, 0.05), rgba(17, 63, 125, 0.1));
+  border: 1px solid rgba(17, 63, 125, 0.08);
+}
+
+.contact-pill strong {
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.contact-pill p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.contact-pill-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2f5fa5;
+}
+
+.contact-pill-link {
+  width: fit-content;
+  color: #21498d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.contact-pill-link:hover {
+  text-decoration: underline;
 }
 
 .region-pill span,

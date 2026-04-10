@@ -5,6 +5,11 @@ import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
 import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 
+const OFFICE_ADDRESS = "울산광역시 중구 다운로 160";
+const OFFICE_NAME = "다운우미린공인중개사사무소";
+const OFFICE_PHONE = "010-9904-1031";
+const BLOG_URL = "https://blog.naver.com/tedted111";
+
 export function SiteLayout() {
   const { session } = useSession();
   const isAdmin = session.kind === "admin";
@@ -18,10 +23,24 @@ export function SiteLayout() {
             <span className="brand-badge">LOCAL HOME</span>
             <strong>다우니</strong>
           </Link>
+
           <div className="region-pill">
             <span>인증 지역</span>
             <strong>{regionName}</strong>
           </div>
+
+          {!isAdmin ? (
+            <div className="contact-pill">
+              <span className="contact-pill-label">문의</span>
+              <strong>
+                {OFFICE_ADDRESS} {OFFICE_NAME}
+              </strong>
+              <p>{OFFICE_PHONE} 문의 부탁합니다.</p>
+              <a href={BLOG_URL} className="contact-pill-link" target="_blank" rel="noreferrer">
+                블로그 바로가기
+              </a>
+            </div>
+          ) : null}
         </div>
 
         <div className="top-actions">
@@ -33,12 +52,7 @@ export function SiteLayout() {
               <LogoutButton action="/api/admin/logout" label="로그아웃" />
             </>
           ) : session.authenticated ? (
-            <>
-              <Link href="/sell" className="nav-button nav-button-secondary">
-                문의 등록
-              </Link>
-              <LogoutButton action="/api/auth/logout" label="로그아웃" />
-            </>
+            <LogoutButton action="/api/auth/logout" label="로그아웃" />
           ) : (
             <>
               <Link href="/login" className="nav-button nav-button-secondary">
