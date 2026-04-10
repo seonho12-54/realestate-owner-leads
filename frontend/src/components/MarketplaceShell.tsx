@@ -108,12 +108,12 @@ export function MarketplaceShell({
     <div className="page-stack">
       <section className="hero-card">
         <div>
-          <span className="eyebrow">{previewMode ? "미리보기 모드" : "우리 동네 매물"}</span>
+          <span className="eyebrow">{previewMode ? "🔍 미리보기 모드" : "🏘️ 우리 동네 매물"}</span>
           <h1 className="page-title page-title-medium">{title}</h1>
           <p className="page-copy">{description}</p>
         </div>
         <div className="hero-region-card">
-          <span>{previewMode ? "안내" : "현재 지역"}</span>
+          <span>{previewMode ? "💡 안내" : "📍 현재 지역"}</span>
           <strong>{regionName}</strong>
           <p>
             {previewMode
@@ -251,7 +251,7 @@ export function MarketplaceShell({
             <div className="selected-panel">
               <div className="selected-header">
                 <div>
-                  <span className="eyebrow">{previewMode ? "미리보기 카드" : "선택한 매물"}</span>
+                  <span className="eyebrow">{previewMode ? "✨ 미리보기 카드" : "✨ 선택한 매물"}</span>
                   <strong>{previewMode ? getPreviewHeadline(selectedListing, regionName) : selectedListing.listingTitle}</strong>
                 </div>
                 <span className={`status-badge transaction-${selectedListing.transactionType}`}>{getTransactionTypeLabel(selectedListing.transactionType)}</span>

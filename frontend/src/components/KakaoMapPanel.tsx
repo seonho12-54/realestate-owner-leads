@@ -190,7 +190,7 @@ export function KakaoMapPanel({
     <div className="map-shell">
       <div className="map-toolbar">
         <div>
-          <strong>지도에서는 주변 권역만 보여줘요</strong>
+          <strong>🗺️ 지도에서는 주변 권역만 보여줘요</strong>
           <p>정확한 집 위치 대신 문의 가능한 주변 범위를 원형으로 표시합니다.</p>
         </div>
         {showReset ? (

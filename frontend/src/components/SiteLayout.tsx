@@ -25,19 +25,19 @@ export function SiteLayout() {
           </Link>
 
           <div className="region-pill">
-            <span>인증 지역</span>
+            <span>📍 인증 지역</span>
             <strong>{regionName}</strong>
           </div>
 
           {!isAdmin ? (
             <div className="contact-pill">
-              <span className="contact-pill-label">문의</span>
+              <span className="contact-pill-label">☎ 문의</span>
               <strong>
                 {OFFICE_ADDRESS} {OFFICE_NAME}
               </strong>
-              <p>{OFFICE_PHONE} 문의 부탁합니다.</p>
+              <p>📞 {OFFICE_PHONE} 문의 부탁합니다.</p>
               <a href={BLOG_URL} className="contact-pill-link" target="_blank" rel="noreferrer">
-                블로그 바로가기
+                📝 블로그 바로가기
               </a>
             </div>
           ) : null}
@@ -69,10 +69,10 @@ export function SiteLayout() {
       {!isAdmin ? (
         <section className="service-strip">
           <div>
-            <span className="service-strip-label">서비스 지역</span>
+            <span className="service-strip-label">✨ 서비스 지역</span>
             <strong>{SERVICE_REGION_LABEL}</strong>
           </div>
-          <p>우리 동네 인증을 마치면 그 지역 매물만 빠르게 비교해서 볼 수 있어요.</p>
+          <p>🏡 우리 동네 인증을 마치면 그 지역 매물만 빠르게 비교해서 볼 수 있어요.</p>
         </section>
       ) : null}
 
