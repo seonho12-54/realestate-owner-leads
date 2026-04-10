@@ -1669,12 +1669,134 @@ img {
   font-family: var(--font-body);
 }
 
+.inquiry-toolbar,
+.reply-box-header,
+.inquiry-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inquiry-compose-panel,
+.inquiry-detail-stack,
+.inquiry-detail-body,
+.admin-reply-editor {
+  display: grid;
+  gap: 18px;
+}
+
+.inquiry-layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.inquiry-list-panel,
+.inquiry-detail-panel {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow-lg);
+}
+
+.inquiry-list {
+  display: grid;
+  gap: 12px;
+}
+
+.inquiry-card {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+
+.inquiry-card.active {
+  border-color: rgba(33, 73, 141, 0.3);
+  box-shadow: 0 22px 38px rgba(33, 73, 141, 0.14);
+}
+
+.inquiry-card-top {
+  align-items: flex-start;
+}
+
+.inquiry-card-top strong {
+  font-family: var(--font-heading);
+  font-size: 1.08rem;
+  letter-spacing: -0.03em;
+}
+
+.inquiry-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.inquiry-preview,
+.inquiry-content-box p,
+.reply-box p {
+  margin: 0;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.inquiry-preview {
+  color: var(--text);
+}
+
+.inquiry-content-box,
+.reply-box {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(245, 248, 255, 0.82);
+}
+
+.inquiry-content-box strong,
+.reply-box strong {
+  font-size: 1rem;
+}
+
+.reply-box-header {
+  align-items: flex-start;
+}
+
+.reply-box-header span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.status-open {
+  background: var(--warning-soft);
+  color: #b2692d;
+}
+
+.status-answered {
+  background: var(--success-soft);
+  color: #17774d;
+}
+
 @media (max-width: 1200px) {
   .landing-category-grid,
   .detail-grid-shell,
   .photo-grid,
   .preview-card-grid,
-  .manage-summary-grid {
+  .manage-summary-grid,
+  .inquiry-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1697,7 +1819,10 @@ img {
 
   .stitch-topbar,
   .section-heading,
-  .selected-header {
+  .selected-header,
+  .inquiry-toolbar,
+  .reply-box-header,
+  .inquiry-card-top {
     flex-direction: column;
     align-items: stretch;
   }
@@ -1711,7 +1836,8 @@ img {
   .photo-grid,
   .detail-grid-shell,
   .preview-card-grid,
-  .manage-summary-grid {
+  .manage-summary-grid,
+  .inquiry-layout {
     grid-template-columns: 1fr;
   }
 

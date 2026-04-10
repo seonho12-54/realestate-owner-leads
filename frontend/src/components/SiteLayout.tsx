@@ -46,6 +46,9 @@ export function SiteLayout() {
         <div className="top-actions">
           {isAdmin ? (
             <>
+              <Link href="/sell" className="nav-button nav-button-secondary">
+                문의 관리
+              </Link>
               <Link href="/admin/leads" className="nav-button nav-button-primary">
                 매물 관리
               </Link>
@@ -86,7 +89,7 @@ export function SiteLayout() {
             홈
           </Link>
           <Link href="/sell" className="bottom-nav-link">
-            문의 등록
+            문의하기
           </Link>
           <Link href="/manage" className="bottom-nav-link">
             매물 관리
