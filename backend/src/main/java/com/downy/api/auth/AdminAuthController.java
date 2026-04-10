@@ -42,7 +42,7 @@ public class AdminAuthController {
 
     public record AdminLoginRequest(
         @NotBlank @Size(max = 191) String email,
-        @NotBlank @Size(min = 8, max = 128) String password
+        @NotBlank @Size(max = 128) String password
     ) {
     }
 }

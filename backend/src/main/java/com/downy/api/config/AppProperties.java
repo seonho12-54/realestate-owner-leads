@@ -17,6 +17,7 @@ public class AppProperties {
     private S3Properties s3 = new S3Properties();
     private CorsProperties cors = new CorsProperties();
     private CookieProperties cookie = new CookieProperties();
+    private BootstrapAdminProperties bootstrapAdmin = new BootstrapAdminProperties();
 
     public String getBaseUrl() {
         return baseUrl;
@@ -104,6 +105,14 @@ public class AppProperties {
 
     public void setCookie(CookieProperties cookie) {
         this.cookie = cookie;
+    }
+
+    public BootstrapAdminProperties getBootstrapAdmin() {
+        return bootstrapAdmin;
+    }
+
+    public void setBootstrapAdmin(BootstrapAdminProperties bootstrapAdmin) {
+        this.bootstrapAdmin = bootstrapAdmin;
     }
 
     public static class S3Properties {
@@ -196,6 +205,55 @@ public class AppProperties {
 
         public void setSecure(String secure) {
             this.secure = secure;
+        }
+    }
+
+    public static class BootstrapAdminProperties {
+
+        private boolean enabled = true;
+        private String email = "admin@downy.local";
+        private String password = "admin";
+        private String name = "admin";
+        private String role = "super";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
         }
     }
 }

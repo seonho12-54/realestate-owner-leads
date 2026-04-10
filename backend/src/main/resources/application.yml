@@ -26,6 +26,12 @@ app:
     same-site: ${APP_COOKIE_SAME_SITE:Lax}
     domain: ${APP_COOKIE_DOMAIN:}
     secure: ${APP_COOKIE_SECURE:}
+  bootstrap-admin:
+    enabled: ${APP_BOOTSTRAP_ADMIN_ENABLED:true}
+    email: ${APP_BOOTSTRAP_ADMIN_EMAIL:admin@downy.local}
+    password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:admin}
+    name: ${APP_BOOTSTRAP_ADMIN_NAME:admin}
+    role: ${APP_BOOTSTRAP_ADMIN_ROLE:super}
   kakao-rest-api-key: ${KAKAO_REST_API_KEY:}
   kakao-js-key: ${KAKAO_JS_KEY:}
   max-photo-size-mb: ${MAX_PHOTO_SIZE_MB:20}
