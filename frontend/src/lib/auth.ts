@@ -11,11 +11,29 @@ export type CurrentUser = {
   officeId: number | null;
 };
 
+export type VerifiedRegion = {
+  slug: string;
+  name: string;
+  city: string;
+  district: string;
+  neighborhood: string;
+  centerLat: number;
+  centerLng: number;
+};
+
+export type RegionStatus = {
+  locked: boolean;
+  region: VerifiedRegion | null;
+  verifiedAt: number;
+  source: "user" | "guest" | "none";
+};
+
 export type CurrentSessionResponse = {
   authenticated: boolean;
   kind: SessionKind;
   user: CurrentUser | null;
   kakaoJsKey: string | null;
+  region: RegionStatus;
 };
 
 export type UserSignupPayload = {

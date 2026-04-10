@@ -3,11 +3,13 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { SiteLayout } from "@/components/SiteLayout";
 import { AdminLeadsPage } from "@/pages/AdminLeadsPage";
 import { AdminLoginPage } from "@/pages/AdminLoginPage";
+import { ExplorePage } from "@/pages/ExplorePage";
 import { HomePage } from "@/pages/HomePage";
 import { ListingDetailPage } from "@/pages/ListingDetailPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { MyPagePage } from "@/pages/MyPagePage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
+import { SavedPage } from "@/pages/SavedPage";
 import { SellDonePage } from "@/pages/SellDonePage";
 import { SellPage } from "@/pages/SellPage";
 import { SignupPage } from "@/pages/SignupPage";
@@ -17,6 +19,8 @@ export default function App() {
     <Routes>
       <Route element={<SiteLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/saved" element={<SavedPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/me" element={<MyPagePage />} />

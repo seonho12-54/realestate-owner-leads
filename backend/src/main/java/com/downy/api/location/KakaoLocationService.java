@@ -40,7 +40,7 @@ public class KakaoLocationService {
             .body(KakaoRegionResponse.class);
 
         if (payload == null || payload.documents() == null || payload.documents().isEmpty()) {
-            return new VerificationResponse(false, null, null, null, null);
+            return new VerificationResponse(false, null, null, null, null, null, null);
         }
 
         KakaoRegionDocument region = payload.documents().stream()
@@ -48,12 +48,20 @@ public class KakaoLocationService {
             .findFirst()
             .orElse(payload.documents().getFirst());
 
-        return new VerificationResponse(
-            serviceAreaSupport.isAllowed(region.region1DepthName(), region.region2DepthName(), region.region3DepthName()),
-            region.addressName(),
+        ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolve(
             region.region1DepthName(),
             region.region2DepthName(),
             region.region3DepthName()
+        );
+
+        return new VerificationResponse(
+            area != null,
+            region.addressName(),
+            region.region1DepthName(),
+            region.region2DepthName(),
+            region.region3DepthName(),
+            area != null ? area.slug() : null,
+            area != null ? area.name() : null
         );
     }
 
@@ -130,7 +138,11 @@ public class KakaoLocationService {
     public AddressSearchResult geocodeWithinAllowedArea(String query) {
         return searchAddresses(query).stream()
             .findFirst()
-            .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, serviceAreaSupport.serviceRegionLabel() + " 주소만 등록할 수 있습니다."));
+            .orElseThrow(() -> new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "REGION_UNSUPPORTED",
+                serviceAreaSupport.serviceRegionLabel() + " 안의 주소만 등록할 수 있어요."
+            ));
     }
 
     private AddressSearchResult toAddressResult(KakaoAddressDocument document) {
@@ -178,7 +190,7 @@ public class KakaoLocationService {
 
     private String kakaoAuthorization() {
         if (!StringUtils.hasText(properties.getKakaoRestApiKey())) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "KAKAO_REST_API_KEY is missing.");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "카카오 REST API 키가 설정되지 않았어요.");
         }
         return "KakaoAK " + properties.getKakaoRestApiKey();
     }
@@ -200,7 +212,9 @@ public class KakaoLocationService {
         String addressName,
         String region1DepthName,
         String region2DepthName,
-        String region3DepthName
+        String region3DepthName,
+        String regionSlug,
+        String regionName
     ) {
     }
 

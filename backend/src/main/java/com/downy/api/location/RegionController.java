@@ -6,33 +6,30 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
-import java.util.List;
-import java.util.Map;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Validated
 @RestController
-@RequestMapping("/api/location")
-public class LocationController {
+@RequestMapping("/api/region")
+public class RegionController {
 
-    private final KakaoLocationService kakaoLocationService;
     private final RegionAccessService regionAccessService;
 
-    public LocationController(KakaoLocationService kakaoLocationService, RegionAccessService regionAccessService) {
-        this.kakaoLocationService = kakaoLocationService;
+    public RegionController(RegionAccessService regionAccessService) {
         this.regionAccessService = regionAccessService;
     }
 
-    @PostMapping("/verify")
-    public RegionAccessService.RegionStatusResponse verify(
-        @Valid @RequestBody VerifyRequest request,
+    @GetMapping("/me")
+    public RegionAccessService.RegionStatusResponse currentRegion(HttpServletRequest request) {
+        return regionAccessService.getRegionStatus(request);
+    }
+
+    @PostMapping("/reverify")
+    public RegionAccessService.RegionStatusResponse reverify(
+        @Valid @RequestBody ReverifyRequest request,
         HttpServletRequest httpRequest,
         HttpServletResponse response
     ) {
@@ -42,16 +39,11 @@ public class LocationController {
             httpRequest,
             response,
             RequestMeta.from(httpRequest),
-            false
+            true
         );
     }
 
-    @GetMapping("/address-search")
-    public Map<String, List<KakaoLocationService.AddressSearchResult>> search(@RequestParam @Size(min = 2, max = 120) String query) {
-        return Map.of("results", kakaoLocationService.searchAddresses(query));
-    }
-
-    public record VerifyRequest(
+    public record ReverifyRequest(
         @Min(33) @Max(39) double latitude,
         @Min(124) @Max(132) double longitude
     ) {

@@ -2,16 +2,15 @@ import { useEffect, useRef, useState } from "react";
 
 import type { PublicListing } from "@/lib/leads";
 import { loadKakaoMapsSdk } from "@/lib/kakao-map-client";
-import { SERVICE_MAP_POINTS } from "@/lib/service-area";
+import { SERVICE_MAP_CENTER } from "@/lib/service-area";
 
-function createMarkerImage(kakao: any, transactionType: PublicListing["transactionType"], selected: boolean) {
-  const fill =
-    transactionType === "sale" ? "#f48a3d" : transactionType === "jeonse" ? "#149b86" : transactionType === "monthly" ? "#3558f3" : "#64748b";
-  const size = selected ? 24 : 20;
+function createMarkerImage(kakao: any, selected: boolean) {
+  const size = selected ? 28 : 22;
+  const fill = selected ? "#0a9b6f" : "#113f7d";
 
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-      <circle cx="${size / 2}" cy="${size / 2}" r="${selected ? 8 : 6.5}" fill="${fill}" stroke="rgba(255,255,255,0.96)" stroke-width="${selected ? 4 : 3}" />
+      <circle cx="${size / 2}" cy="${size / 2}" r="${selected ? 9 : 7}" fill="${fill}" stroke="rgba(255,255,255,0.96)" stroke-width="${selected ? 5 : 4}" />
     </svg>
   `.trim();
 
@@ -24,21 +23,17 @@ export function KakaoMapPanel({
   listings,
   selectedListingId,
   onSelect,
-  transactionFilter,
-  onTransactionFilterChange,
 }: {
   listings: PublicListing[];
   selectedListingId: number | null;
   onSelect: (listingId: number) => void;
-  transactionFilter: string;
-  onTransactionFilterChange: (nextValue: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
-  const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,68 +45,22 @@ export function KakaoMapPanel({
         }
 
         const map = new kakao.maps.Map(containerRef.current, {
-          center: new kakao.maps.LatLng(SERVICE_MAP_POINTS[0].lat, SERVICE_MAP_POINTS[0].lng),
-          level: 9,
+          center: new kakao.maps.LatLng(SERVICE_MAP_CENTER.lat, SERVICE_MAP_CENTER.lng),
+          level: 6,
         });
 
-        const clusterer =
-          typeof kakao.maps.MarkerClusterer === "function"
-            ? new kakao.maps.MarkerClusterer({
-                map,
-                averageCenter: true,
-                minLevel: 7,
-                disableClickZoom: true,
-                styles: [
-                  {
-                    width: "46px",
-                    height: "46px",
-                    background: "linear-gradient(135deg, rgba(62, 106, 255, 0.96), rgba(24, 58, 166, 0.96))",
-                    borderRadius: "23px",
-                    color: "#ffffff",
-                    textAlign: "center",
-                    fontWeight: "800",
-                    lineHeight: "46px",
-                    border: "3px solid rgba(255,255,255,0.96)",
-                    boxShadow: "0 14px 28px rgba(33, 62, 135, 0.25)",
-                  },
-                  {
-                    width: "54px",
-                    height: "54px",
-                    background: "linear-gradient(135deg, rgba(38, 77, 204, 0.98), rgba(13, 39, 125, 0.98))",
-                    borderRadius: "27px",
-                    color: "#ffffff",
-                    textAlign: "center",
-                    fontWeight: "900",
-                    lineHeight: "54px",
-                    border: "3px solid rgba(255,255,255,0.98)",
-                    boxShadow: "0 18px 30px rgba(12, 35, 111, 0.28)",
-                  },
-                ],
-                calculator: [6, 18],
-              })
-            : null;
-
-        if (clusterer) {
-          kakao.maps.event.addListener(clusterer, "clusterclick", (cluster: any) => {
-            map.setLevel(Math.max(3, map.getLevel() - 1), {
-              anchor: cluster.getCenter(),
-            });
-          });
-        }
+        kakao.maps.event.addListener(map, "dragend", () => setShowReset(true));
+        kakao.maps.event.addListener(map, "zoom_changed", () => setShowReset(true));
 
         mapRef.current = map;
-        clustererRef.current = clusterer;
         setReady(true);
       })
       .catch((loadError) => {
-        setError(loadError instanceof Error ? loadError.message : "카카오 지도를 불러오지 못했습니다.");
+        setError(loadError instanceof Error ? loadError.message : "지도를 불러오지 못했어요.");
       });
 
     return () => {
       isMounted = false;
-      if (clustererRef.current) {
-        clustererRef.current.clear();
-      }
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
     };
@@ -125,97 +74,87 @@ export function KakaoMapPanel({
     try {
       const kakao = window.kakao;
       const map = mapRef.current;
-      const clusterer = clustererRef.current;
-      const safeListings = (Array.isArray(listings) ? listings : []).filter(
-        (listing) => Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude),
-      );
-
-      if (clusterer) {
-        clusterer.clear();
-      }
+      const visibleListings = listings.filter((listing) => Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude));
 
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
 
-      if (safeListings.length === 0) {
-        const fallbackBounds = new kakao.maps.LatLngBounds();
-        SERVICE_MAP_POINTS.forEach((point) => fallbackBounds.extend(new kakao.maps.LatLng(point.lat, point.lng)));
-        map.setBounds(fallbackBounds);
+      if (visibleListings.length === 0) {
+        map.setCenter(new kakao.maps.LatLng(SERVICE_MAP_CENTER.lat, SERVICE_MAP_CENTER.lng));
+        map.setLevel(7);
         return;
       }
 
       const bounds = new kakao.maps.LatLngBounds();
-      const markers = safeListings.map((listing) => {
+      const markers = visibleListings.map((listing) => {
         const position = new kakao.maps.LatLng(listing.latitude, listing.longitude);
         const marker = new kakao.maps.Marker({
           position,
           clickable: true,
-          image: createMarkerImage(kakao, listing.transactionType, listing.id === selectedListingId),
+          image: createMarkerImage(kakao, listing.id === selectedListingId),
         });
 
         kakao.maps.event.addListener(marker, "click", () => onSelect(listing.id));
+        marker.setMap(map);
         bounds.extend(position);
         return marker;
       });
 
       markersRef.current = markers;
 
-      if (clusterer) {
-        clusterer.addMarkers(markers);
-      } else {
-        markers.forEach((marker) => marker.setMap(map));
-      }
-
-      const selectedListing = selectedListingId ? safeListings.find((listing) => listing.id === selectedListingId) : null;
+      const selectedListing = selectedListingId ? visibleListings.find((listing) => listing.id === selectedListingId) : null;
       if (selectedListing) {
         map.panTo(new kakao.maps.LatLng(selectedListing.latitude, selectedListing.longitude));
-        return;
+      } else {
+        map.setBounds(bounds);
       }
-
-      map.setBounds(bounds);
+      setShowReset(false);
     } catch (mapError) {
-      console.error("Failed to render Kakao map", mapError);
-      setError(mapError instanceof Error ? mapError.message : "지도를 그리지 못했습니다.");
+      setError(mapError instanceof Error ? mapError.message : "지도를 그리지 못했어요.");
     }
   }, [listings, onSelect, ready, selectedListingId]);
 
+  function resetToRegion() {
+    if (!mapRef.current || !window.kakao?.maps) {
+      return;
+    }
+
+    const kakao = window.kakao;
+    const visibleListings = listings.filter((listing) => Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude));
+    if (visibleListings.length === 0) {
+      mapRef.current.setCenter(new kakao.maps.LatLng(SERVICE_MAP_CENTER.lat, SERVICE_MAP_CENTER.lng));
+      mapRef.current.setLevel(7);
+      setShowReset(false);
+      return;
+    }
+
+    const bounds = new kakao.maps.LatLngBounds();
+    visibleListings.forEach((listing) => bounds.extend(new kakao.maps.LatLng(listing.latitude, listing.longitude)));
+    mapRef.current.setBounds(bounds);
+    setShowReset(false);
+  }
+
   if (error) {
     return (
-      <div className="market-map-shell">
-        <div className="map-fallback">
-          <strong>지도를 불러오지 못했습니다.</strong>
-          <p>{error}</p>
-        </div>
+      <div className="map-fallback">
+        <strong>지도를 불러오지 못했어요</strong>
+        <p>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="market-map-shell">
-      <div className="map-legend">
-        <span className="map-legend-title">지도 안내</span>
-        <span className="map-legend-item neutral">가까운 매물은 클러스터로 묶여 표시됩니다.</span>
-        <button
-          type="button"
-          className={`map-legend-item interactive sale${transactionFilter === "sale" ? " active" : ""}`}
-          onClick={() => onTransactionFilterChange(transactionFilter === "sale" ? "all" : "sale")}
-        >
-          매매
-        </button>
-        <button
-          type="button"
-          className={`map-legend-item interactive jeonse${transactionFilter === "jeonse" ? " active" : ""}`}
-          onClick={() => onTransactionFilterChange(transactionFilter === "jeonse" ? "all" : "jeonse")}
-        >
-          전세
-        </button>
-        <button
-          type="button"
-          className={`map-legend-item interactive monthly${transactionFilter === "monthly" ? " active" : ""}`}
-          onClick={() => onTransactionFilterChange(transactionFilter === "monthly" ? "all" : "monthly")}
-        >
-          월세
-        </button>
+    <div className="map-shell">
+      <div className="map-toolbar">
+        <div>
+          <strong>지도에서 바로 비교하기</strong>
+          <p>핀을 누르면 목록 카드가 같이 강조돼요.</p>
+        </div>
+        {showReset ? (
+          <button type="button" className="button button-secondary button-small" onClick={resetToRegion}>
+            이 지역 다시 보기
+          </button>
+        ) : null}
       </div>
       <div ref={containerRef} className="map-canvas market-map-canvas" />
     </div>

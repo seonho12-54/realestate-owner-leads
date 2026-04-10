@@ -14,6 +14,7 @@ export type PublicListing = {
   listingTitle: string;
   propertyType: string;
   transactionType: string;
+  regionSlug: string;
   addressLine1: string;
   addressLine2: string | null;
   region3DepthName: string | null;
@@ -94,6 +95,7 @@ export type MyLeadSummary = {
   addressLine1: string;
   addressLine2: string | null;
   postalCode: string | null;
+  regionSlug: string | null;
   region2DepthName: string | null;
   region3DepthName: string | null;
   areaM2: number | null;
@@ -137,8 +139,8 @@ export type CreateLeadPayload = {
   utmContent: string;
   referrerUrl: string;
   landingUrl: string;
-  browserLatitude: number;
-  browserLongitude: number;
+  browserLatitude?: number | null;
+  browserLongitude?: number | null;
   photos: Array<{
     s3Key: string;
     fileName: string;
@@ -166,8 +168,8 @@ export type UpdateMyLeadPayload = {
   moveInDate: string;
   contactTime: string;
   description: string;
-  browserLatitude: number;
-  browserLongitude: number;
+  browserLatitude?: number | null;
+  browserLongitude?: number | null;
 };
 
 function normalizePhotoAsset(photo: Partial<LeadPhotoAsset> | null | undefined): LeadPhotoAsset | null {
@@ -213,6 +215,7 @@ function normalizePublicListing(listing: Partial<PublicListing> | null | undefin
     listingTitle: listing.listingTitle,
     propertyType: listing.propertyType,
     transactionType: listing.transactionType,
+    regionSlug: typeof listing.regionSlug === "string" ? listing.regionSlug : "",
     addressLine1: listing.addressLine1,
     addressLine2: typeof listing.addressLine2 === "string" ? listing.addressLine2 : null,
     region3DepthName: typeof listing.region3DepthName === "string" ? listing.region3DepthName : null,
@@ -367,6 +370,7 @@ function normalizeMyLead(value: unknown): MyLeadSummary | null {
     addressLine1: lead.addressLine1,
     addressLine2: typeof lead.addressLine2 === "string" ? lead.addressLine2 : null,
     postalCode: typeof lead.postalCode === "string" ? lead.postalCode : null,
+    regionSlug: typeof lead.regionSlug === "string" ? lead.regionSlug : null,
     region2DepthName: typeof lead.region2DepthName === "string" ? lead.region2DepthName : null,
     region3DepthName: typeof lead.region3DepthName === "string" ? lead.region3DepthName : null,
     areaM2: typeof lead.areaM2 === "number" ? lead.areaM2 : null,

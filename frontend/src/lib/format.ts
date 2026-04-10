@@ -71,11 +71,11 @@ export function getPropertyTypeLabel(value?: string | null) {
     case "officetel":
       return "오피스텔";
     case "villa":
-      return "빌라/연립";
+      return "빌라";
     case "house":
-      return "주택/단독";
+      return "주택";
     case "commercial":
-      return "상가/사무실";
+      return "상가";
     case "land":
       return "토지";
     default:

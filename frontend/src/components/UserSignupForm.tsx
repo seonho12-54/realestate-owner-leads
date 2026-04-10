@@ -5,7 +5,7 @@ import { useSession } from "@/context/SessionContext";
 import { signupUser } from "@/lib/auth";
 import { useRouter } from "@/lib/router";
 
-export function UserSignupForm({ nextUrl = "/me" }: { nextUrl?: string }) {
+export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   const router = useRouter();
   const { refreshSession } = useSession();
   const [name, setName] = useState("");
@@ -25,33 +25,38 @@ export function UserSignupForm({ nextUrl = "/me" }: { nextUrl?: string }) {
       await refreshSession();
       router.replace(nextUrl);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "회원가입에 실패했습니다.");
+      setError(submitError instanceof Error ? submitError.message : "회원가입에 실패했어요.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="auth-card signup-card" onSubmit={handleSubmit}>
-      <span className="eyebrow">JOIN UMI</span>
-      <h1 className="page-title">회원가입</h1>
-      <p className="page-copy compact-copy">
-        가입을 마치면 마이페이지에서 위치 인증을 한 번만 완료한 뒤 매물 접수와 수정 기능을 사용할 수 있습니다. 회원가입 단계에서는 위치 인증이 필요하지 않습니다.
-      </p>
+    <form className="auth-card" onSubmit={handleSubmit}>
+      <span className="eyebrow">회원가입</span>
+      <h1 className="page-title page-title-medium">내 동네 매물을 더 빠르게 받아보세요</h1>
+      <p className="page-copy compact-copy">가입 후 지역 인증을 완료하면 내 동네 매물만 안전하게 잠금 상태로 둘러볼 수 있어요.</p>
 
       <label className="field">
         <span>이름</span>
-        <input className="input" value={name} onChange={(event) => setName(event.target.value)} placeholder="이름" />
+        <input className="input" value={name} onChange={(event) => setName(event.target.value)} placeholder="홍길동" />
       </label>
 
       <label className="field">
         <span>이메일</span>
-        <input className="input" value={email} onChange={(event) => setEmail(event.target.value)} inputMode="email" placeholder="name@example.com" />
+        <input
+          className="input"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          inputMode="email"
+          autoComplete="username"
+          placeholder="name@example.com"
+        />
       </label>
 
       <label className="field">
-        <span>전화번호</span>
-        <input className="input" value={phone} onChange={(event) => setPhone(event.target.value)} inputMode="tel" placeholder="010-1234-5678" />
+        <span>연락처</span>
+        <input className="input" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="010-1234-5678" />
       </label>
 
       <label className="field">
@@ -61,7 +66,8 @@ export function UserSignupForm({ nextUrl = "/me" }: { nextUrl?: string }) {
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="영문과 숫자를 포함해 8자 이상"
+          autoComplete="new-password"
+          placeholder="영문과 숫자를 포함해 입력해주세요"
         />
       </label>
 
@@ -73,7 +79,7 @@ export function UserSignupForm({ nextUrl = "/me" }: { nextUrl?: string }) {
 
       <div className="button-row button-row-compact">
         <Link href={`/login?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
-          로그인
+          이미 계정이 있어요
         </Link>
       </div>
     </form>

@@ -2,6 +2,23 @@ import { readAccessToken } from "@/lib/token";
 
 type JsonBody = Record<string, unknown> | Array<unknown> | null;
 
+type ApiErrorResponse = {
+  error?: string;
+  code?: string;
+};
+
+export class ApiError extends Error {
+  code: string | null;
+  status: number;
+
+  constructor(message: string, options?: { code?: string | null; status?: number }) {
+    super(message);
+    this.name = "ApiError";
+    this.code = options?.code ?? null;
+    this.status = options?.status ?? 500;
+  }
+}
+
 function getConfiguredApiBase() {
   return import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
 }
@@ -69,19 +86,21 @@ export async function apiRequest<T>(path: string, init?: RequestInit & { json?: 
   const response = await apiFetch(path, init);
   const contentType = response.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
-  const data = isJson ? await response.json() : null;
+  const data = (isJson ? await response.json() : null) as ApiErrorResponse | null;
 
   if (!response.ok) {
-    const message =
-      data && typeof data === "object" && "error" in data && typeof data.error === "string"
-        ? data.error
-        : "요청을 처리하지 못했습니다.";
-
-    throw new Error(message);
+    const message = data?.error && typeof data.error === "string" ? data.error : "요청을 처리하지 못했어요.";
+    const code = data?.code && typeof data.code === "string" ? data.code : null;
+    throw new ApiError(message, {
+      code,
+      status: response.status,
+    });
   }
 
   if (!isJson && path.startsWith("/api/")) {
-    throw new Error("API 응답이 JSON이 아닙니다. 프론트 서버만 열려 있거나 /api 프록시가 빠졌는지 확인해 주세요.");
+    throw new ApiError("API 응답이 JSON이 아니에요. 프론트 개발 서버와 /api 프록시 설정을 확인해주세요.", {
+      status: response.status,
+    });
   }
 
   return data as T;

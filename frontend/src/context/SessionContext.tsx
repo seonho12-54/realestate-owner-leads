@@ -17,6 +17,12 @@ const defaultSession: SessionState = {
   kind: null,
   user: null,
   kakaoJsKey: null,
+  region: {
+    locked: false,
+    region: null,
+    verifiedAt: 0,
+    source: "none",
+  },
   isLoading: true,
 };
 

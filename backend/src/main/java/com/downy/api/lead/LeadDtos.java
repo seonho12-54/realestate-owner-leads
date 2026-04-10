@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -55,14 +54,37 @@ public final class LeadDtos {
         @Size(max = 100) String utmContent,
         @Size(max = 500) String referrerUrl,
         @Size(max = 500) String landingUrl,
-        @NotNull @Min(33) @Max(39) Double browserLatitude,
-        @NotNull @Min(124) @Max(132) Double browserLongitude,
+        @Min(33) @Max(39) Double browserLatitude,
+        @Min(124) @Max(132) Double browserLongitude,
         @Valid List<LeadPhotoInput> photos
     ) {
         @AssertTrue(message = "개인정보 수집 및 이용 동의가 필요합니다.")
         public boolean isPrivacyConsentAccepted() {
             return privacyConsent;
         }
+    }
+
+    public record UserLeadUpdateRequest(
+        @Positive long officeId,
+        @NotBlank @Size(min = 4, max = 160) String listingTitle,
+        @NotBlank @Size(min = 2, max = 100) String ownerName,
+        @NotBlank @Size(min = 9, max = 30) @Pattern(regexp = "^[0-9+\\-() ]+$", message = "연락처 형식을 확인해 주세요.") String phone,
+        @Email @Size(max = 191) String email,
+        @NotBlank String propertyType,
+        @NotBlank String transactionType,
+        @NotBlank @Size(min = 5, max = 255) String addressLine1,
+        @Size(max = 255) String addressLine2,
+        @Size(max = 20) String postalCode,
+        @Min(0) Double areaM2,
+        @Min(0) Long priceKrw,
+        @Min(0) Long depositKrw,
+        @Min(0) Long monthlyRentKrw,
+        @Size(max = 50) String moveInDate,
+        @Size(max = 100) String contactTime,
+        @Size(max = 3000) String description,
+        @Min(33) @Max(39) Double browserLatitude,
+        @Min(124) @Max(132) Double browserLongitude
+    ) {
     }
 
     public record LeadPhotoAsset(long id, long leadId, String fileName, String s3Key, String viewUrl) {
@@ -73,6 +95,7 @@ public final class LeadDtos {
         String listingTitle,
         String propertyType,
         String transactionType,
+        String regionSlug,
         String addressLine1,
         String addressLine2,
         String region3DepthName,
@@ -96,6 +119,7 @@ public final class LeadDtos {
         String listingTitle,
         String propertyType,
         String transactionType,
+        String regionSlug,
         String addressLine1,
         String addressLine2,
         String region3DepthName,
@@ -162,10 +186,41 @@ public final class LeadDtos {
     ) {
     }
 
+    public record MyLeadSummaryResponse(
+        long id,
+        long officeId,
+        String officeName,
+        String listingTitle,
+        String ownerName,
+        String phone,
+        String email,
+        String propertyType,
+        String transactionType,
+        String addressLine1,
+        String addressLine2,
+        String postalCode,
+        String regionSlug,
+        String region2DepthName,
+        String region3DepthName,
+        Double areaM2,
+        Long priceKrw,
+        Long depositKrw,
+        Long monthlyRentKrw,
+        String moveInDate,
+        String contactTime,
+        String description,
+        String status,
+        boolean isPublished,
+        Instant createdAt,
+        int photoCount,
+        List<LeadPhotoAsset> photos
+    ) {
+    }
+
     public record AdminLeadUpdateRequest(
         @NotBlank String status,
-        boolean isPublished,
-        @Size(max = 2000) String adminMemo
+        @Size(max = 2000) String adminMemo,
+        boolean isPublished
     ) {
     }
 }

@@ -8,38 +8,34 @@ import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 export function SiteLayout() {
   const { session } = useSession();
   const isAdmin = session.kind === "admin";
-  const isUser = session.kind === "user";
+  const regionName = session.region.region?.name ?? "지역 인증 전";
 
   return (
-    <div className="stitch-shell">
-      <header className="stitch-topbar">
-        <Link href={isAdmin ? "/admin/leads" : "/"} className="stitch-brand-block">
-          <span className="stitch-brand-kicker">WEB EDITION</span>
-          <strong className="stitch-brand-title">UMI REALESTATE</strong>
-          <p className="stitch-brand-note">{SERVICE_REGION_LABEL}</p>
-        </Link>
+    <div className="app-shell">
+      <header className="top-shell">
+        <div className="brand-row">
+          <Link href={isAdmin ? "/admin/leads" : "/"} className="brand-link">
+            <span className="brand-badge">LOCAL HOME</span>
+            <strong>동네집</strong>
+          </Link>
+          <div className="region-pill">
+            <span>인증 지역</span>
+            <strong>{regionName}</strong>
+          </div>
+        </div>
 
-        <div className="stitch-auth-actions">
+        <div className="top-actions">
           {isAdmin ? (
             <>
               <Link href="/admin/leads" className="nav-button nav-button-primary">
-                관리자 모드
+                관리자
               </Link>
-              <Link href="/sell" className="nav-button nav-button-secondary">
-                매물 접수
-              </Link>
-              <LogoutButton action="/api/auth/logout" label="로그아웃" />
+              <LogoutButton action="/api/admin/logout" label="로그아웃" />
             </>
-          ) : isUser ? (
+          ) : session.authenticated ? (
             <>
-              <Link href="/" className="nav-button nav-button-secondary">
-                홈
-              </Link>
               <Link href="/sell" className="nav-button nav-button-secondary">
-                매물 접수
-              </Link>
-              <Link href="/me" className="nav-button nav-button-primary">
-                마이페이지
+                매물 등록
               </Link>
               <LogoutButton action="/api/auth/logout" label="로그아웃" />
             </>
@@ -56,9 +52,36 @@ export function SiteLayout() {
         </div>
       </header>
 
+      {!isAdmin ? (
+        <section className="service-strip">
+          <div>
+            <span className="service-strip-label">서비스 지역</span>
+            <strong>{SERVICE_REGION_LABEL}</strong>
+          </div>
+          <p>내 동네 인증을 한 번만 완료하면 그 지역 매물만 빠르게 비교할 수 있어요.</p>
+        </section>
+      ) : null}
+
       <main className="page-container">
         <Outlet />
       </main>
+
+      {!isAdmin ? (
+        <nav className="bottom-nav" aria-label="주요 메뉴">
+          <Link href="/" className="bottom-nav-link">
+            홈
+          </Link>
+          <Link href="/explore" className="bottom-nav-link">
+            둘러보기
+          </Link>
+          <Link href="/saved" className="bottom-nav-link">
+            저장
+          </Link>
+          <Link href="/me" className="bottom-nav-link">
+            설정
+          </Link>
+        </nav>
+      ) : null}
     </div>
   );
 }
