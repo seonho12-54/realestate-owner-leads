@@ -868,8 +868,73 @@ public class LeadService {
     @Transactional
     public void updateLeadAdminFields(long leadId, AdminLeadUpdateRequest request, long adminId, RequestMeta requestMeta) {
         ensureOfficeExists(request.officeId());
-        AddressSearchResult geocoded = kakaoLocationService.geocodeWithinAllowedArea(request.addressLine1());
-        ServiceAreaSupport.ServiceArea serviceArea = resolveServiceArea(geocoded);
+        AdminLeadLocationSnapshot currentLeadLocation = jdbcTemplate.query(
+            """
+                SELECT
+                    address_line1,
+                    postal_code,
+                    region_1depth_name,
+                    region_2depth_name,
+                    region_3depth_name,
+                    region_slug,
+                    latitude,
+                    longitude
+                FROM leads
+                WHERE id = ?
+                LIMIT 1
+                """,
+            (rs, rowNum) -> new AdminLeadLocationSnapshot(
+                rs.getString("address_line1"),
+                rs.getString("postal_code"),
+                rs.getString("region_1depth_name"),
+                rs.getString("region_2depth_name"),
+                rs.getString("region_3depth_name"),
+                rs.getString("region_slug"),
+                getNullableDouble(rs.getBigDecimal("latitude")),
+                getNullableDouble(rs.getBigDecimal("longitude"))
+            ),
+            leadId
+        ).stream().findFirst().orElse(null);
+
+        if (currentLeadLocation == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "留ㅻЪ??李얠쓣 ???놁뼱??");
+        }
+
+        ResolvedLeadLocation resolvedLocation;
+        boolean samePrimaryAddress =
+            currentLeadLocation.addressLine1() != null &&
+            request.addressLine1().trim().equals(currentLeadLocation.addressLine1().trim());
+
+        if (
+            samePrimaryAddress &&
+            currentLeadLocation.regionSlug() != null &&
+            currentLeadLocation.latitude() != null &&
+            currentLeadLocation.longitude() != null
+        ) {
+            resolvedLocation = new ResolvedLeadLocation(
+                currentLeadLocation.addressLine1(),
+                blankToNull(request.postalCode()) != null ? request.postalCode() : currentLeadLocation.postalCode(),
+                currentLeadLocation.region1DepthName(),
+                currentLeadLocation.region2DepthName(),
+                currentLeadLocation.region3DepthName(),
+                currentLeadLocation.regionSlug(),
+                currentLeadLocation.latitude(),
+                currentLeadLocation.longitude()
+            );
+        } else {
+            AddressSearchResult geocoded = kakaoLocationService.geocodeWithinAllowedArea(request.addressLine1());
+            ServiceAreaSupport.ServiceArea serviceArea = resolveServiceArea(geocoded);
+            resolvedLocation = new ResolvedLeadLocation(
+                geocoded.roadAddress() != null ? geocoded.roadAddress() : geocoded.addressName(),
+                blankToNull(request.postalCode()) != null ? request.postalCode() : geocoded.postalCode(),
+                geocoded.region1DepthName(),
+                geocoded.region2DepthName(),
+                geocoded.region3DepthName(),
+                serviceArea.slug(),
+                geocoded.latitude(),
+                geocoded.longitude()
+            );
+        }
 
         int updated = jdbcTemplate.update(
             """
@@ -922,15 +987,15 @@ public class LeadService {
             blankToNull(request.email()),
             request.propertyType(),
             request.transactionType(),
-            geocoded.roadAddress() != null ? geocoded.roadAddress() : geocoded.addressName(),
+            resolvedLocation.addressLine1(),
             blankToNull(request.addressLine2()),
-            blankToNull(request.postalCode()) != null ? request.postalCode() : geocoded.postalCode(),
-            geocoded.region1DepthName(),
-            geocoded.region2DepthName(),
-            geocoded.region3DepthName(),
-            serviceArea.slug(),
-            BigDecimal.valueOf(geocoded.latitude()),
-            BigDecimal.valueOf(geocoded.longitude()),
+            resolvedLocation.postalCode(),
+            resolvedLocation.region1DepthName(),
+            resolvedLocation.region2DepthName(),
+            resolvedLocation.region3DepthName(),
+            resolvedLocation.regionSlug(),
+            BigDecimal.valueOf(resolvedLocation.latitude()),
+            BigDecimal.valueOf(resolvedLocation.longitude()),
             request.areaM2() == null ? null : BigDecimal.valueOf(request.areaM2()),
             request.priceKrw(),
             request.depositKrw(),
@@ -959,9 +1024,9 @@ public class LeadService {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("listingTitle", request.listingTitle());
         payload.put("transactionType", request.transactionType());
-        payload.put("region2DepthName", geocoded.region2DepthName());
-        payload.put("region3DepthName", geocoded.region3DepthName());
-        payload.put("regionSlug", serviceArea.slug());
+        payload.put("region2DepthName", resolvedLocation.region2DepthName());
+        payload.put("region3DepthName", resolvedLocation.region3DepthName());
+        payload.put("regionSlug", resolvedLocation.regionSlug());
         payload.put("status", request.status());
         payload.put("isPublished", request.isPublished());
 
@@ -1277,6 +1342,30 @@ public class LeadService {
         String landingUrl,
         Instant createdAt,
         int photoCount
+    ) {
+    }
+
+    private record AdminLeadLocationSnapshot(
+        String addressLine1,
+        String postalCode,
+        String region1DepthName,
+        String region2DepthName,
+        String region3DepthName,
+        String regionSlug,
+        Double latitude,
+        Double longitude
+    ) {
+    }
+
+    private record ResolvedLeadLocation(
+        String addressLine1,
+        String postalCode,
+        String region1DepthName,
+        String region2DepthName,
+        String region3DepthName,
+        String regionSlug,
+        double latitude,
+        double longitude
     ) {
     }
 
