@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import { Link } from "@/components/RouterLink";
-import { apiRequest } from "@/lib/api";
-import { formatFileSize, prepareImageForUpload, resolveUploadContentType } from "@/lib/client-image";
+import { getAdminLeadsPath } from "@/lib/admin-lead-status";
+import { formatFileSize } from "@/lib/client-image";
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel } from "@/lib/format";
+import {
+  createEditablePhotos,
+  releaseEditablePhoto,
+  releaseEditablePhotos,
+  reindexEditablePhotos,
+  toLeadPhotoInputs,
+  uploadEditablePhoto,
+  type EditableLeadPhoto,
+} from "@/lib/lead-photo-editor";
 import type { AdminLeadSummary, UpdateAdminLeadPayload } from "@/lib/leads";
 import { updateLeadAdminFields } from "@/lib/leads";
 import type { OfficeOption } from "@/lib/offices";
+import { useRouter } from "@/lib/router";
 import {
   leadStatusOptions,
   propertyTypeOptions,
@@ -39,18 +49,12 @@ type AdminLeadFormState = {
   isPublished: boolean;
 };
 
-type EditablePhoto = {
-  id: string;
-  s3Key: string;
-  fileName: string;
-  contentType: string;
-  fileSize: number;
-  displayOrder: number;
-  previewUrl: string | null;
-  isObjectUrl: boolean;
-  originalFileSize: number;
-  optimizedFileSize: number;
-  wasCompressed: boolean;
+const statusActionLabels: Record<LeadStatus, string> = {
+  new: "신규접수로",
+  contacted: "연락완료로",
+  reviewing: "검토중으로",
+  completed: "처리완료로",
+  closed: "반려/보류로",
 };
 
 function getStatusLabel(status: LeadStatus) {
@@ -98,39 +102,35 @@ function createFormState(lead: AdminLeadSummary): AdminLeadFormState {
   };
 }
 
-function createEditablePhotos(lead: AdminLeadSummary): EditablePhoto[] {
-  return [...lead.photos]
-    .sort((left, right) => left.displayOrder - right.displayOrder)
-    .map((photo, index) => ({
-      id: `existing-${photo.id}`,
-      s3Key: photo.s3Key,
-      fileName: photo.fileName,
-      contentType: photo.contentType ?? "image/jpeg",
-      fileSize: Math.max(photo.fileSize ?? 1, 1),
-      displayOrder: index,
-      previewUrl: photo.viewUrl,
-      isObjectUrl: false,
-      originalFileSize: Math.max(photo.fileSize ?? 0, 0),
-      optimizedFileSize: Math.max(photo.fileSize ?? 0, 0),
-      wasCompressed: false,
-    }));
-}
-
-export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]; offices: OfficeOption[] }) {
+export function AdminLeadManager({
+  leads,
+  offices,
+  activeStatus,
+}: {
+  leads: AdminLeadSummary[];
+  offices: OfficeOption[];
+  activeStatus: LeadStatus | null;
+}) {
+  const router = useRouter();
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(leads[0]?.id ?? null);
   const [form, setForm] = useState<AdminLeadFormState | null>(leads[0] ? createFormState(leads[0]) : null);
-  const [photos, setPhotos] = useState<EditablePhoto[]>(leads[0] ? createEditablePhotos(leads[0]) : []);
+  const [photos, setPhotos] = useState<EditableLeadPhoto[]>(leads[0] ? createEditablePhotos(leads[0].photos) : []);
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [uploadHint, setUploadHint] = useState<string | null>(null);
-  const photosRef = useRef<EditablePhoto[]>(photos);
+  const photosRef = useRef<EditableLeadPhoto[]>(photos);
 
   const selectedLead = useMemo(() => leads.find((lead) => lead.id === selectedLeadId) ?? leads[0] ?? null, [leads, selectedLeadId]);
 
   useEffect(() => {
     if (!selectedLead && leads[0]) {
       setSelectedLeadId(leads[0].id);
+      return;
+    }
+
+    if (selectedLead && !leads.some((lead) => lead.id === selectedLead.id)) {
+      setSelectedLeadId(leads[0]?.id ?? null);
     }
   }, [leads, selectedLead]);
 
@@ -145,71 +145,21 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
       return;
     }
 
-    photosRef.current.forEach((photo) => {
-      if (photo.isObjectUrl && photo.previewUrl) {
-        URL.revokeObjectURL(photo.previewUrl);
-      }
-    });
+    releaseEditablePhotos(photosRef.current);
 
+    const nextPhotos = createEditablePhotos(selectedLead.photos);
+    photosRef.current = nextPhotos;
     setForm(createFormState(selectedLead));
-    setPhotos(createEditablePhotos(selectedLead));
+    setPhotos(nextPhotos);
     setMessage(null);
     setUploadHint(null);
   }, [selectedLead]);
 
   useEffect(() => {
     return () => {
-      photosRef.current.forEach((photo) => {
-        if (photo.isObjectUrl && photo.previewUrl) {
-          URL.revokeObjectURL(photo.previewUrl);
-        }
-      });
+      releaseEditablePhotos(photosRef.current);
     };
   }, []);
-
-  async function uploadSinglePhoto(file: File, indexOffset: number) {
-    const prepared = await prepareImageForUpload(file);
-    const contentType = resolveUploadContentType(prepared.file);
-
-    if (!contentType) {
-      throw new Error("이미지 형식을 확인할 수 없습니다. JPG, PNG, WEBP 파일만 업로드해 주세요.");
-    }
-
-    const presign = await apiRequest<{ key: string; uploadUrl: string }>("/api/uploads/presign", {
-      method: "POST",
-      json: {
-        fileName: prepared.file.name,
-        contentType,
-        fileSize: prepared.file.size,
-      },
-    });
-
-    const uploadResponse = await fetch(presign.uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": contentType,
-      },
-      body: prepared.file,
-    });
-
-    if (!uploadResponse.ok) {
-      throw new Error("사진 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-    }
-
-    return {
-      id: `${Date.now()}-${indexOffset}-${prepared.file.name}`,
-      s3Key: presign.key,
-      fileName: prepared.file.name,
-      contentType,
-      fileSize: prepared.file.size,
-      displayOrder: indexOffset,
-      previewUrl: URL.createObjectURL(prepared.file),
-      isObjectUrl: true,
-      originalFileSize: prepared.originalFileSize,
-      optimizedFileSize: prepared.optimizedFileSize,
-      wasCompressed: prepared.wasCompressed,
-    } satisfies EditablePhoto;
-  }
 
   async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const nextFiles = Array.from(event.target.files ?? []);
@@ -224,25 +174,19 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
       setMessage(null);
 
       const existingCount = photos.length;
-      const uploadedPhotos: EditablePhoto[] = [];
+      const uploadedPhotos: EditableLeadPhoto[] = [];
 
       for (const [offset, file] of nextFiles.entries()) {
-        const uploaded = await uploadSinglePhoto(file, existingCount + offset);
-        uploadedPhotos.push(uploaded);
+        uploadedPhotos.push(await uploadEditablePhoto(file, existingCount + offset));
       }
 
-      const combinedPhotos = [...photos, ...uploadedPhotos].map((photo, index) => ({
-        ...photo,
-        displayOrder: index,
-      }));
-
-      setPhotos(combinedPhotos);
+      setPhotos((current) => reindexEditablePhotos([...current, ...uploadedPhotos]));
 
       const compressedCount = uploadedPhotos.filter((photo) => photo.wasCompressed).length;
       setUploadHint(
         compressedCount > 0
           ? `${compressedCount}장의 사진을 최적화해서 업로드했습니다.`
-          : "사진 업로드가 완료되었습니다.",
+          : "사진 업로드를 마쳤습니다.",
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "사진 업로드에 실패했습니다.");
@@ -253,26 +197,21 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
 
   function handleRemovePhoto(photoId: string) {
     setPhotos((current) => {
-      const target = current.find((photo) => photo.id === photoId);
-      if (target?.isObjectUrl && target.previewUrl) {
-        URL.revokeObjectURL(target.previewUrl);
+      const target = current.find((photo) => photo.localId === photoId);
+      if (target) {
+        releaseEditablePhoto(target);
       }
 
-      return current
-        .filter((photo) => photo.id !== photoId)
-        .map((photo, index) => ({
-          ...photo,
-          displayOrder: index,
-        }));
+      return reindexEditablePhotos(current.filter((photo) => photo.localId !== photoId));
     });
   }
 
-  async function handleSave() {
-    if (!selectedLead || !form) {
-      return;
+  function buildPayload(nextStatus = form?.status ?? "reviewing"): UpdateAdminLeadPayload | null {
+    if (!form) {
+      return null;
     }
 
-    const payload: UpdateAdminLeadPayload = {
+    return {
       officeId: Number(form.officeId),
       listingTitle: form.listingTitle.trim(),
       ownerName: form.ownerName.trim(),
@@ -292,17 +231,24 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
       description: form.description.trim(),
       privacyConsent: form.privacyConsent,
       marketingConsent: form.marketingConsent,
-      status: form.status,
+      status: nextStatus,
       adminMemo: form.adminMemo.trim(),
       isPublished: form.isPublished,
-      photos: photos.map((photo, index) => ({
-        s3Key: photo.s3Key,
-        fileName: photo.fileName,
-        contentType: photo.contentType,
-        fileSize: photo.fileSize,
-        displayOrder: index,
-      })),
+      photos: toLeadPhotoInputs(photos),
     };
+  }
+
+  async function persistLead(options?: { nextStatus?: LeadStatus; nextPath?: string; successMessage?: string }) {
+    if (!selectedLead || !form) {
+      return;
+    }
+
+    const nextStatus = options?.nextStatus ?? form.status;
+    const payload = buildPayload(nextStatus);
+
+    if (!payload) {
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -310,8 +256,19 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
 
       await updateLeadAdminFields(selectedLead.id, payload);
 
-      setMessage("매물 수정 내용을 저장했습니다. 최신 정보로 다시 불러옵니다.");
-      window.location.reload();
+      const successMessage = options?.successMessage ?? "변경 내용을 저장했습니다.";
+      setMessage(successMessage);
+
+      if (options?.nextPath) {
+        if (window.location.pathname === options.nextPath) {
+          router.refresh();
+        } else {
+          router.replace(options.nextPath);
+        }
+        return;
+      }
+
+      router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "저장에 실패했습니다.");
     } finally {
@@ -319,11 +276,25 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
     }
   }
 
+  async function handleStatusMove(nextStatus: LeadStatus) {
+    if (!form) {
+      return;
+    }
+
+    setForm((current) => (current ? { ...current, status: nextStatus } : current));
+
+    await persistLead({
+      nextStatus,
+      nextPath: getAdminLeadsPath(nextStatus),
+      successMessage: `${getStatusLabel(nextStatus)} 분류로 이동했습니다.`,
+    });
+  }
+
   if (leads.length === 0) {
     return (
       <div className="empty-panel">
-        <strong>접수된 매물이 없습니다.</strong>
-        <p>새 접수가 들어오면 이 화면에서 내용을 수정하고 공개 여부를 관리할 수 있습니다.</p>
+        <strong>선택된 분류에 매물이 없습니다.</strong>
+        <p>상단 분류 버튼을 눌러 다른 상태를 확인하거나, 새 접수가 들어오면 여기에서 바로 관리할 수 있습니다.</p>
       </div>
     );
   }
@@ -378,11 +349,16 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
             <h2 className="section-title">{selectedLead.listingTitle}</h2>
           </div>
 
-          {selectedLead.isPublished ? (
-            <Link href={`/listings/${selectedLead.id}`} className="button button-secondary button-small">
-              공개 상세 보기
+          <div className="button-row">
+            <Link href={getAdminLeadsPath(activeStatus)} className="button button-secondary button-small">
+              현재 분류 보기
             </Link>
-          ) : null}
+            {selectedLead.isPublished ? (
+              <Link href={`/listings/${selectedLead.id}`} className="button button-secondary button-small">
+                공개 상세 보기
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         <div className="detail-info-grid">
@@ -407,6 +383,31 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
         <section className="admin-form-section">
           <div className="section-heading section-heading-compact">
             <div>
+              <span className="eyebrow">상태 이동</span>
+              <h3 className="section-title section-title-small">분류 변경 버튼</h3>
+            </div>
+          </div>
+
+          <p className="page-copy compact-copy">버튼을 누르면 저장 후 해당 분류 페이지로 바로 이동합니다.</p>
+
+          <div className="button-row">
+            {leadStatusOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`button button-small ${form.status === option.value ? "button-primary" : "button-secondary"}`}
+                onClick={() => void handleStatusMove(option.value)}
+                disabled={isSaving || isUploadingPhotos}
+              >
+                {statusActionLabels[option.value]}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin-form-section">
+          <div className="section-heading section-heading-compact">
+            <div>
               <span className="eyebrow">사진</span>
               <h3 className="section-title section-title-small">등록 사진</h3>
             </div>
@@ -423,25 +424,29 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
             {photos.length === 0 ? (
               <div className="empty-panel">
                 <strong>등록된 사진이 없습니다.</strong>
-                <p>여기서 새 사진을 추가하거나 기존 사진을 정리할 수 있습니다.</p>
+                <p>사진을 추가하거나 불필요한 사진을 지운 뒤 저장할 수 있습니다.</p>
               </div>
             ) : (
               photos.map((photo) => (
-                <article key={photo.id} className="admin-photo-card">
+                <article key={photo.localId} className="admin-photo-card">
                   {photo.previewUrl ? (
                     <img className="admin-photo-thumb" src={photo.previewUrl} alt={photo.fileName} />
                   ) : (
-                    <div className="admin-photo-thumb admin-photo-thumb-empty">미리보기 없음</div>
+                    <div className="admin-photo-thumb admin-photo-thumb-empty">미리보기를 준비 중입니다.</div>
                   )}
                   <div className="admin-photo-meta">
                     <strong>{photo.fileName}</strong>
                     <span>
-                      {photo.originalFileSize > 0 ? formatFileSize(photo.originalFileSize) : "기존 사진"}
+                      {photo.originalFileSize > 0 ? formatFileSize(photo.originalFileSize) : "기존 등록 사진"}
                       {photo.wasCompressed ? ` -> ${formatFileSize(photo.optimizedFileSize)}` : ""}
                     </span>
                   </div>
-                  <button type="button" className="button button-ghost button-small" onClick={() => handleRemovePhoto(photo.id)}>
-                    사진 제거
+                  <button
+                    type="button"
+                    className="button button-ghost button-small"
+                    onClick={() => handleRemovePhoto(photo.localId)}
+                  >
+                    사진 삭제
                   </button>
                 </article>
               ))
@@ -465,7 +470,7 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
                 value={form.officeId}
                 onChange={(event) => setForm((current) => (current ? { ...current, officeId: event.target.value } : current))}
               >
-                <option value="">중개사무소를 선택해 주세요</option>
+                <option value="">중개사무소를 선택해 주세요.</option>
                 {offices.map((office) => (
                   <option key={office.id} value={office.id}>
                     {office.name}
@@ -690,7 +695,7 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
               className="textarea"
               value={form.adminMemo}
               onChange={(event) => setForm((current) => (current ? { ...current, adminMemo: event.target.value } : current))}
-              placeholder="보완 요청, 공개 보류 사유, 연락 메모 등을 적어 주세요."
+              placeholder="보완 요청, 공개 보류 사유, 연락 메모를 적어 주세요."
             />
           </label>
 
@@ -706,7 +711,12 @@ export function AdminLeadManager({ leads, offices }: { leads: AdminLeadSummary[]
         {message ? <div className="success-banner">{message}</div> : null}
 
         <div className="button-row">
-          <button type="button" className="button button-primary" onClick={handleSave} disabled={isSaving || isUploadingPhotos}>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => void persistLead()}
+            disabled={isSaving || isUploadingPhotos}
+          >
             {isSaving ? "저장 중..." : "변경 저장"}
           </button>
         </div>

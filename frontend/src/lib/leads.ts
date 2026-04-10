@@ -450,6 +450,17 @@ export async function listAdminLeads(status?: string | null) {
   return normalizeAdminLeadArray(response);
 }
 
+export async function getAdminLeadDetail(leadId: number) {
+  const leads = await listAdminLeads();
+  const lead = leads.find((item) => item.id === leadId) ?? null;
+
+  if (!lead) {
+    throw new Error("관리 중인 매물을 찾지 못했어요.");
+  }
+
+  return lead;
+}
+
 export type UpdateAdminLeadPayload = {
   officeId: number;
   listingTitle: string;

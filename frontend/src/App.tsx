@@ -30,6 +30,7 @@ export default function App() {
         <Route path="/sell/done" element={<SellDonePage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/leads" element={<AdminLeadsPage />} />
+        <Route path="/admin/leads/:statusFilter" element={<AdminLeadsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/listings/:listingId" element={<ListingDetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
