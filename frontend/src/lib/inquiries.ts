@@ -96,6 +96,17 @@ export async function createInquiry(payload: { title: string; content: string; s
   });
 }
 
+export async function updateInquiry(inquiryId: number, payload: { title: string; content: string; secret: boolean }) {
+  return apiRequest<{ ok: boolean }>(`/api/inquiries/${inquiryId}`, {
+    method: "PATCH",
+    json: {
+      title: payload.title.trim(),
+      content: payload.content.trim(),
+      secret: payload.secret,
+    },
+  });
+}
+
 export async function replyInquiry(inquiryId: number, reply: string) {
   return apiRequest<{ ok: boolean }>(`/api/admin/inquiries/${inquiryId}/reply`, {
     method: "PATCH",

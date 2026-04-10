@@ -19,6 +19,16 @@ public final class InquiryDtos {
     public record CreateInquiryResponse(long id) {
     }
 
+    public record UpdateInquiryRequest(
+        @NotBlank @Size(min = 2, max = 160) String title,
+        @NotBlank @Size(min = 5, max = 5000) String content,
+        boolean secret
+    ) {
+    }
+
+    public record UpdateInquiryResponse(boolean ok) {
+    }
+
     public record InquirySummaryResponse(
         long id,
         String title,
@@ -43,6 +53,7 @@ public final class InquiryDtos {
         boolean answered,
         String status,
         Instant createdAt,
+        String previewText,
         String content,
         String adminReply,
         Instant adminReplyAt,

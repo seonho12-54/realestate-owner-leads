@@ -81,6 +81,45 @@ public class InquiryService {
         return inquiryId;
     }
 
+    @Transactional
+    public void updateInquiry(long inquiryId, InquiryDtos.UpdateInquiryRequest request, long userId, RequestMeta requestMeta) {
+        ensureUserExists(userId);
+
+        InquiryRow existing = requireInquiry(inquiryId);
+        if (!Objects.equals(existing.userId(), userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "본인이 작성한 문의글만 수정할 수 있습니다.");
+        }
+
+        int updated = jdbcTemplate.update(
+            """
+                UPDATE support_inquiries
+                SET
+                    title = ?,
+                    content = ?,
+                    is_secret = ?
+                WHERE id = ? AND user_id = ?
+                """,
+            request.title().trim(),
+            request.content().trim(),
+            request.secret(),
+            inquiryId,
+            userId
+        );
+
+        if (updated == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "문의글을 수정하지 못했습니다.");
+        }
+
+        auditLogService.write(
+            null,
+            "inquiry.updated",
+            "support_inquiry",
+            inquiryId,
+            requestMeta,
+            Map.of("userId", userId, "secret", request.secret(), "title", request.title().trim())
+        );
+    }
+
     public List<InquirySummaryResponse> listInquiries(Long viewerUserId, boolean adminView) {
         return jdbcTemplate.query(
             """
@@ -193,11 +232,44 @@ public class InquiryService {
             row.answered(),
             row.status(),
             row.createdAt(),
+            canRead ? abbreviate(row.content(), 90) : SECRET_PREVIEW,
             canRead ? row.content() : SECRET_CONTENT,
             canRead ? row.adminReply() : (row.answered() ? SECRET_REPLY : null),
             row.adminReplyAt(),
             canRead ? row.adminReplyAdminName() : null
         );
+    }
+
+    private InquiryRow requireInquiry(long inquiryId) {
+        InquiryRow row = jdbcTemplate.query(
+            """
+                SELECT
+                    i.id,
+                    i.user_id,
+                    i.title,
+                    i.content,
+                    i.is_secret,
+                    i.status,
+                    i.admin_reply,
+                    i.admin_reply_at,
+                    i.created_at,
+                    u.name AS user_name,
+                    a.name AS admin_name
+                FROM support_inquiries i
+                LEFT JOIN users u ON u.id = i.user_id
+                LEFT JOIN admins a ON a.id = i.admin_reply_admin_id
+                WHERE i.id = ?
+                LIMIT 1
+                """,
+            (rs, rowNum) -> mapRow(rs),
+            inquiryId
+        ).stream().findFirst().orElse(null);
+
+        if (row == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "문의글을 찾을 수 없습니다.");
+        }
+
+        return row;
     }
 
     private InquiryRow mapRow(java.sql.ResultSet rs) throws java.sql.SQLException {

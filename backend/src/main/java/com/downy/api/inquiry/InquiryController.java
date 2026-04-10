@@ -8,10 +8,13 @@ import com.downy.api.inquiry.InquiryDtos.CreateInquiryRequest;
 import com.downy.api.inquiry.InquiryDtos.CreateInquiryResponse;
 import com.downy.api.inquiry.InquiryDtos.InquiryDetailResponse;
 import com.downy.api.inquiry.InquiryDtos.InquirySummaryResponse;
+import com.downy.api.inquiry.InquiryDtos.UpdateInquiryRequest;
+import com.downy.api.inquiry.InquiryDtos.UpdateInquiryResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,5 +54,16 @@ public class InquiryController {
         UserSession userSession = sessionService.requireUser(httpRequest);
         long inquiryId = inquiryService.createInquiry(request, userSession.userId(), RequestMeta.from(httpRequest));
         return new CreateInquiryResponse(inquiryId);
+    }
+
+    @PatchMapping("/{inquiryId}")
+    public UpdateInquiryResponse update(
+        @PathVariable long inquiryId,
+        @Valid @RequestBody UpdateInquiryRequest request,
+        HttpServletRequest httpRequest
+    ) {
+        UserSession userSession = sessionService.requireUser(httpRequest);
+        inquiryService.updateInquiry(inquiryId, request, userSession.userId(), RequestMeta.from(httpRequest));
+        return new UpdateInquiryResponse(true);
     }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
@@ -8,6 +8,7 @@ import {
   getInquiryDetail,
   listInquiries,
   replyInquiry,
+  updateInquiry,
   type InquiryDetail,
   type InquirySummary,
 } from "@/lib/inquiries";
@@ -18,10 +19,10 @@ function getStatusLabel(answered: boolean) {
 
 function getListCountText(count: number) {
   if (count === 0) {
-    return "등록된 문의가 아직 없어요.";
+    return "등록된 문의글이 아직 없어요.";
   }
 
-  return `현재 ${count}개의 문의글이 등록되어 있어요.`;
+  return `현재 ${count}개의 문의글이 등록돼 있어요.`;
 }
 
 export function SellPage() {
@@ -30,6 +31,7 @@ export function SellPage() {
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
   const [selectedInquiry, setSelectedInquiry] = useState<InquiryDetail | null>(null);
   const [showCompose, setShowCompose] = useState(false);
+  const [editingInquiryId, setEditingInquiryId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [secret, setSecret] = useState(false);
@@ -48,6 +50,42 @@ export function SellPage() {
   const isAdmin = session.kind === "admin";
   const answeredCount = inquiries.filter((inquiry) => inquiry.answered).length;
   const openCount = inquiries.length - answeredCount;
+  const isEditingSelected = selectedInquiry !== null && editingInquiryId === selectedInquiry.id;
+  const submitButtonLabel = editingInquiryId ? "문의글 수정" : "게시글 등록";
+
+  const selectedSummary = useMemo(
+    () => inquiries.find((inquiry) => inquiry.id === selectedInquiryId) ?? null,
+    [inquiries, selectedInquiryId],
+  );
+
+  function resetComposeForm() {
+    setTitle("");
+    setContent("");
+    setSecret(false);
+    setEditingInquiryId(null);
+    setSubmitError(null);
+  }
+
+  function openCreateForm() {
+    resetComposeForm();
+    setShowCompose(true);
+    setSuccessMessage(null);
+  }
+
+  function openEditForm(inquiry: InquiryDetail) {
+    setTitle(inquiry.title);
+    setContent(inquiry.content);
+    setSecret(inquiry.secret);
+    setEditingInquiryId(inquiry.id);
+    setShowCompose(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+  }
+
+  function closeComposeForm() {
+    setShowCompose(false);
+    resetComposeForm();
+  }
 
   async function loadInquiries(preferredInquiryId?: number | null) {
     setIsListLoading(true);
@@ -144,20 +182,29 @@ export function SellPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await createInquiry({
-        title,
-        content,
-        secret,
-      });
+      if (editingInquiryId) {
+        await updateInquiry(editingInquiryId, {
+          title,
+          content,
+          secret,
+        });
+        setSuccessMessage("문의글을 수정했어요.");
+        await loadInquiries(editingInquiryId);
+        const refreshed = await getInquiryDetail(editingInquiryId);
+        setSelectedInquiry(refreshed);
+      } else {
+        const response = await createInquiry({
+          title,
+          content,
+          secret,
+        });
+        setSuccessMessage("문의글이 등록됐어요. 답변이 달리면 이 화면에서 바로 확인할 수 있어요.");
+        await loadInquiries(response.id);
+      }
 
-      setTitle("");
-      setContent("");
-      setSecret(false);
-      setShowCompose(false);
-      setSuccessMessage("문의가 등록됐어요. 관리자 답변이 달리면 여기에서 바로 확인할 수 있어요.");
-      await loadInquiries(response.id);
+      closeComposeForm();
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "문의 등록에 실패했어요.");
+      setSubmitError(error instanceof Error ? error.message : "문의 저장에 실패했어요.");
     } finally {
       setIsSubmitting(false);
     }
@@ -200,22 +247,20 @@ export function SellPage() {
       <section className="hero-card">
         <div>
           <span className="eyebrow">문의하기</span>
-          <h1 className="page-title page-title-medium">
-            제목과 본문만 남기면 게시글처럼 관리자가 답변해 드려요
-          </h1>
+          <h1 className="page-title page-title-medium">게시글처럼 남기고 답변까지 한 화면에서 확인해 보세요</h1>
           <p className="page-copy">
-            회원은 글쓰기 버튼으로 문의글을 남기고, 관리자는 같은 화면에서 답변만 작성합니다.
-            비밀글을 체크하면 작성자와 관리자만 내용을 볼 수 있어요.
+            회원은 제목과 본문만 작성해서 문의글을 남기고, 관리자는 같은 화면에서 바로 답변을 등록하거나 수정할 수 있어요.
+            비밀글은 작성자와 관리자만 자세한 내용을 볼 수 있습니다.
           </p>
         </div>
 
         <div className="hero-region-card">
           <span>문의 안내</span>
-          <strong>{isAdmin ? "관리자 답변 모드" : "게시판형 Q&A 접수"}</strong>
+          <strong>{isAdmin ? "관리자 답변 모드" : "게시판형 Q&A"}</strong>
           <p>
             {isAdmin
-              ? "선택한 문의글에서 바로 답변을 남기면 회원 화면에도 즉시 반영됩니다."
-              : "문의글은 목록으로 남고, 답변이 달리면 같은 글 안에서 확인할 수 있어요."}
+              ? "문의글을 선택하면 오른쪽에서 상세 내용 확인과 답변 등록을 바로 진행할 수 있어요."
+              : "문의글을 선택하면 본문과 답변을 자세히 볼 수 있고, 내 글이면 수정도 가능합니다."}
           </p>
         </div>
       </section>
@@ -229,16 +274,8 @@ export function SellPage() {
 
         <div className="button-row">
           {isUser ? (
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={() => {
-                setShowCompose((value) => !value);
-                setSubmitError(null);
-                setSuccessMessage(null);
-              }}
-            >
-              {showCompose ? "글쓰기 닫기" : "문의하기"}
+            <button type="button" className="button button-primary" onClick={openCreateForm}>
+              문의하기
             </button>
           ) : !session.authenticated ? (
             <Link href="/login?next=/sell" className="button button-primary">
@@ -265,8 +302,10 @@ export function SellPage() {
         <section className="page-panel inquiry-compose-panel">
           <div className="section-heading section-heading-compact">
             <div>
-              <span className="eyebrow">글쓰기</span>
-              <h2 className="section-title">제목과 본문만 작성하면 바로 문의글이 등록돼요</h2>
+              <span className="eyebrow">{editingInquiryId ? "문의 수정" : "글쓰기"}</span>
+              <h2 className="section-title">
+                {editingInquiryId ? "선택한 문의글 내용을 수정해 주세요" : "제목과 본문만 입력하면 바로 문의글이 등록돼요"}
+              </h2>
             </div>
           </div>
 
@@ -277,7 +316,7 @@ export function SellPage() {
                 className="input"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="예: 매물 상세 위치와 가격이 궁금합니다"
+                placeholder="예: 이 매물의 위치와 가격이 궁금합니다"
                 maxLength={160}
               />
             </label>
@@ -288,7 +327,7 @@ export function SellPage() {
                 className="textarea"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
-                placeholder="문의하고 싶은 내용을 편하게 적어 주세요."
+                placeholder="문의하고 싶은 내용을 자세히 적어 주세요."
                 maxLength={5000}
               />
             </label>
@@ -297,7 +336,7 @@ export function SellPage() {
               <input type="checkbox" checked={secret} onChange={(event) => setSecret(event.target.checked)} />
               <div>
                 <strong>비밀글로 등록</strong>
-                <p className="page-copy compact-copy">비밀글은 작성자 본인과 관리자만 내용을 볼 수 있어요.</p>
+                <p className="page-copy compact-copy">비밀글은 작성자 본인과 관리자만 내용을 확인할 수 있어요.</p>
               </div>
             </label>
 
@@ -305,17 +344,9 @@ export function SellPage() {
 
             <div className="button-row">
               <button type="submit" className="button button-primary" disabled={isSubmitting}>
-                {isSubmitting ? "등록 중..." : "게시글 등록"}
+                {isSubmitting ? "저장 중..." : submitButtonLabel}
               </button>
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => {
-                  setShowCompose(false);
-                  setSubmitError(null);
-                }}
-                disabled={isSubmitting}
-              >
+              <button type="button" className="button button-secondary" onClick={closeComposeForm} disabled={isSubmitting}>
                 닫기
               </button>
             </div>
@@ -328,7 +359,7 @@ export function SellPage() {
           <div className="section-heading section-heading-compact">
             <div>
               <span className="eyebrow">문의 목록</span>
-              <h2 className="section-title">게시글 형식으로 문의를 확인해 보세요</h2>
+              <h2 className="section-title">등록된 문의글을 선택해 자세히 확인해 보세요</h2>
             </div>
             <span className="inline-note">{getListCountText(inquiries.length)}</span>
           </div>
@@ -341,8 +372,8 @@ export function SellPage() {
             </div>
           ) : inquiries.length === 0 ? (
             <div className="empty-panel">
-              <strong>아직 등록된 문의가 없어요.</strong>
-              <p>첫 번째 문의글을 남기면 관리자 답변도 여기에서 이어서 볼 수 있어요.</p>
+              <strong>아직 등록된 문의글이 없어요.</strong>
+              <p>첫 번째 문의글을 남기면 관리자가 같은 게시글에 답변할 수 있어요.</p>
             </div>
           ) : (
             <div className="inquiry-list">
@@ -383,14 +414,14 @@ export function SellPage() {
           <article className="inquiry-detail-panel">
             {isDetailLoading ? (
               <div className="empty-panel">
-                <strong>문의 내용을 불러오는 중이에요.</strong>
+                <strong>문의 상세를 불러오는 중이에요.</strong>
               </div>
             ) : detailError ? (
               <div className="error-banner">{detailError}</div>
-            ) : !selectedInquiry ? (
+            ) : !selectedInquiry || !selectedSummary ? (
               <div className="empty-panel">
                 <strong>왼쪽 목록에서 문의글을 선택해 주세요.</strong>
-                <p>제목을 누르면 본문과 관리자 답변을 자세히 볼 수 있어요.</p>
+                <p>선택한 글의 본문과 답변을 이 영역에서 자세히 볼 수 있어요.</p>
               </div>
             ) : (
               <>
@@ -399,15 +430,23 @@ export function SellPage() {
                     <span className="eyebrow">문의 상세</span>
                     <h2 className="section-title">{selectedInquiry.title}</h2>
                   </div>
-                  <span className={`status-badge ${selectedInquiry.answered ? "status-answered" : "status-open"}`}>
-                    {getStatusLabel(selectedInquiry.answered)}
-                  </span>
+                  <div className="button-row button-row-compact">
+                    <span className={`status-badge ${selectedInquiry.answered ? "status-answered" : "status-open"}`}>
+                      {getStatusLabel(selectedInquiry.answered)}
+                    </span>
+                    {isUser && selectedInquiry.mine && selectedInquiry.canRead ? (
+                      <button type="button" className="button button-secondary button-small" onClick={() => openEditForm(selectedInquiry)}>
+                        수정
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="inquiry-detail-body">
                   <div className="inquiry-card-meta">
                     <span>작성자 {selectedInquiry.authorName}</span>
                     {selectedInquiry.secret ? <span className="inline-note">비밀글</span> : null}
+                    {selectedInquiry.mine ? <span className="inline-note success">내 글</span> : null}
                     <span>{formatDateTime(selectedInquiry.createdAt)}</span>
                   </div>
 
@@ -421,9 +460,7 @@ export function SellPage() {
                       <div className="reply-box-header">
                         <strong>관리자 답변</strong>
                         <span>
-                          {selectedInquiry.adminReplyAdminName
-                            ? `${selectedInquiry.adminReplyAdminName} · `
-                            : ""}
+                          {selectedInquiry.adminReplyAdminName ? `${selectedInquiry.adminReplyAdminName} · ` : ""}
                           {formatDateTime(selectedInquiry.adminReplyAt)}
                         </span>
                       </div>
@@ -435,6 +472,10 @@ export function SellPage() {
                       <p>관리자가 확인 후 이 게시글 안에 답변을 남길 예정이에요.</p>
                     </div>
                   )}
+
+                  {isEditingSelected ? (
+                    <div className="inline-note">현재 이 문의글을 수정 중이에요.</div>
+                  ) : null}
                 </div>
               </>
             )}
@@ -445,7 +486,7 @@ export function SellPage() {
               <div className="section-heading section-heading-compact">
                 <div>
                   <span className="eyebrow">관리자 답변</span>
-                  <h2 className="section-title">선택한 문의글에 답변 작성</h2>
+                  <h2 className="section-title">선택한 문의글에 답변 등록 또는 수정</h2>
                 </div>
               </div>
 
