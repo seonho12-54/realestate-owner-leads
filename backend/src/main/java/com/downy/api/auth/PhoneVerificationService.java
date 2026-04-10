@@ -33,7 +33,7 @@ public class PhoneVerificationService {
         this.jdbcTemplate = jdbcTemplate;
         this.properties = properties;
 
-        SnsClient.Builder builder = SnsClient.builder()
+        var builder = SnsClient.builder()
             .region(Region.of(properties.getPhoneVerification().getRegion()));
 
         if (StringUtils.hasText(properties.getS3().getAccessKeyId()) && StringUtils.hasText(properties.getS3().getSecretAccessKey())) {
