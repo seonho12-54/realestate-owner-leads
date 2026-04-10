@@ -25,7 +25,7 @@ app:
   cookie:
     same-site: ${APP_COOKIE_SAME_SITE:Lax}
     domain: ${APP_COOKIE_DOMAIN:}
-    secure: ${APP_COOKIE_SECURE:#{null}}
+    secure: ${APP_COOKIE_SECURE:}
   kakao-rest-api-key: ${KAKAO_REST_API_KEY:}
   kakao-js-key: ${KAKAO_JS_KEY:}
   max-photo-size-mb: ${MAX_PHOTO_SIZE_MB:20}

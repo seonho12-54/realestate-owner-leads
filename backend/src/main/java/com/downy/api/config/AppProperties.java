@@ -172,7 +172,7 @@ public class AppProperties {
 
         private String sameSite = "Lax";
         private String domain;
-        private Boolean secure;
+        private String secure;
 
         public String getSameSite() {
             return sameSite;
@@ -190,11 +190,11 @@ public class AppProperties {
             this.domain = domain;
         }
 
-        public Boolean getSecure() {
+        public String getSecure() {
             return secure;
         }
 
-        public void setSecure(Boolean secure) {
+        public void setSecure(String secure) {
             this.secure = secure;
         }
     }

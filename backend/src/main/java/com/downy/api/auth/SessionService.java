@@ -361,8 +361,9 @@ public class SessionService {
     }
 
     private boolean isSecureCookie() {
-        if (properties.getCookie().getSecure() != null) {
-            return properties.getCookie().getSecure();
+        String configured = properties.getCookie().getSecure();
+        if (configured != null && !configured.isBlank()) {
+            return Boolean.parseBoolean(configured.trim());
         }
 
         return properties.getBaseUrl() != null && properties.getBaseUrl().startsWith("https://");
