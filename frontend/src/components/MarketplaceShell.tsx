@@ -5,6 +5,7 @@ import { Link } from "@/components/RouterLink";
 import { formatArea, formatTradeLabel, getPropertyTypeLabel, getTransactionTypeLabel } from "@/lib/format";
 import { isSavedListing, toggleSavedListing } from "@/lib/listing-prefs";
 import type { PublicListing } from "@/lib/leads";
+import { getApproximateLocationLabel } from "@/lib/map-privacy";
 
 type MarketplaceShellProps = {
   listings: PublicListing[];
@@ -31,7 +32,7 @@ export function MarketplaceShell({
   title,
   description,
   previewMode = false,
-  emptyTitle = "조건에 맞는 매물이 아직 없어요.",
+  emptyTitle = "조건에 맞는 매물이 아직 없어요",
   emptyDescription = "필터를 조금 바꾸거나 다른 거래 방식을 확인해 보세요.",
 }: MarketplaceShellProps) {
   const [selectedListingId, setSelectedListingId] = useState<number | null>(listings[0]?.id ?? null);
@@ -114,7 +115,11 @@ export function MarketplaceShell({
         <div className="hero-region-card">
           <span>{previewMode ? "안내" : "현재 지역"}</span>
           <strong>{regionName}</strong>
-          <p>{previewMode ? "미리보기에서는 실제 데이터만 보여주고, 상세 주소는 인증 후에 공개돼요." : "검색과 필터는 인증한 지역 안에서만 동작해요."}</p>
+          <p>
+            {previewMode
+              ? "미리보기에서는 실제 데이터만 보여주고, 상세 주소는 문의 전까지 공개하지 않아요."
+              : "정확한 집 위치 대신 문의 가능한 주변 권역만 지도에 표시합니다."}
+          </p>
         </div>
       </section>
 
@@ -196,8 +201,8 @@ export function MarketplaceShell({
                 const isSaved = savedIds.includes(listing.id);
                 const headline = previewMode ? getPreviewHeadline(listing, regionName) : listing.listingTitle;
                 const locationLabel = previewMode
-                  ? `${listing.region3DepthName ?? regionName} · 상세 주소 비공개`
-                  : `${listing.region3DepthName ?? regionName} · ${listing.addressLine1}`;
+                  ? `${listing.region3DepthName ?? regionName} / 상세 주소 비공개`
+                  : getApproximateLocationLabel(listing, regionName);
 
                 return (
                   <article
@@ -261,15 +266,15 @@ export function MarketplaceShell({
 
               <p className="page-copy compact-copy">
                 {previewMode
-                  ? "미리보기에서는 위치와 기본 정보만 먼저 볼 수 있어요. 상세 주소와 연락처는 내 동네 인증 후에 확인할 수 있어요."
-                  : selectedListing.description ?? "상세 설명은 매물 상세 화면에서 확인할 수 있어요."}
+                  ? "미리보기에서는 위치와 기본 정보만 먼저 볼 수 있어요. 상세 주소와 연락처는 문의 등록 후 확인할 수 있어요."
+                  : selectedListing.description ?? "지도에는 정확한 집 위치 대신 문의 가능한 주변 권역만 표시됩니다."}
               </p>
 
               {previewMode || selectedListing.isPreview ? <span className="preview-badge">미리보기</span> : null}
 
               <div className="button-row">
                 <Link href={`/listings/${selectedListing.id}`} className="button button-primary">
-                  {previewMode ? "동네 인증 후 상세 보기" : "상세 보기"}
+                  {previewMode ? "문의 등록 후 상세 보기" : "상세 보기"}
                 </Link>
                 {!previewMode ? (
                   <button type="button" className="button button-secondary" onClick={() => handleToggleSave(selectedListing.id)}>

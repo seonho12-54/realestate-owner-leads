@@ -876,6 +876,13 @@ img {
   background: #ffffff;
 }
 
+.input:disabled,
+.textarea:disabled {
+  color: var(--muted);
+  background: rgba(234, 239, 247, 0.92);
+  cursor: not-allowed;
+}
+
 .error-banner,
 .success-banner {
   padding: 16px 18px;
@@ -1183,6 +1190,27 @@ img {
   border-radius: var(--radius-xl);
   overflow: hidden;
   background: #dbe8fa;
+}
+
+.map-privacy-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 2px solid rgba(76, 111, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #3054d1;
+  font-size: 0.84rem;
+  font-weight: 800;
+  box-shadow: 0 12px 22px rgba(39, 64, 145, 0.14);
+}
+
+.map-privacy-badge.active {
+  background: #ffffff;
+  border-color: rgba(48, 84, 209, 1);
+  color: #17376b;
 }
 
 .market-map-canvas {

@@ -9,6 +9,7 @@ import { ListingDetailPage } from "@/pages/ListingDetailPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { ManagePage } from "@/pages/ManagePage";
 import { MyPagePage } from "@/pages/MyPagePage";
+import { MyProfileEditPage } from "@/pages/MyProfileEditPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { SavedPage } from "@/pages/SavedPage";
 import { SellDonePage } from "@/pages/SellDonePage";
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/me" element={<MyPagePage />} />
+        <Route path="/me/profile" element={<MyProfileEditPage />} />
         <Route path="/manage" element={<ManagePage />} />
         <Route path="/sell" element={<SellPage />} />
         <Route path="/sell/done" element={<SellDonePage />} />

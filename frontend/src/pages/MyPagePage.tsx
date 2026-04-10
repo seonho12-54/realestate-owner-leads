@@ -58,7 +58,7 @@ export function MyPagePage() {
             longitude: position.coords.longitude,
           });
           await refreshSession();
-          setInfoMessage("지역 재인증이 완료됐어요.");
+          setInfoMessage("지역 재인증이 완료되었어요.");
         } catch (error) {
           setInfoMessage(error instanceof Error ? error.message : "지역 재인증에 실패했어요.");
         } finally {
@@ -81,8 +81,8 @@ export function MyPagePage() {
       <section className="hero-card">
         <div>
           <span className="eyebrow">내 설정</span>
-          <h1 className="page-title page-title-medium">지역 잠금 상태와 내 매물을 한 번에 확인하세요</h1>
-          <p className="page-copy">지역 변경은 메인 탐색 흐름이 아니라 이 설정 화면에서만 다시 인증하도록 분리했어요.</p>
+          <h1 className="page-title page-title-medium">지역 잠금 상태와 내 계정 정보를 확인하세요</h1>
+          <p className="page-copy">지역이 바뀌었거나 개인정보를 수정해야 할 때 이 화면에서 다시 확인할 수 있어요.</p>
         </div>
       </section>
 
@@ -90,7 +90,7 @@ export function MyPagePage() {
         <article className="settings-card">
           <span className="eyebrow">지역 잠금</span>
           <strong>{session.region.region?.name ?? "아직 인증 전"}</strong>
-          <p>{session.region.locked ? "현재 계정 또는 브라우저는 한 지역으로 잠금되어 있어요." : "내 동네 인증을 완료하면 한 지역으로 잠금돼요."}</p>
+          <p>{session.region.locked ? "현재 계정은 인증한 지역으로 잠겨 있어요." : "우리 동네 인증을 마치면 해당 지역으로 잠겨요."}</p>
           <div className="button-row">
             <button type="button" className="button button-primary" onClick={handleReverify} disabled={isReverifying}>
               {isReverifying ? "재인증 중..." : "지역 다시 인증하기"}
@@ -107,8 +107,18 @@ export function MyPagePage() {
         <article className="settings-card">
           <span className="eyebrow">계정</span>
           <strong>{session.user?.name ?? "비회원 둘러보기"}</strong>
-          <p>{session.user?.email ?? "로그인 전에는 브라우저 잠금 상태로만 지역 인증이 유지돼요."}</p>
-          {!session.authenticated ? (
+          <p>{session.user?.email ?? "로그인 전에는 지역 인증 상태만 확인할 수 있어요."}</p>
+
+          {session.authenticated ? (
+            <>
+              <div className="button-row">
+                <Link href="/me/profile" className="button button-primary">
+                  개인정보 수정
+                </Link>
+              </div>
+              <p className="page-copy compact-copy">개인정보 수정 전에 비밀번호를 한 번 더 확인해요.</p>
+            </>
+          ) : (
             <div className="button-row">
               <Link href="/login" className="button button-primary">
                 로그인
@@ -117,7 +127,7 @@ export function MyPagePage() {
                 회원가입
               </Link>
             </div>
-          ) : null}
+          )}
         </article>
       </section>
 
@@ -133,7 +143,7 @@ export function MyPagePage() {
           {myLeads.length === 0 ? (
             <div className="empty-panel">
               <strong>아직 등록한 매물이 없어요.</strong>
-              <p>내 동네 인증 후 첫 매물을 등록해보세요.</p>
+              <p>문의 등록에서 첫 매물을 등록해 보세요.</p>
             </div>
           ) : (
             <div className="saved-card-grid">
