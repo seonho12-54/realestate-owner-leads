@@ -23,6 +23,17 @@ export const SERVICE_AREAS: ServiceArea[] = [
     },
   },
   {
+    slug: "yongin-cheoin-yubang",
+    name: "경기도 용인시 처인구 유방동",
+    city: "경기도",
+    district: "용인시 처인구",
+    neighborhood: "유방동",
+    center: {
+      lat: 37.2319,
+      lng: 127.2112,
+    },
+  },
+  {
     slug: "yongin-cheoin-yeokbuk",
     name: "경기도 용인시 처인구 역북동",
     city: "경기도",
@@ -77,6 +88,7 @@ export function buildServiceAreaSearchQueries(query: string): string[] {
   const values = new Set<string>([
     trimmed,
     ...SERVICE_AREAS.map((area) => `${area.name} ${trimmed}`),
+    ...SERVICE_AREAS.map((area) => `${area.district} ${area.neighborhood} ${trimmed}`),
     ...SERVICE_AREAS.map((area) => `${area.neighborhood} ${trimmed}`),
   ]);
 

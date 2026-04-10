@@ -195,6 +195,70 @@ public class LeadService {
 
         return leadId;
     }
+
+    public List<PublicListingResponse> listPreviewListings(int limit) {
+        int safeLimit = Math.max(3, Math.min(limit, 6));
+
+        List<PublicListingRow> rows = jdbcTemplate.query(
+            """
+                SELECT
+                    l.id,
+                    l.listing_title,
+                    l.property_type,
+                    l.transaction_type,
+                    l.region_slug,
+                    l.address_line1,
+                    l.address_line2,
+                    l.region_3depth_name,
+                    l.area_m2,
+                    l.price_krw,
+                    l.deposit_krw,
+                    l.monthly_rent_krw,
+                    l.description,
+                    l.latitude,
+                    l.longitude,
+                    l.created_at,
+                    o.name AS office_name,
+                    o.phone AS office_phone,
+                    COUNT(lp.id) AS photo_count
+                FROM leads l
+                INNER JOIN offices o ON o.id = l.office_id
+                LEFT JOIN lead_photos lp ON lp.lead_id = l.id
+                WHERE l.is_published = 1
+                  AND l.location_verified = 1
+                  AND l.latitude IS NOT NULL
+                  AND l.longitude IS NOT NULL
+                GROUP BY l.id
+                ORDER BY COALESCE(l.published_at, l.created_at) DESC, l.created_at DESC
+                LIMIT ?
+                """,
+            (rs, rowNum) -> new PublicListingRow(
+                rs.getLong("id"),
+                rs.getString("listing_title"),
+                rs.getString("property_type"),
+                rs.getString("transaction_type"),
+                rs.getString("region_slug"),
+                rs.getString("address_line1"),
+                rs.getString("address_line2"),
+                rs.getString("region_3depth_name"),
+                getNullableDouble(rs.getBigDecimal("area_m2")),
+                getNullableLong(rs.getObject("price_krw")),
+                getNullableLong(rs.getObject("deposit_krw")),
+                getNullableLong(rs.getObject("monthly_rent_krw")),
+                rs.getString("description"),
+                Objects.requireNonNull(rs.getBigDecimal("latitude")).doubleValue(),
+                Objects.requireNonNull(rs.getBigDecimal("longitude")).doubleValue(),
+                rs.getTimestamp("created_at").toInstant(),
+                rs.getString("office_name"),
+                rs.getString("office_phone"),
+                rs.getInt("photo_count")
+            ),
+            safeLimit
+        );
+
+        return toPublicListingResponses(rows, true);
+    }
+
     public List<PublicListingResponse> listPublishedListings(String regionSlug) {
         List<PublicListingRow> rows = jdbcTemplate.query(
             """
@@ -253,30 +317,7 @@ public class LeadService {
             regionSlug
         );
 
-        Map<Long, List<LeadPhotoAsset>> photoMap = listLeadPhotoAssets(rows.stream().map(PublicListingRow::id).toList(), 1);
-
-        return rows.stream().map(row -> new PublicListingResponse(
-            row.id(),
-            row.listingTitle(),
-            row.propertyType(),
-            row.transactionType(),
-            row.regionSlug(),
-            row.addressLine1(),
-            row.addressLine2(),
-            row.region3DepthName(),
-            row.areaM2(),
-            row.priceKrw(),
-            row.depositKrw(),
-            row.monthlyRentKrw(),
-            row.description(),
-            row.latitude(),
-            row.longitude(),
-            row.createdAt(),
-            row.officeName(),
-            row.officePhone(),
-            row.photoCount(),
-            photoMap.getOrDefault(row.id(), List.of()).stream().findFirst().map(LeadPhotoAsset::viewUrl).orElse(null)
-        )).toList();
+        return toPublicListingResponses(rows, false);
     }
 
     public LeadDetailResponse getPublishedListingDetail(long leadId, String accessibleRegionSlug) {
@@ -296,7 +337,7 @@ public class LeadService {
             throw new ApiException(HttpStatus.NOT_FOUND, "매물을 찾을 수 없어요.");
         }
 
-        if (!Objects.equals(actualRegionSlug, accessibleRegionSlug)) {
+        if (accessibleRegionSlug != null && !Objects.equals(actualRegionSlug, accessibleRegionSlug)) {
             throw new ApiException(
                 HttpStatus.FORBIDDEN,
                 RegionAccessService.REGION_ACCESS_DENIED,
@@ -304,63 +345,122 @@ public class LeadService {
             );
         }
 
-        List<LeadDetailRow> rows = jdbcTemplate.query(
-            """
-                SELECT
-                    l.id,
-                    l.listing_title,
-                    l.property_type,
-                    l.transaction_type,
-                    l.region_slug,
-                    l.address_line1,
-                    l.address_line2,
-                    l.region_3depth_name,
-                    l.area_m2,
-                    l.price_krw,
-                    l.deposit_krw,
-                    l.monthly_rent_krw,
-                    l.description,
-                    l.contact_time,
-                    l.move_in_date,
-                    l.latitude,
-                    l.longitude,
-                    l.created_at,
-                    o.name AS office_name,
-                    o.phone AS office_phone,
-                    o.address AS office_address
-                FROM leads l
-                INNER JOIN offices o ON o.id = l.office_id
-                WHERE l.id = ?
-                  AND l.is_published = 1
-                  AND l.region_slug = ?
-                LIMIT 1
-                """,
-            (rs, rowNum) -> new LeadDetailRow(
-                rs.getLong("id"),
-                rs.getString("listing_title"),
-                rs.getString("property_type"),
-                rs.getString("transaction_type"),
-                rs.getString("region_slug"),
-                rs.getString("address_line1"),
-                rs.getString("address_line2"),
-                rs.getString("region_3depth_name"),
-                getNullableDouble(rs.getBigDecimal("area_m2")),
-                getNullableLong(rs.getObject("price_krw")),
-                getNullableLong(rs.getObject("deposit_krw")),
-                getNullableLong(rs.getObject("monthly_rent_krw")),
-                rs.getString("description"),
-                rs.getString("contact_time"),
-                rs.getString("move_in_date"),
-                Objects.requireNonNull(rs.getBigDecimal("latitude")).doubleValue(),
-                Objects.requireNonNull(rs.getBigDecimal("longitude")).doubleValue(),
-                rs.getTimestamp("created_at").toInstant(),
-                rs.getString("office_name"),
-                rs.getString("office_phone"),
-                rs.getString("office_address")
-            ),
-            leadId,
-            accessibleRegionSlug
-        );
+        List<LeadDetailRow> rows;
+        if (accessibleRegionSlug == null) {
+            rows = jdbcTemplate.query(
+                """
+                    SELECT
+                        l.id,
+                        l.listing_title,
+                        l.property_type,
+                        l.transaction_type,
+                        l.region_slug,
+                        l.address_line1,
+                        l.address_line2,
+                        l.region_3depth_name,
+                        l.area_m2,
+                        l.price_krw,
+                        l.deposit_krw,
+                        l.monthly_rent_krw,
+                        l.description,
+                        l.contact_time,
+                        l.move_in_date,
+                        l.latitude,
+                        l.longitude,
+                        l.created_at,
+                        o.name AS office_name,
+                        o.phone AS office_phone,
+                        o.address AS office_address
+                    FROM leads l
+                    INNER JOIN offices o ON o.id = l.office_id
+                    WHERE l.id = ?
+                      AND l.is_published = 1
+                    LIMIT 1
+                    """,
+                (rs, rowNum) -> new LeadDetailRow(
+                    rs.getLong("id"),
+                    rs.getString("listing_title"),
+                    rs.getString("property_type"),
+                    rs.getString("transaction_type"),
+                    rs.getString("region_slug"),
+                    rs.getString("address_line1"),
+                    rs.getString("address_line2"),
+                    rs.getString("region_3depth_name"),
+                    getNullableDouble(rs.getBigDecimal("area_m2")),
+                    getNullableLong(rs.getObject("price_krw")),
+                    getNullableLong(rs.getObject("deposit_krw")),
+                    getNullableLong(rs.getObject("monthly_rent_krw")),
+                    rs.getString("description"),
+                    rs.getString("contact_time"),
+                    rs.getString("move_in_date"),
+                    Objects.requireNonNull(rs.getBigDecimal("latitude")).doubleValue(),
+                    Objects.requireNonNull(rs.getBigDecimal("longitude")).doubleValue(),
+                    rs.getTimestamp("created_at").toInstant(),
+                    rs.getString("office_name"),
+                    rs.getString("office_phone"),
+                    rs.getString("office_address")
+                ),
+                leadId
+            );
+        } else {
+            rows = jdbcTemplate.query(
+                """
+                    SELECT
+                        l.id,
+                        l.listing_title,
+                        l.property_type,
+                        l.transaction_type,
+                        l.region_slug,
+                        l.address_line1,
+                        l.address_line2,
+                        l.region_3depth_name,
+                        l.area_m2,
+                        l.price_krw,
+                        l.deposit_krw,
+                        l.monthly_rent_krw,
+                        l.description,
+                        l.contact_time,
+                        l.move_in_date,
+                        l.latitude,
+                        l.longitude,
+                        l.created_at,
+                        o.name AS office_name,
+                        o.phone AS office_phone,
+                        o.address AS office_address
+                    FROM leads l
+                    INNER JOIN offices o ON o.id = l.office_id
+                    WHERE l.id = ?
+                      AND l.is_published = 1
+                      AND l.region_slug = ?
+                    LIMIT 1
+                    """,
+                (rs, rowNum) -> new LeadDetailRow(
+                    rs.getLong("id"),
+                    rs.getString("listing_title"),
+                    rs.getString("property_type"),
+                    rs.getString("transaction_type"),
+                    rs.getString("region_slug"),
+                    rs.getString("address_line1"),
+                    rs.getString("address_line2"),
+                    rs.getString("region_3depth_name"),
+                    getNullableDouble(rs.getBigDecimal("area_m2")),
+                    getNullableLong(rs.getObject("price_krw")),
+                    getNullableLong(rs.getObject("deposit_krw")),
+                    getNullableLong(rs.getObject("monthly_rent_krw")),
+                    rs.getString("description"),
+                    rs.getString("contact_time"),
+                    rs.getString("move_in_date"),
+                    Objects.requireNonNull(rs.getBigDecimal("latitude")).doubleValue(),
+                    Objects.requireNonNull(rs.getBigDecimal("longitude")).doubleValue(),
+                    rs.getTimestamp("created_at").toInstant(),
+                    rs.getString("office_name"),
+                    rs.getString("office_phone"),
+                    rs.getString("office_address")
+                ),
+                leadId,
+                accessibleRegionSlug
+            );
+        }
 
         if (rows.isEmpty()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "매물을 찾을 수 없어요.");
@@ -397,6 +497,19 @@ public class LeadService {
     }
 
     public void incrementViewCount(long leadId, String accessibleRegionSlug) {
+        if (accessibleRegionSlug == null) {
+            jdbcTemplate.update(
+                """
+                    UPDATE leads
+                    SET view_count = view_count + 1
+                    WHERE id = ?
+                      AND is_published = 1
+                    """,
+                leadId
+            );
+            return;
+        }
+
         jdbcTemplate.update(
             """
                 UPDATE leads
@@ -890,6 +1003,34 @@ public class LeadService {
         }
 
         return result;
+    }
+
+    private List<PublicListingResponse> toPublicListingResponses(List<PublicListingRow> rows, boolean preview) {
+        Map<Long, List<LeadPhotoAsset>> photoMap = listLeadPhotoAssets(rows.stream().map(PublicListingRow::id).toList(), 1);
+
+        return rows.stream().map(row -> new PublicListingResponse(
+            row.id(),
+            row.listingTitle(),
+            row.propertyType(),
+            row.transactionType(),
+            preview,
+            row.regionSlug(),
+            row.addressLine1(),
+            row.addressLine2(),
+            row.region3DepthName(),
+            row.areaM2(),
+            row.priceKrw(),
+            row.depositKrw(),
+            row.monthlyRentKrw(),
+            row.description(),
+            row.latitude(),
+            row.longitude(),
+            row.createdAt(),
+            row.officeName(),
+            row.officePhone(),
+            row.photoCount(),
+            photoMap.getOrDefault(row.id(), List.of()).stream().findFirst().map(LeadPhotoAsset::viewUrl).orElse(null)
+        )).toList();
     }
 
     private void setNullableBigDecimal(PreparedStatement ps, int index, Double value) throws java.sql.SQLException {

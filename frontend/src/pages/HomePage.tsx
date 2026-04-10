@@ -1,26 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { MarketplaceShell } from "@/components/MarketplaceShell";
 import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
 import { ApiError } from "@/lib/api";
-import { listPublishedListings, type PublicListing } from "@/lib/leads";
+import { formatArea, formatTradeLabel, getPropertyTypeLabel } from "@/lib/format";
+import { listPreviewListings, listPublishedListings, type PublicListing } from "@/lib/leads";
 import { verifyLocation } from "@/lib/region";
 import { SERVICE_AREAS } from "@/lib/service-area";
-
-type TeaserListing = {
-  id: string;
-  title: string;
-  price: string;
-  meta: string;
-  area: string;
-};
-
-const teaserListings: TeaserListing[] = [
-  { id: "1", title: "역세권 오피스텔 미리보기", price: "월세 1,000 / 60", meta: "서교동 · 오피스텔", area: "24.0㎡" },
-  { id: "2", title: "채광 좋은 소형 아파트 미리보기", price: "전세 2억 4,000", meta: "다운동 · 아파트", area: "59.8㎡" },
-  { id: "3", title: "주차 가능한 빌라 미리보기", price: "매매 3억 1,000", meta: "역북동 · 빌라", area: "74.2㎡" },
-];
 
 export function HomePage() {
   const { session, refreshSession } = useSession();
@@ -31,23 +18,20 @@ export function HomePage() {
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
 
   const lockedRegion = session.region.region;
+  const previewListings = useMemo(() => listings.slice(0, 3), [listings]);
 
   useEffect(() => {
-    if (!session.region.locked) {
-      setListings([]);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
     let isMounted = true;
     setIsLoading(true);
 
-    listPublishedListings()
+    const loader = session.region.locked ? listPublishedListings() : listPreviewListings(6);
+
+    loader
       .then((response) => {
         if (!isMounted) {
           return;
         }
+
         setListings(response);
         setError(null);
       })
@@ -55,11 +39,13 @@ export function HomePage() {
         if (!isMounted) {
           return;
         }
+
         if (loadError instanceof ApiError && loadError.code === "REGION_VERIFICATION_REQUIRED") {
           setListings([]);
           setError(null);
           return;
         }
+
         setListings([]);
         setError(loadError instanceof Error ? loadError.message : "매물 목록을 불러오지 못했어요.");
       })
@@ -76,7 +62,7 @@ export function HomePage() {
 
   async function handleVerify() {
     if (!window.isSecureContext && window.location.hostname !== "localhost") {
-      setVerifyMessage("위치 인증은 HTTPS 환경에서만 가능해요.");
+      setVerifyMessage("위치 인증은 HTTPS 환경에서만 사용할 수 있어요.");
       return;
     }
 
@@ -96,7 +82,7 @@ export function HomePage() {
             longitude: position.coords.longitude,
           });
           await refreshSession();
-          setVerifyMessage("인증이 완료됐어요. 이제 우리 동네 매물만 보여드릴게요.");
+          setVerifyMessage("📍 내 동네 인증이 완료됐어요. 이제 인증한 지역 매물만 보여드릴게요.");
         } catch (verifyError) {
           setVerifyMessage(verifyError instanceof Error ? verifyError.message : "위치 인증에 실패했어요.");
         } finally {
@@ -106,10 +92,11 @@ export function HomePage() {
       (geoError) => {
         setIsVerifying(false);
         if (geoError.code === geoError.PERMISSION_DENIED) {
-          setVerifyMessage("위치 권한이 필요해요. 브라우저에서 허용 후 다시 시도해주세요.");
+          setVerifyMessage("위치 권한을 허용한 뒤 다시 시도해 주세요.");
           return;
         }
-        setVerifyMessage("현재 위치를 가져오지 못했어요. 잠시 후 다시 시도해주세요.");
+
+        setVerifyMessage("현재 위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.");
       },
       {
         enableHighAccuracy: true,
@@ -124,7 +111,7 @@ export function HomePage() {
       <div className="page-stack">
         <section className="page-panel">
           <span className="eyebrow">로딩 중</span>
-          <h1 className="page-title page-title-medium">우리 동네 매물을 준비하고 있어요.</h1>
+          <h1 className="page-title page-title-medium">우리 동네 매물을 준비하고 있어요</h1>
         </section>
       </div>
     );
@@ -138,7 +125,7 @@ export function HomePage() {
             <span className="eyebrow">한 번만 인증</span>
             <h1 className="page-title">내 동네 인증하고 우리 동네 매물만 빠르게 보세요</h1>
             <p className="page-copy">
-              이 서비스는 동네 기반 부동산 플랫폼이에요. 한 번 인증하면 인증한 지역의 매물만 보여드리고, 다른 지역 매물은 열 수 없어요.
+              동네 기반 부동산 서비스라서, 위치 인증을 완료하면 인증한 지역 매물만 안전하게 보여드려요.
             </p>
             <div className="button-row">
               <button type="button" className="button button-primary" onClick={handleVerify} disabled={isVerifying}>
@@ -161,16 +148,47 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className="teaser-grid">
-          {teaserListings.map((listing) => (
-            <article key={listing.id} className="teaser-card">
-              <span className="eyebrow">미리보기</span>
-              <strong>{listing.title}</strong>
-              <p>{listing.price}</p>
-              <span>{listing.meta}</span>
-              <span>{listing.area}</span>
-            </article>
-          ))}
+        {error ? (
+          <section className="page-panel">
+            <span className="eyebrow">미리보기 오류</span>
+            <h2 className="section-title">실시간 미리보기를 불러오지 못했어요</h2>
+            <p className="page-copy compact-copy">{error}</p>
+          </section>
+        ) : null}
+
+        <section className="saved-section">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">실데이터 미리보기</span>
+              <h2 className="section-title">인증 전에도 실제 매물을 먼저 볼 수 있어요</h2>
+            </div>
+            <Link href="/explore" className="button button-secondary button-small">
+              전체 미리보기 보기
+            </Link>
+          </div>
+
+          {previewListings.length === 0 ? (
+            <div className="empty-panel">
+              <strong>🏠 미리보기 매물이 아직 없어요</strong>
+              <p>잠시 후 다시 확인해 주세요.</p>
+            </div>
+          ) : (
+            <div className="preview-card-grid">
+              {previewListings.map((listing) => (
+                <article key={listing.id} className="preview-card">
+                  {listing.previewPhotoUrl ? (
+                    <img className="preview-card-thumb" src={listing.previewPhotoUrl} alt={listing.listingTitle} />
+                  ) : (
+                    <div className="preview-card-thumb empty">사진 준비 중</div>
+                  )}
+                  <span className="preview-badge">미리보기</span>
+                  <strong className="preview-card-price">{formatTradeLabel(listing)}</strong>
+                  <strong>{listing.region3DepthName ?? "인증 가능 지역"} · {getPropertyTypeLabel(listing.propertyType)}</strong>
+                  <span>{formatArea(listing.areaM2)}</span>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     );
@@ -181,7 +199,7 @@ export function HomePage() {
       <div className="page-stack">
         <section className="page-panel">
           <span className="eyebrow">불러오기 실패</span>
-          <h1 className="page-title page-title-medium">인증 지역 매물을 가져오지 못했어요.</h1>
+          <h1 className="page-title page-title-medium">인증 지역 매물을 가져오지 못했어요</h1>
           <p className="page-copy compact-copy">{error}</p>
         </section>
       </div>
@@ -192,10 +210,10 @@ export function HomePage() {
     <MarketplaceShell
       listings={listings}
       regionName={lockedRegion.name}
-      title={`${lockedRegion.neighborhood}에서 바로 비교해보세요`}
-      description="사진, 가격, 거래방식, 면적을 먼저 보고 지도와 목록을 함께 오가며 빠르게 후보를 줄일 수 있어요."
-      emptyTitle="인증한 지역에 공개된 매물이 아직 없어요"
-      emptyDescription="조금 뒤 다시 확인하거나 매물 등록으로 첫 매물을 남겨보세요."
+      title={`${lockedRegion.neighborhood}에서 바로 비교해 보세요`}
+      description="가격, 거래방식, 지역, 면적을 먼저 보고 지도와 목록을 함께 비교할 수 있어요."
+      emptyTitle="인증한 지역에 공개된 매물이 아직 없어요."
+      emptyDescription="잠시 후 다시 확인하거나 새 매물 등록을 기다려 주세요."
     />
   );
 }

@@ -28,14 +28,14 @@ export function SiteLayout() {
           {isAdmin ? (
             <>
               <Link href="/admin/leads" className="nav-button nav-button-primary">
-                관리자
+                매물 관리
               </Link>
               <LogoutButton action="/api/admin/logout" label="로그아웃" />
             </>
           ) : session.authenticated ? (
             <>
               <Link href="/sell" className="nav-button nav-button-secondary">
-                매물 등록
+                새 매물 등록
               </Link>
               <LogoutButton action="/api/auth/logout" label="로그아웃" />
             </>
@@ -58,7 +58,7 @@ export function SiteLayout() {
             <span className="service-strip-label">서비스 지역</span>
             <strong>{SERVICE_REGION_LABEL}</strong>
           </div>
-          <p>내 동네 인증을 한 번만 완료하면 그 지역 매물만 빠르게 비교할 수 있어요.</p>
+          <p>내 동네 인증을 한 번만 완료하면 그 지역 매물만 빠르게 비교해서 볼 수 있어요.</p>
         </section>
       ) : null}
 
@@ -74,8 +74,8 @@ export function SiteLayout() {
           <Link href="/explore" className="bottom-nav-link">
             둘러보기
           </Link>
-          <Link href="/saved" className="bottom-nav-link">
-            저장
+          <Link href="/manage" className="bottom-nav-link">
+            매물 관리
           </Link>
           <Link href="/me" className="bottom-nav-link">
             설정

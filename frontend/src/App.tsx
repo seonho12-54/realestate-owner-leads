@@ -7,6 +7,7 @@ import { ExplorePage } from "@/pages/ExplorePage";
 import { HomePage } from "@/pages/HomePage";
 import { ListingDetailPage } from "@/pages/ListingDetailPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { ManagePage } from "@/pages/ManagePage";
 import { MyPagePage } from "@/pages/MyPagePage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { SavedPage } from "@/pages/SavedPage";
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/me" element={<MyPagePage />} />
+        <Route path="/manage" element={<ManagePage />} />
         <Route path="/sell" element={<SellPage />} />
         <Route path="/sell/done" element={<SellDonePage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />

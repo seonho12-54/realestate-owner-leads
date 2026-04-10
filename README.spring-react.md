@@ -25,7 +25,9 @@
 ## 허용 지역
 
 - 울산광역시 중구 다운동
-- 경기도 용인시 처인구 포곡읍
+- 경기도 용인시 처인구 유방동
+- 경기도 용인시 처인구 역북동
+- 서울특별시 마포구 서교동
 
 ## 요구 사항
 
@@ -45,7 +47,11 @@
 - `SPRING_DATASOURCE_PASSWORD`
 - `APP_BASE_URL`
 - `FRONTEND_ORIGIN`
+- `APP_CORS_ALLOWED_ORIGINS`
 - `ADMIN_SESSION_SECRET`
+- `APP_COOKIE_SAME_SITE`
+- `APP_COOKIE_DOMAIN`
+- `APP_COOKIE_SECURE`
 - `USER_SESSION_SECRET`
 - `KAKAO_REST_API_KEY`
 - `KAKAO_JS_KEY`
@@ -58,7 +64,19 @@
 주요 프론트 환경변수:
 
 - `VITE_API_PROXY_TARGET`
+- `VITE_API_BASE_URL`
 - `VITE_KAKAO_JS_KEY`
+
+## 관리자 로그인
+
+- 관리자 로그인 화면: `/admin/login`
+- 실제 관리자 계정은 `admins` 테이블에 저장된 이메일/비밀번호 해시를 기준으로 인증합니다.
+- 배포 환경에서 프론트와 백엔드 도메인이 다르면 아래 값을 함께 맞춰야 쿠키 세션이 유지됩니다.
+  - `APP_CORS_ALLOWED_ORIGINS`
+  - `APP_COOKIE_SAME_SITE=None`
+  - `APP_COOKIE_SECURE=true`
+  - `APP_COOKIE_DOMAIN=<배포 쿠키 도메인>`
+- 프론트 요청은 `credentials: include`로 쿠키를 함께 보내도록 구현되어 있습니다.
 
 ## 로컬 실행
 
@@ -144,12 +162,19 @@ pm2 logs downy-web --lines 50
 - `POST /api/auth/logout`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
+- `GET /api/listings/preview`
+- `GET /api/listings`
+- `GET /api/listings/{id}`
 - `GET /api/public/listings`
 - `GET /api/public/listings/{id}`
 - `POST /api/leads`
+- `GET /api/me/leads`
+- `PATCH /api/me/leads/{id}`
 - `GET /api/admin/leads`
 - `PATCH /api/admin/leads/{id}`
 - `POST /api/uploads/presign`
 - `POST /api/location/verify`
+- `POST /api/location/reverify`
+- `GET /api/region/me`
 - `GET /api/location/address-search`
 - `GET /api/offices`

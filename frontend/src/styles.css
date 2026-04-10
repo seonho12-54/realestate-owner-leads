@@ -1,9 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap");
 
 :root {
   color-scheme: light;
-  --font-heading: "Plus Jakarta Sans", "Pretendard Variable", "SUIT Variable", "Noto Sans KR", sans-serif;
-  --font-body: "Inter", "Pretendard Variable", "SUIT Variable", "Noto Sans KR", sans-serif;
+  --font-heading: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --bg: #eef3fb;
   --bg-soft: #f6f9fe;
   --panel: rgba(255, 255, 255, 0.86);
@@ -38,6 +38,24 @@ html,
 body,
 #root {
   min-height: 100%;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea,
+a,
+table,
+nav,
+.chip,
+.listing-badge,
+.status-badge,
+.bottom-nav-link,
+.auth-card,
+.auth-prompt-dialog {
+  font-family: var(--font-body);
 }
 
 body {
@@ -397,6 +415,71 @@ img {
 .saved-section {
   display: grid;
   gap: 16px;
+}
+
+.preview-card-grid,
+.manage-summary-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.preview-card {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow-md);
+}
+
+.preview-card-thumb {
+  width: 100%;
+  aspect-ratio: 1.45;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+  background: #dde6f4;
+}
+
+.preview-card-thumb.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.preview-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(23, 55, 107, 0.08);
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.preview-card-price {
+  font-family: var(--font-heading);
+  font-size: 1.18rem;
+}
+
+.manage-summary-card {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-md);
+}
+
+.manage-summary-card strong {
+  font-size: 1.6rem;
+  font-family: var(--font-heading);
 }
 
 .locked-state-card {
@@ -1449,7 +1532,9 @@ img {
 @media (max-width: 1200px) {
   .landing-category-grid,
   .detail-grid-shell,
-  .photo-grid {
+  .photo-grid,
+  .preview-card-grid,
+  .manage-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1484,7 +1569,9 @@ img {
   .gallery-grid,
   .landing-category-grid,
   .photo-grid,
-  .detail-grid-shell {
+  .detail-grid-shell,
+  .preview-card-grid,
+  .manage-summary-grid {
     grid-template-columns: 1fr;
   }
 

@@ -34,8 +34,8 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   return (
     <form className="auth-card" onSubmit={handleSubmit}>
       <span className="eyebrow">회원가입</span>
-      <h1 className="page-title page-title-medium">내 동네 매물을 더 빠르게 받아보세요</h1>
-      <p className="page-copy compact-copy">가입 후 지역 인증을 완료하면 내 동네 매물만 안전하게 잠금 상태로 둘러볼 수 있어요.</p>
+      <h1 className="page-title page-title-medium">우리 동네 매물을 더 빠르게 받아보세요</h1>
+      <p className="page-copy compact-copy">가입 후 내 동네 인증을 완료하면 우리 동네 매물만 안전하게 잠금 상태로 둘러볼 수 있어요.</p>
 
       <label className="field">
         <span>이름</span>
@@ -67,7 +67,7 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="new-password"
-          placeholder="영문과 숫자를 포함해 입력해주세요"
+          placeholder="영문과 숫자를 포함해 입력해 주세요"
         />
       </label>
 

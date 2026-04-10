@@ -3,32 +3,7 @@ import { useEffect, useState } from "react";
 import { MarketplaceShell } from "@/components/MarketplaceShell";
 import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
-import { listPublishedListings, type PublicListing } from "@/lib/leads";
-
-const teaserListings: PublicListing[] = [
-  {
-    id: 900001,
-    listingTitle: "미리보기 오피스텔",
-    propertyType: "officetel",
-    transactionType: "monthly",
-    regionSlug: "teaser",
-    addressLine1: "지역 인증 후 실제 주소가 보여요",
-    addressLine2: null,
-    region3DepthName: "서교동",
-    areaM2: 24,
-    priceKrw: null,
-    depositKrw: 10000000,
-    monthlyRentKrw: 600000,
-    description: "지도와 목록을 함께 비교하는 화면 미리보기입니다.",
-    latitude: 37.5555,
-    longitude: 126.9216,
-    createdAt: new Date().toISOString(),
-    officeName: "미리보기",
-    officePhone: null,
-    photoCount: 0,
-    previewPhotoUrl: null,
-  },
-];
+import { listPreviewListings, listPublishedListings, type PublicListing } from "@/lib/leads";
 
 export function ExplorePage() {
   const { session } = useSession();
@@ -37,20 +12,17 @@ export function ExplorePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!session.region.locked) {
-      setListings(teaserListings);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
     let isMounted = true;
     setIsLoading(true);
-    listPublishedListings()
+
+    const loader = session.region.locked ? listPublishedListings() : listPreviewListings(6);
+
+    loader
       .then((response) => {
         if (!isMounted) {
           return;
         }
+
         setListings(response);
         setError(null);
       })
@@ -58,7 +30,9 @@ export function ExplorePage() {
         if (!isMounted) {
           return;
         }
-        setError(loadError instanceof Error ? loadError.message : "매물을 불러오지 못했어요.");
+
+        setListings([]);
+        setError(loadError instanceof Error ? loadError.message : "매물 목록을 불러오지 못했어요.");
       })
       .finally(() => {
         if (isMounted) {
@@ -76,7 +50,19 @@ export function ExplorePage() {
       <div className="page-stack">
         <section className="page-panel">
           <span className="eyebrow">둘러보기</span>
-          <h1 className="page-title page-title-medium">지도와 목록을 불러오는 중이에요.</h1>
+          <h1 className="page-title page-title-medium">지금 올라온 매물을 불러오는 중이에요</h1>
+        </section>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-stack">
+        <section className="page-panel">
+          <span className="eyebrow">오류</span>
+          <h1 className="page-title page-title-medium">둘러보기 화면을 불러오지 못했어요</h1>
+          <p className="page-copy compact-copy">{error}</p>
         </section>
       </div>
     );
@@ -88,8 +74,8 @@ export function ExplorePage() {
         <section className="locked-state-card">
           <div>
             <span className="eyebrow">미리보기 모드</span>
-            <h1 className="page-title page-title-medium">지역 인증 전에는 실제 매물을 열 수 없어요</h1>
-            <p className="page-copy">화면 구성은 미리볼 수 있지만, 실제 목록과 상세는 내 동네 인증 후에만 열립니다.</p>
+            <h1 className="page-title page-title-medium">실제 매물을 먼저 둘러보고, 내 동네 인증 후 상세 정보를 확인하세요</h1>
+            <p className="page-copy">지금 보이는 목록과 지도는 실제 DB 데이터 기반 미리보기예요. 상세 주소와 지역 제한은 인증 후에 열려요.</p>
           </div>
           <div className="button-row">
             <Link href="/" className="button button-primary">
@@ -102,22 +88,13 @@ export function ExplorePage() {
         </section>
         <MarketplaceShell
           listings={listings}
-          regionName="미리보기 지역"
-          title="지도와 목록을 함께 보는 화면"
-          description="실제 매물은 지역 인증 후에만 열 수 있고, 지금은 탐색 흐름만 미리 확인할 수 있어요."
+          regionName="인증 전 미리보기"
+          title="실제 매물 미리보기"
+          description="지금은 기본 정보만 먼저 보여드리고 있어요. 인증 후에는 같은 데이터셋을 지도와 목록에서 더 자세히 비교할 수 있어요."
+          previewMode
+          emptyTitle="미리보기 매물이 아직 없어요."
+          emptyDescription="잠시 후 다시 시도해 주세요."
         />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="page-stack">
-        <section className="page-panel">
-          <span className="eyebrow">오류</span>
-          <h1 className="page-title page-title-medium">탐색 화면을 불러오지 못했어요.</h1>
-          <p className="page-copy compact-copy">{error}</p>
-        </section>
       </div>
     );
   }
@@ -126,8 +103,10 @@ export function ExplorePage() {
     <MarketplaceShell
       listings={listings}
       regionName={session.region.region.name}
-      title="지도와 목록으로 빠르게 비교해보세요"
-      description="핀을 누르면 카드가 같이 강조되고, 카드를 누르면 해당 위치가 바로 보이도록 연결했어요."
+      title="지도와 목록으로 우리 동네 매물을 비교해 보세요"
+      description="핀을 누르면 목록 카드가 함께 강조되고, 카드에 마우스를 올리면 지도에서도 바로 위치를 확인할 수 있어요."
+      emptyTitle="조건에 맞는 매물이 아직 없어요."
+      emptyDescription="검색어를 바꾸거나 필터를 조금 넓혀 보세요."
     />
   );
 }

@@ -11,6 +11,7 @@ type MarketplaceShellProps = {
   regionName: string;
   title: string;
   description: string;
+  previewMode?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -20,13 +21,18 @@ function listingHasKeyword(listing: PublicListing, keyword: string) {
   return source.includes(keyword);
 }
 
+function getPreviewHeadline(listing: PublicListing, regionName: string) {
+  return `${listing.region3DepthName ?? regionName} ${getPropertyTypeLabel(listing.propertyType)}`;
+}
+
 export function MarketplaceShell({
   listings,
   regionName,
   title,
   description,
-  emptyTitle = "조건에 맞는 매물이 아직 없어요",
-  emptyDescription = "필터를 조금 넓히거나 다른 거래방식을 확인해보세요.",
+  previewMode = false,
+  emptyTitle = "조건에 맞는 매물이 아직 없어요.",
+  emptyDescription = "필터를 조금 바꾸거나 다른 거래 방식을 확인해 보세요.",
 }: MarketplaceShellProps) {
   const [selectedListingId, setSelectedListingId] = useState<number | null>(listings[0]?.id ?? null);
   const [search, setSearch] = useState("");
@@ -38,8 +44,13 @@ export function MarketplaceShell({
   const [savedIds, setSavedIds] = useState<number[]>([]);
 
   useEffect(() => {
+    if (previewMode) {
+      setSavedIds([]);
+      return;
+    }
+
     setSavedIds(listings.map((listing) => listing.id).filter((listingId) => isSavedListing(listingId)));
-  }, [listings]);
+  }, [listings, previewMode]);
 
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
@@ -85,6 +96,10 @@ export function MarketplaceShell({
   const selectedListing = filteredListings.find((listing) => listing.id === selectedListingId) ?? filteredListings[0] ?? null;
 
   function handleToggleSave(listingId: number) {
+    if (previewMode) {
+      return;
+    }
+
     setSavedIds(toggleSavedListing(listingId));
   }
 
@@ -92,14 +107,14 @@ export function MarketplaceShell({
     <div className="page-stack">
       <section className="hero-card">
         <div>
-          <span className="eyebrow">우리 동네 매물</span>
+          <span className="eyebrow">{previewMode ? "미리보기 모드" : "우리 동네 매물"}</span>
           <h1 className="page-title page-title-medium">{title}</h1>
           <p className="page-copy">{description}</p>
         </div>
         <div className="hero-region-card">
-          <span>현재 지역</span>
+          <span>{previewMode ? "안내" : "현재 지역"}</span>
           <strong>{regionName}</strong>
-          <p>검색과 필터는 인증한 지역 안에서만 동작해요.</p>
+          <p>{previewMode ? "미리보기에서는 실제 데이터만 보여주고, 상세 주소는 인증 후에 공개돼요." : "검색과 필터는 인증한 지역 안에서만 동작해요."}</p>
         </div>
       </section>
 
@@ -108,7 +123,7 @@ export function MarketplaceShell({
           className="input search-input"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="동네, 주소, 매물명을 검색해보세요"
+          placeholder="동네, 주소, 매물명으로 검색해 보세요."
         />
         <div className="chip-group">
           {[
@@ -129,7 +144,7 @@ export function MarketplaceShell({
         </div>
         <div className="chip-group">
           {[
-            { key: "all", label: "매물유형" },
+            { key: "all", label: "매물 유형" },
             { key: "apartment", label: "아파트" },
             { key: "officetel", label: "오피스텔" },
             { key: "villa", label: "빌라" },
@@ -167,7 +182,7 @@ export function MarketplaceShell({
         <div className="listing-column">
           <div className="listing-summary">
             <strong>{filteredListings.length}</strong>
-            <span>{regionName}에서 볼 수 있는 매물</span>
+            <span>{previewMode ? "미리보기 매물" : `${regionName}에서 볼 수 있는 매물`}</span>
           </div>
 
           {filteredListings.length === 0 ? (
@@ -179,6 +194,10 @@ export function MarketplaceShell({
             <div className="listing-card-grid">
               {filteredListings.map((listing) => {
                 const isSaved = savedIds.includes(listing.id);
+                const headline = previewMode ? getPreviewHeadline(listing, regionName) : listing.listingTitle;
+                const locationLabel = previewMode
+                  ? `${listing.region3DepthName ?? regionName} · 상세 주소 비공개`
+                  : `${listing.region3DepthName ?? regionName} · ${listing.addressLine1}`;
 
                 return (
                   <article
@@ -186,14 +205,16 @@ export function MarketplaceShell({
                     className={`listing-card${selectedListingId === listing.id ? " selected" : ""}`}
                     onMouseEnter={() => setSelectedListingId(listing.id)}
                   >
-                    <button type="button" className="listing-save-button" onClick={() => handleToggleSave(listing.id)}>
-                      {isSaved ? "저장됨" : "저장"}
-                    </button>
+                    {!previewMode ? (
+                      <button type="button" className="listing-save-button" onClick={() => handleToggleSave(listing.id)}>
+                        {isSaved ? "저장됨" : "저장"}
+                      </button>
+                    ) : null}
 
                     <button type="button" className="listing-card-hit" onClick={() => setSelectedListingId(listing.id)}>
                       <div className="listing-thumb-wrap">
                         {listing.previewPhotoUrl ? (
-                          <img className="listing-thumb" src={listing.previewPhotoUrl} alt={listing.listingTitle} />
+                          <img className="listing-thumb" src={listing.previewPhotoUrl} alt={headline} />
                         ) : (
                           <div className="listing-thumb empty">사진 준비 중</div>
                         )}
@@ -201,12 +222,13 @@ export function MarketplaceShell({
                       </div>
 
                       <div className="listing-content">
-                        <strong>{listing.listingTitle}</strong>
+                        <strong>{headline}</strong>
                         <div className="listing-price">{formatTradeLabel(listing)}</div>
-                        <span className="listing-location">{listing.region3DepthName ?? regionName}</span>
+                        <span className="listing-location">{locationLabel}</span>
                         <div className="listing-meta">
                           <span>{getPropertyTypeLabel(listing.propertyType)}</span>
                           <span>{formatArea(listing.areaM2)}</span>
+                          <span>{previewMode || listing.isPreview ? "미리보기" : listing.officeName}</span>
                         </div>
                       </div>
                     </button>
@@ -224,8 +246,8 @@ export function MarketplaceShell({
             <div className="selected-panel">
               <div className="selected-header">
                 <div>
-                  <span className="eyebrow">선택한 매물</span>
-                  <strong>{selectedListing.listingTitle}</strong>
+                  <span className="eyebrow">{previewMode ? "미리보기 카드" : "선택한 매물"}</span>
+                  <strong>{previewMode ? getPreviewHeadline(selectedListing, regionName) : selectedListing.listingTitle}</strong>
                 </div>
                 <span className={`status-badge transaction-${selectedListing.transactionType}`}>{getTransactionTypeLabel(selectedListing.transactionType)}</span>
               </div>
@@ -237,15 +259,23 @@ export function MarketplaceShell({
                 <span>{selectedListing.region3DepthName ?? regionName}</span>
               </div>
 
-              <p className="page-copy compact-copy">{selectedListing.description ?? "상세 설명은 매물 화면에서 바로 확인할 수 있어요."}</p>
+              <p className="page-copy compact-copy">
+                {previewMode
+                  ? "미리보기에서는 위치와 기본 정보만 먼저 볼 수 있어요. 상세 주소와 연락처는 내 동네 인증 후에 확인할 수 있어요."
+                  : selectedListing.description ?? "상세 설명은 매물 상세 화면에서 확인할 수 있어요."}
+              </p>
+
+              {previewMode || selectedListing.isPreview ? <span className="preview-badge">미리보기</span> : null}
 
               <div className="button-row">
                 <Link href={`/listings/${selectedListing.id}`} className="button button-primary">
-                  상세 보기
+                  {previewMode ? "동네 인증 후 상세 보기" : "상세 보기"}
                 </Link>
-                <button type="button" className="button button-secondary" onClick={() => handleToggleSave(selectedListing.id)}>
-                  {savedIds.includes(selectedListing.id) ? "저장 해제" : "저장"}
-                </button>
+                {!previewMode ? (
+                  <button type="button" className="button button-secondary" onClick={() => handleToggleSave(selectedListing.id)}>
+                    {savedIds.includes(selectedListing.id) ? "저장 해제" : "저장"}
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}

@@ -20,6 +20,23 @@ class ServiceAreaSupportTest {
     }
 
     @Test
+    void resolvesYubangFromRegionNames() {
+        ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolve("경기도", "용인시 처인구", "유방동");
+
+        assertNotNull(area);
+        assertEquals("yongin-cheoin-yubang", area.slug());
+        assertEquals("경기도 용인시 처인구 유방동", area.name());
+    }
+
+    @Test
+    void resolvesYubangFromCoordinates() {
+        ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolveByCoordinates(37.2321, 127.2108);
+
+        assertNotNull(area);
+        assertEquals("yongin-cheoin-yubang", area.slug());
+    }
+
+    @Test
     void returnsNullForUnsupportedArea() {
         ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolve("부산광역시", "해운대구", "우동");
 

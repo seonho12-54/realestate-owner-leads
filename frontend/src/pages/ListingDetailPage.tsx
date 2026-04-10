@@ -1,28 +1,162 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
+import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
 import { ApiError } from "@/lib/api";
-import { formatArea, formatTradeLabel, getPropertyTypeLabel, getTransactionTypeLabel } from "@/lib/format";
-import { isSavedListing, pushRecentListing, toggleSavedListing } from "@/lib/listing-prefs";
+import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel, getTransactionTypeLabel } from "@/lib/format";
 import { getPublishedListingDetail, type LeadDetail } from "@/lib/leads";
+import { isSavedListing, pushRecentListing, toggleSavedListing } from "@/lib/listing-prefs";
+
+function DetailBlockedState({ listingId }: { listingId: number | null }) {
+  const nextUrl = listingId ? `/listings/${listingId}` : "/";
+
+  return (
+    <div className="page-stack">
+      <section className="page-panel detail-hero">
+        <div>
+          <span className="eyebrow">미리보기 상세</span>
+          <h1 className="page-title page-title-medium">내 동네 인증 후 실제 상세 정보를 볼 수 있어요</h1>
+          <p className="page-copy">
+            상세 주소, 연락처, 사진 전체 보기 등 핵심 정보는 지역 인증이 끝난 뒤에만 열립니다. 화면 구조는 먼저 확인하고, 인증 후 다시 들어오면
+            실제 데이터를 그대로 이어서 볼 수 있어요.
+          </p>
+        </div>
+        <div className="button-row">
+          <Link href="/" className="button button-primary">
+            내 동네 인증하러 가기
+          </Link>
+          <Link href={`/login?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary">
+            로그인
+          </Link>
+        </div>
+      </section>
+
+      <section className="gallery-grid">
+        <div className="empty-panel">
+          <strong>썸네일은 인증 후 공개돼요</strong>
+          <p>사진, 상세 주소, 연락처는 인증 지역이 확인되면 보여드립니다.</p>
+        </div>
+        <div className="empty-panel">
+          <strong>가격과 거래 정보 구조 미리보기</strong>
+          <p>매매가, 전세가, 월세, 면적 정보는 인증이 끝나면 실제 데이터로 채워져요.</p>
+        </div>
+        <div className="empty-panel">
+          <strong>중개사무소 정보도 함께 확인</strong>
+          <p>지역이 잠기면 중개사무소 연락처와 사진 목록까지 바로 이어서 볼 수 있어요.</p>
+        </div>
+      </section>
+
+      <section className="detail-grid-shell">
+        <div className="detail-card">
+          <h2 className="section-title">매물 정보</h2>
+          <div className="detail-info-grid">
+            <div>
+              <span>거래 유형</span>
+              <strong>인증 후 공개</strong>
+            </div>
+            <div>
+              <span>매물 유형</span>
+              <strong>인증 후 공개</strong>
+            </div>
+            <div>
+              <span>면적</span>
+              <strong>인증 후 공개</strong>
+            </div>
+            <div>
+              <span>지역</span>
+              <strong>인증한 동네 기준</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <h2 className="section-title">상세 설명</h2>
+          <p className="page-copy">매물 설명, 특이사항, 입주 가능 시기, 연락 가능 시간은 지역 인증 후 실제 데이터로 표시됩니다.</p>
+        </div>
+
+        <div className="detail-card">
+          <h2 className="section-title">연락 정보</h2>
+          <p className="page-copy">중개사무소 전화번호와 주소는 인증 지역 내 매물에 한해 공개됩니다.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function DetailErrorState({
+  title,
+  message,
+  listingId,
+}: {
+  title: string;
+  message: string;
+  listingId: number | null;
+}) {
+  const manageHref = listingId ? "/manage" : "/";
+
+  return (
+    <div className="page-stack">
+      <section className="page-panel">
+        <span className="eyebrow">상세 보기</span>
+        <h1 className="page-title page-title-medium">{title}</h1>
+        <p className="page-copy compact-copy">{message}</p>
+        <div className="button-row">
+          <Link href="/explore" className="button button-primary">
+            둘러보기로 이동
+          </Link>
+          <Link href={manageHref} className="button button-secondary">
+            매물 관리
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 export function ListingDetailPage() {
+  const { listingId: listingIdParam } = useParams();
   const { session } = useSession();
-  const params = useParams();
-  const listingId = Number(params.listingId);
   const [listing, setListing] = useState<LeadDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+
+  const listingId = useMemo(() => {
+    const value = Number(listingIdParam);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }, [listingIdParam]);
+
+  const canReadDetail = session.kind === "admin" || session.region.locked;
+  const visiblePhotos = useMemo(() => listing?.photos.filter((photo) => Boolean(photo.viewUrl)) ?? [], [listing]);
 
   useEffect(() => {
+    if (listingId == null) {
+      setListing(null);
+      setError("잘못된 매물 주소예요.");
+      setErrorCode("INVALID_LISTING_ID");
+      setIsLoading(false);
+      return;
+    }
+
     setIsSaved(isSavedListing(listingId));
   }, [listingId]);
 
   useEffect(() => {
-    if (!Number.isFinite(listingId) || listingId <= 0) {
+    if (listingId == null) {
+      return;
+    }
+
+    if (session.isLoading) {
+      return;
+    }
+
+    if (!canReadDetail) {
+      setListing(null);
+      setError(null);
+      setErrorCode(null);
+      setIsLoading(false);
       return;
     }
 
@@ -34,18 +168,25 @@ export function ListingDetailPage() {
         if (!isMounted) {
           return;
         }
+
         setListing(response);
         setError(null);
         setErrorCode(null);
-        pushRecentListing(response.id);
+        pushRecentListing(listingId);
       })
       .catch((loadError) => {
         if (!isMounted) {
           return;
         }
-        setListing(null);
+
+        if (loadError instanceof ApiError) {
+          setErrorCode(loadError.code);
+          setError(loadError.message);
+          return;
+        }
+
+        setErrorCode(null);
         setError(loadError instanceof Error ? loadError.message : "매물 상세를 불러오지 못했어요.");
-        setErrorCode(loadError instanceof ApiError ? loadError.code : null);
       })
       .finally(() => {
         if (isMounted) {
@@ -56,136 +197,136 @@ export function ListingDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [listingId]);
+  }, [canReadDetail, listingId, session.isLoading]);
 
-  if (!Number.isFinite(listingId) || listingId <= 0) {
-    return <Navigate to="/" replace />;
+  function handleToggleSave() {
+    if (listingId == null || session.kind === "admin") {
+      return;
+    }
+
+    setIsSaved(toggleSavedListing(listingId).includes(listingId));
   }
 
-  if (isLoading || session.isLoading) {
+  if (session.isLoading || isLoading) {
     return (
       <div className="page-stack">
         <section className="page-panel">
           <span className="eyebrow">상세 보기</span>
-          <h1 className="page-title page-title-medium">매물 정보를 불러오고 있어요.</h1>
+          <h1 className="page-title page-title-medium">매물 상세를 불러오고 있어요.</h1>
         </section>
       </div>
     );
   }
 
-  if (errorCode === "REGION_VERIFICATION_REQUIRED") {
-    return (
-      <div className="page-stack">
-        <section className="locked-state-card">
-          <span className="eyebrow">지역 인증 필요</span>
-          <h1 className="page-title page-title-medium">매물 상세는 지역 인증 후에만 열 수 있어요</h1>
-          <p className="page-copy">홈에서 내 동네 인증을 완료하면 인증한 지역의 매물만 안전하게 확인할 수 있어요.</p>
-          <div className="button-row">
-            <Link to="/" className="button button-primary">
-              홈으로 가기
-            </Link>
-            <Link to="/login" className="button button-secondary">
-              로그인
-            </Link>
-          </div>
-        </section>
-      </div>
-    );
+  if (listingId == null) {
+    return <DetailErrorState title="올바른 매물 주소가 아니에요" message="매물 번호를 다시 확인해 주세요." listingId={listingId} />;
+  }
+
+  if (!canReadDetail) {
+    return <DetailBlockedState listingId={listingId} />;
   }
 
   if (errorCode === "REGION_ACCESS_DENIED") {
     return (
-      <div className="page-stack">
-        <section className="locked-state-card">
-          <span className="eyebrow">지역 잠금</span>
-          <h1 className="page-title page-title-medium">인증한 지역 밖의 매물은 볼 수 없어요</h1>
-          <p className="page-copy">내 동네 인증은 한 지역만 잠금돼요. 다른 지역으로 바꾸려면 설정에서 다시 인증을 진행해주세요.</p>
-          <div className="button-row">
-            <Link to="/explore" className="button button-primary">
-              우리 동네 둘러보기
-            </Link>
-            <Link to="/me" className="button button-secondary">
-              설정으로 가기
-            </Link>
-          </div>
-        </section>
-      </div>
+      <DetailErrorState
+        title="인증한 지역 밖의 매물이에요"
+        message={error ?? "현재 인증한 동네 밖의 매물은 상세 정보를 볼 수 없어요."}
+        listingId={listingId}
+      />
     );
   }
 
-  if (!listing || error) {
+  if (errorCode === "REGION_VERIFICATION_REQUIRED") {
+    return <DetailBlockedState listingId={listingId} />;
+  }
+
+  if (error || !listing) {
     return (
-      <div className="page-stack">
-        <section className="page-panel">
-          <span className="eyebrow">불러오기 실패</span>
-          <h1 className="page-title page-title-medium">매물 상세를 가져오지 못했어요.</h1>
-          <p className="page-copy compact-copy">{error ?? "해당 매물을 찾을 수 없어요."}</p>
-        </section>
-      </div>
+      <DetailErrorState
+        title="매물 상세를 불러오지 못했어요"
+        message={error ?? "잠시 후 다시 시도해 주세요."}
+        listingId={listingId}
+      />
     );
   }
-
-  const visiblePhotos = listing.photos.filter((photo) => Boolean(photo.viewUrl));
 
   return (
     <div className="page-stack">
-      <section className="detail-hero detail-hero-clean">
+      <section className="page-panel detail-hero">
         <div>
           <span className="eyebrow">{getTransactionTypeLabel(listing.transactionType)}</span>
           <h1 className="page-title page-title-medium">{listing.listingTitle}</h1>
-          <p className="page-copy compact-copy">{listing.addressLine1}</p>
+          <p className="page-copy">
+            {listing.region3DepthName ?? "인증 지역"} · {listing.addressLine1}
+          </p>
+          <div className="detail-highlight-row">
+            <strong>{formatTradeLabel(listing)}</strong>
+            <span>{getPropertyTypeLabel(listing.propertyType)}</span>
+            <span>{formatArea(listing.areaM2)}</span>
+            <span>{formatDateTime(listing.createdAt)}</span>
+          </div>
         </div>
-        <div className="detail-highlight-row">
-          <span>{formatTradeLabel(listing)}</span>
-          <span>{formatArea(listing.areaM2)}</span>
-          <span>{getPropertyTypeLabel(listing.propertyType)}</span>
-          <button type="button" className="button button-secondary button-small" onClick={() => setIsSaved(toggleSavedListing(listing.id).includes(listing.id))}>
-            {isSaved ? "저장 해제" : "저장"}
-          </button>
+        <div className="button-row">
+          <Link href="/explore" className="button button-secondary">
+            목록으로
+          </Link>
+          {session.kind === "admin" ? (
+            <Link href="/admin/leads" className="button button-primary">
+              매물 관리
+            </Link>
+          ) : (
+            <button type="button" className="button button-primary" onClick={handleToggleSave}>
+              {isSaved ? "저장 해제" : "매물 저장"}
+            </button>
+          )}
         </div>
       </section>
 
-      <section className="page-panel">
+      <section className="gallery-grid">
         {visiblePhotos.length > 0 ? (
-          <div className="gallery-grid">
-            {visiblePhotos.map((photo) =>
-              photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="detail-photo" /> : null,
-            )}
+          visiblePhotos.map((photo) =>
+            photo.viewUrl ? <img key={photo.id} src={photo.viewUrl} alt={photo.fileName} className="detail-photo" /> : null,
+          )
+        ) : listing.photos.length > 0 ? (
+          <div className="empty-panel">
+            <strong>사진 미리보기를 준비하지 못했어요</strong>
+            <p>S3 공개 URL 또는 presigned GET 설정을 확인한 뒤 다시 시도해 주세요.</p>
           </div>
         ) : (
           <div className="empty-panel">
-            <strong>등록된 사진이 아직 없어요.</strong>
+            <strong>등록된 사진이 없어요</strong>
+            <p>기본 정보와 설명은 아래에서 먼저 확인할 수 있어요.</p>
           </div>
         )}
       </section>
 
       <section className="detail-grid-shell">
         <div className="detail-card">
-          <h2 className="section-title">핵심 정보</h2>
+          <h2 className="section-title">매물 정보</h2>
           <div className="detail-info-grid">
             <div>
-              <span>거래 방식</span>
+              <span>거래 유형</span>
               <strong>{getTransactionTypeLabel(listing.transactionType)}</strong>
-            </div>
-            <div>
-              <span>가격</span>
-              <strong>{formatTradeLabel(listing)}</strong>
-            </div>
-            <div>
-              <span>면적</span>
-              <strong>{formatArea(listing.areaM2)}</strong>
             </div>
             <div>
               <span>매물 유형</span>
               <strong>{getPropertyTypeLabel(listing.propertyType)}</strong>
             </div>
             <div>
-              <span>동네</span>
-              <strong>{listing.region3DepthName ?? "-"}</strong>
+              <span>면적</span>
+              <strong>{formatArea(listing.areaM2)}</strong>
             </div>
             <div>
-              <span>입주 가능일</span>
-              <strong>{listing.moveInDate ?? "-"}</strong>
+              <span>입주 가능 시기</span>
+              <strong>{listing.moveInDate || "-"}</strong>
+            </div>
+            <div>
+              <span>연락 가능 시간</span>
+              <strong>{listing.contactTime || "-"}</strong>
+            </div>
+            <div>
+              <span>동네</span>
+              <strong>{listing.region3DepthName ?? "인증 지역"}</strong>
             </div>
           </div>
         </div>
@@ -196,36 +337,27 @@ export function ListingDetailPage() {
         </div>
 
         <div className="detail-card">
-          <h2 className="section-title">문의 정보</h2>
+          <h2 className="section-title">연락 정보</h2>
           <div className="detail-info-grid">
             <div>
               <span>중개사무소</span>
               <strong>{listing.officeName}</strong>
             </div>
             <div>
-              <span>연락처</span>
-              <strong>{listing.officePhone || "-"}</strong>
+              <span>전화번호</span>
+              <strong>{listing.officePhone || "준비 중"}</strong>
             </div>
             <div>
-              <span>주소</span>
+              <span>사무소 주소</span>
               <strong>{listing.officeAddress || "-"}</strong>
             </div>
             <div>
-              <span>연락 가능 시간</span>
-              <strong>{listing.contactTime || "-"}</strong>
+              <span>사진 수</span>
+              <strong>{listing.photoCount}장</strong>
             </div>
           </div>
         </div>
       </section>
-
-      <div className="button-row">
-        <Link to="/explore" className="button button-secondary">
-          목록으로 돌아가기
-        </Link>
-        <Link to="/saved" className="button button-primary">
-          저장한 매물 보기
-        </Link>
-      </div>
     </div>
   );
 }

@@ -148,7 +148,7 @@ export function KakaoMapPanel({
       <div className="map-toolbar">
         <div>
           <strong>지도에서 바로 비교하기</strong>
-          <p>핀을 누르면 목록 카드가 같이 강조돼요.</p>
+          <p>핀을 누르면 목록 카드도 함께 강조돼요.</p>
         </div>
         {showReset ? (
           <button type="button" className="button button-secondary button-small" onClick={resetToRegion}>

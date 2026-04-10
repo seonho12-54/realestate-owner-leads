@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.Clock;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -21,6 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -329,25 +331,46 @@ public class SessionService {
     }
 
     private void setCookie(HttpServletResponse response, String name, String value) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureCookie());
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (properties.getSessionDurationDays() * 24L * 60L * 60L));
-        response.addCookie(cookie);
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, value)
+            .httpOnly(true)
+            .secure(isSecureCookie())
+            .path("/")
+            .maxAge(Duration.ofDays(properties.getSessionDurationDays()))
+            .sameSite(resolveSameSite());
+
+        if (properties.getCookie().getDomain() != null && !properties.getCookie().getDomain().isBlank()) {
+            cookieBuilder.domain(properties.getCookie().getDomain().trim());
+        }
+
+        response.addHeader("Set-Cookie", cookieBuilder.build().toString());
     }
 
     private void clearCookie(HttpServletResponse response, String name) {
-        Cookie cookie = new Cookie(name, "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureCookie());
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, "")
+            .httpOnly(true)
+            .secure(isSecureCookie())
+            .path("/")
+            .maxAge(Duration.ZERO)
+            .sameSite(resolveSameSite());
+
+        if (properties.getCookie().getDomain() != null && !properties.getCookie().getDomain().isBlank()) {
+            cookieBuilder.domain(properties.getCookie().getDomain().trim());
+        }
+
+        response.addHeader("Set-Cookie", cookieBuilder.build().toString());
     }
 
     private boolean isSecureCookie() {
+        if (properties.getCookie().getSecure() != null) {
+            return properties.getCookie().getSecure();
+        }
+
         return properties.getBaseUrl() != null && properties.getBaseUrl().startsWith("https://");
+    }
+
+    private String resolveSameSite() {
+        String sameSite = properties.getCookie().getSameSite();
+        return sameSite == null || sameSite.isBlank() ? "Lax" : sameSite.trim();
     }
 
     private String asString(Object value) {

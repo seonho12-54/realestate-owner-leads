@@ -95,6 +95,7 @@ public final class LeadDtos {
         String listingTitle,
         String propertyType,
         String transactionType,
+        boolean isPreview,
         String regionSlug,
         String addressLine1,
         String addressLine2,

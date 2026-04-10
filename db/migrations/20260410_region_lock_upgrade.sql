@@ -1,14 +1,94 @@
-ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS verified_region_slug VARCHAR(80) NULL AFTER phone,
-  ADD COLUMN IF NOT EXISTS verified_region_name VARCHAR(120) NULL AFTER verified_region_slug,
-  ADD COLUMN IF NOT EXISTS region_verified_at DATETIME NULL AFTER verified_region_name,
-  ADD COLUMN IF NOT EXISTS location_locked TINYINT(1) NOT NULL DEFAULT 0 AFTER region_verified_at;
+SET @db_name = DATABASE();
 
-ALTER TABLE leads
-  ADD COLUMN IF NOT EXISTS region_slug VARCHAR(80) NULL AFTER region_3depth_name;
+SET @sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @db_name
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'verified_region_slug'
+  ),
+  'SELECT 1',
+  'ALTER TABLE users ADD COLUMN verified_region_slug VARCHAR(80) NULL AFTER phone'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
-ALTER TABLE leads
-  ADD INDEX idx_leads_region_slug (region_slug);
+SET @sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @db_name
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'verified_region_name'
+  ),
+  'SELECT 1',
+  'ALTER TABLE users ADD COLUMN verified_region_name VARCHAR(120) NULL AFTER verified_region_slug'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @db_name
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'region_verified_at'
+  ),
+  'SELECT 1',
+  'ALTER TABLE users ADD COLUMN region_verified_at DATETIME NULL AFTER verified_region_name'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @db_name
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'location_locked'
+  ),
+  'SELECT 1',
+  'ALTER TABLE users ADD COLUMN location_locked TINYINT(1) NOT NULL DEFAULT 0 AFTER region_verified_at'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @db_name
+      AND TABLE_NAME = 'leads'
+      AND COLUMN_NAME = 'region_slug'
+  ),
+  'SELECT 1',
+  'ALTER TABLE leads ADD COLUMN region_slug VARCHAR(80) NULL AFTER region_3depth_name'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+  EXISTS (
+    SELECT 1
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @db_name
+      AND TABLE_NAME = 'leads'
+      AND INDEX_NAME = 'idx_leads_region_slug'
+  ),
+  'SELECT 1',
+  'ALTER TABLE leads ADD INDEX idx_leads_region_slug (region_slug)'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS location_verification_logs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -32,6 +112,7 @@ CREATE TABLE IF NOT EXISTS location_verification_logs (
 UPDATE leads
 SET region_slug = CASE
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%울산%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%중구%' AND REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%다운%' THEN 'ulsan-junggu-daun'
+  WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%경기%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%처인구%' AND REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%유방%' THEN 'yongin-cheoin-yubang'
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%경기%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%처인구%' AND REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%역북%' THEN 'yongin-cheoin-yeokbuk'
   WHEN REPLACE(IFNULL(region_1depth_name, ''), ' ', '') LIKE '%서울%' AND REPLACE(IFNULL(region_2depth_name, ''), ' ', '') LIKE '%마포구%' AND (
     REPLACE(IFNULL(region_3depth_name, ''), ' ', '') LIKE '%서교%' OR

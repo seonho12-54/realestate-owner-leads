@@ -14,6 +14,7 @@ export type PublicListing = {
   listingTitle: string;
   propertyType: string;
   transactionType: string;
+  isPreview: boolean;
   regionSlug: string;
   addressLine1: string;
   addressLine2: string | null;
@@ -215,6 +216,7 @@ function normalizePublicListing(listing: Partial<PublicListing> | null | undefin
     listingTitle: listing.listingTitle,
     propertyType: listing.propertyType,
     transactionType: listing.transactionType,
+    isPreview: typeof listing.isPreview === "boolean" ? listing.isPreview : false,
     regionSlug: typeof listing.regionSlug === "string" ? listing.regionSlug : "",
     addressLine1: listing.addressLine1,
     addressLine2: typeof listing.addressLine2 === "string" ? listing.addressLine2 : null,
@@ -396,13 +398,18 @@ function normalizeMyLeadArray(value: unknown): MyLeadSummary[] {
   return value.map((lead) => normalizeMyLead(lead)).filter((lead): lead is MyLeadSummary => Boolean(lead));
 }
 
+export async function listPreviewListings(limit = 6) {
+  const response = await apiRequest<unknown>(`/api/listings/preview?limit=${encodeURIComponent(String(limit))}`);
+  return normalizePublicListingArray(response);
+}
+
 export async function listPublishedListings() {
-  const response = await apiRequest<unknown>("/api/public/listings");
+  const response = await apiRequest<unknown>("/api/listings");
   return normalizePublicListingArray(response);
 }
 
 export async function getPublishedListingDetail(listingId: number) {
-  const response = await apiRequest<unknown>(`/api/public/listings/${listingId}`);
+  const response = await apiRequest<unknown>(`/api/listings/${listingId}`);
   return normalizeLeadDetail(response);
 }
 

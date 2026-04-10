@@ -51,8 +51,14 @@ public class KakaoLocationService {
         ServiceAreaSupport.ServiceArea area = serviceAreaSupport.resolve(
             region.region1DepthName(),
             region.region2DepthName(),
-            region.region3DepthName()
+            region.region3DepthName(),
+            latitude,
+            longitude
         );
+
+        if (area == null) {
+            area = serviceAreaSupport.resolveAddressName(region.addressName());
+        }
 
         return new VerificationResponse(
             area != null,
@@ -87,7 +93,14 @@ public class KakaoLocationService {
                     if (result == null) {
                         continue;
                     }
-                    if (!serviceAreaSupport.isAllowed(result.region1DepthName(), result.region2DepthName(), result.region3DepthName())) {
+                    ServiceAreaSupport.ServiceArea resolved = serviceAreaSupport.resolve(
+                        result.region1DepthName(),
+                        result.region2DepthName(),
+                        result.region3DepthName(),
+                        result.latitude(),
+                        result.longitude()
+                    );
+                    if (resolved == null) {
                         continue;
                     }
                     deduped.putIfAbsent(dedupeKey(result), result);

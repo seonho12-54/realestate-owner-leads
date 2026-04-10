@@ -16,6 +16,7 @@ public class AppProperties {
     private int maxPhotoCount = 10;
     private S3Properties s3 = new S3Properties();
     private CorsProperties cors = new CorsProperties();
+    private CookieProperties cookie = new CookieProperties();
 
     public String getBaseUrl() {
         return baseUrl;
@@ -97,6 +98,14 @@ public class AppProperties {
         this.cors = cors;
     }
 
+    public CookieProperties getCookie() {
+        return cookie;
+    }
+
+    public void setCookie(CookieProperties cookie) {
+        this.cookie = cookie;
+    }
+
     public static class S3Properties {
 
         private String bucket;
@@ -156,6 +165,37 @@ public class AppProperties {
 
         public void setAllowedOrigins(List<String> allowedOrigins) {
             this.allowedOrigins = allowedOrigins;
+        }
+    }
+
+    public static class CookieProperties {
+
+        private String sameSite = "Lax";
+        private String domain;
+        private Boolean secure;
+
+        public String getSameSite() {
+            return sameSite;
+        }
+
+        public void setSameSite(String sameSite) {
+            this.sameSite = sameSite;
+        }
+
+        public String getDomain() {
+            return domain;
+        }
+
+        public void setDomain(String domain) {
+            this.domain = domain;
+        }
+
+        public Boolean getSecure() {
+            return secure;
+        }
+
+        public void setSecure(Boolean secure) {
+            this.secure = secure;
         }
     }
 }
