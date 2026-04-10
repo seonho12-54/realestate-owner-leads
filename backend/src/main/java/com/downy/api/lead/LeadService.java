@@ -734,6 +734,8 @@ public class LeadService {
                     l.transaction_type,
                     l.address_line1,
                     l.address_line2,
+                    l.postal_code,
+                    l.region_slug,
                     l.region_2depth_name,
                     l.region_3depth_name,
                     l.latitude,
@@ -742,6 +744,7 @@ public class LeadService {
                     l.price_krw,
                     l.deposit_krw,
                     l.monthly_rent_krw,
+                    l.move_in_date,
                     l.contact_time,
                     l.description,
                     l.admin_memo,
@@ -783,6 +786,8 @@ public class LeadService {
                 rs.getString("transaction_type"),
                 rs.getString("address_line1"),
                 rs.getString("address_line2"),
+                rs.getString("postal_code"),
+                rs.getString("region_slug"),
                 rs.getString("region_2depth_name"),
                 rs.getString("region_3depth_name"),
                 getNullableDouble(rs.getBigDecimal("latitude")),
@@ -791,6 +796,7 @@ public class LeadService {
                 getNullableLong(rs.getObject("price_krw")),
                 getNullableLong(rs.getObject("deposit_krw")),
                 getNullableLong(rs.getObject("monthly_rent_krw")),
+                rs.getString("move_in_date"),
                 rs.getString("contact_time"),
                 rs.getString("description"),
                 rs.getString("admin_memo"),
@@ -828,6 +834,8 @@ public class LeadService {
             row.transactionType(),
             row.addressLine1(),
             row.addressLine2(),
+            row.postalCode(),
+            row.regionSlug(),
             row.region2DepthName(),
             row.region3DepthName(),
             row.latitude(),
@@ -836,6 +844,7 @@ public class LeadService {
             row.priceKrw(),
             row.depositKrw(),
             row.monthlyRentKrw(),
+            row.moveInDate(),
             row.contactTime(),
             row.description(),
             row.adminMemo(),
@@ -858,10 +867,40 @@ public class LeadService {
 
     @Transactional
     public void updateLeadAdminFields(long leadId, AdminLeadUpdateRequest request, long adminId, RequestMeta requestMeta) {
+        ensureOfficeExists(request.officeId());
+        AddressSearchResult geocoded = kakaoLocationService.geocodeWithinAllowedArea(request.addressLine1());
+        ServiceAreaSupport.ServiceArea serviceArea = resolveServiceArea(geocoded);
+
         int updated = jdbcTemplate.update(
             """
                 UPDATE leads
                 SET
+                    office_id = ?,
+                    listing_title = ?,
+                    owner_name = ?,
+                    phone = ?,
+                    email = ?,
+                    property_type = ?,
+                    transaction_type = ?,
+                    address_line1 = ?,
+                    address_line2 = ?,
+                    postal_code = ?,
+                    region_1depth_name = ?,
+                    region_2depth_name = ?,
+                    region_3depth_name = ?,
+                    region_slug = ?,
+                    latitude = ?,
+                    longitude = ?,
+                    location_verified = 1,
+                    area_m2 = ?,
+                    price_krw = ?,
+                    deposit_krw = ?,
+                    monthly_rent_krw = ?,
+                    move_in_date = ?,
+                    contact_time = ?,
+                    description = ?,
+                    privacy_consent = ?,
+                    marketing_consent = ?,
                     status = ?,
                     is_published = ?,
                     admin_memo = ?,
@@ -872,10 +911,35 @@ public class LeadService {
                     END,
                     published_by_admin_id = CASE
                         WHEN ? = 1 THEN ?
-                        ELSE published_by_admin_id
+                        ELSE NULL
                     END
                 WHERE id = ?
                 """,
+            request.officeId(),
+            request.listingTitle(),
+            request.ownerName(),
+            request.phone(),
+            blankToNull(request.email()),
+            request.propertyType(),
+            request.transactionType(),
+            geocoded.roadAddress() != null ? geocoded.roadAddress() : geocoded.addressName(),
+            blankToNull(request.addressLine2()),
+            blankToNull(request.postalCode()) != null ? request.postalCode() : geocoded.postalCode(),
+            geocoded.region1DepthName(),
+            geocoded.region2DepthName(),
+            geocoded.region3DepthName(),
+            serviceArea.slug(),
+            BigDecimal.valueOf(geocoded.latitude()),
+            BigDecimal.valueOf(geocoded.longitude()),
+            request.areaM2() == null ? null : BigDecimal.valueOf(request.areaM2()),
+            request.priceKrw(),
+            request.depositKrw(),
+            request.monthlyRentKrw(),
+            blankToNull(request.moveInDate()),
+            blankToNull(request.contactTime()),
+            blankToNull(request.description()),
+            request.privacyConsent(),
+            request.marketingConsent(),
             request.status(),
             request.isPublished(),
             blankToNull(request.adminMemo()),
@@ -890,13 +954,24 @@ public class LeadService {
             throw new ApiException(HttpStatus.NOT_FOUND, "매물을 찾을 수 없어요.");
         }
 
+        replaceLeadPhotos(leadId, request.photos());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("listingTitle", request.listingTitle());
+        payload.put("transactionType", request.transactionType());
+        payload.put("region2DepthName", geocoded.region2DepthName());
+        payload.put("region3DepthName", geocoded.region3DepthName());
+        payload.put("regionSlug", serviceArea.slug());
+        payload.put("status", request.status());
+        payload.put("isPublished", request.isPublished());
+
         auditLogService.write(
             adminId,
             "lead.admin_updated",
             "lead",
             leadId,
             requestMeta,
-            Map.of("status", request.status(), "isPublished", request.isPublished())
+            payload
         );
     }
 
@@ -933,6 +1008,8 @@ public class LeadService {
     }
 
     private void replaceLeadPhotos(long leadId, List<LeadPhotoInput> photos) {
+        jdbcTemplate.update("DELETE FROM lead_photos WHERE lead_id = ?", leadId);
+
         if (photos == null || photos.isEmpty()) {
             return;
         }
@@ -968,7 +1045,7 @@ public class LeadService {
 
         List<LeadPhotoRow> rows = namedParameterJdbcTemplate.query(
             """
-                SELECT id, lead_id, s3_key, file_name
+                SELECT id, lead_id, s3_key, file_name, content_type, file_size, display_order
                 FROM lead_photos
                 WHERE lead_id IN (:leadIds)
                 ORDER BY display_order ASC, id ASC
@@ -978,7 +1055,10 @@ public class LeadService {
                 rs.getLong("id"),
                 rs.getLong("lead_id"),
                 rs.getString("s3_key"),
-                rs.getString("file_name")
+                rs.getString("file_name"),
+                rs.getString("content_type"),
+                getNullableLong(rs.getObject("file_size")),
+                rs.getInt("display_order")
             )
         );
 
@@ -997,7 +1077,16 @@ public class LeadService {
                 } catch (Exception exception) {
                     System.err.println("Failed to create view url for " + photoRow.s3Key() + ": " + exception.getMessage());
                 }
-                assets.add(new LeadPhotoAsset(photoRow.id(), photoRow.leadId(), photoRow.fileName(), photoRow.s3Key(), viewUrl));
+                assets.add(new LeadPhotoAsset(
+                    photoRow.id(),
+                    photoRow.leadId(),
+                    photoRow.fileName(),
+                    photoRow.s3Key(),
+                    photoRow.contentType(),
+                    photoRow.fileSize(),
+                    photoRow.displayOrder(),
+                    viewUrl
+                ));
             }
             result.put(entry.getKey(), assets);
         }
@@ -1161,6 +1250,8 @@ public class LeadService {
         String transactionType,
         String addressLine1,
         String addressLine2,
+        String postalCode,
+        String regionSlug,
         String region2DepthName,
         String region3DepthName,
         Double latitude,
@@ -1169,6 +1260,7 @@ public class LeadService {
         Long priceKrw,
         Long depositKrw,
         Long monthlyRentKrw,
+        String moveInDate,
         String contactTime,
         String description,
         String adminMemo,
@@ -1188,6 +1280,6 @@ public class LeadService {
     ) {
     }
 
-    private record LeadPhotoRow(long id, long leadId, String s3Key, String fileName) {
+    private record LeadPhotoRow(long id, long leadId, String s3Key, String fileName, String contentType, Long fileSize, int displayOrder) {
     }
 }

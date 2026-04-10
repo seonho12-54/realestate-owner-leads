@@ -1484,6 +1484,74 @@ img {
   gap: 18px;
 }
 
+.section-heading-compact {
+  margin-bottom: 0;
+}
+
+.section-title-small {
+  font-size: 1.1rem;
+}
+
+.admin-form-section {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-card-thumb-wrap {
+  overflow: hidden;
+  margin-top: 12px;
+  border-radius: var(--radius-lg);
+  background: #dde6f4;
+  aspect-ratio: 1.45;
+}
+
+.admin-card-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-photo-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+}
+
+.admin-photo-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-photo-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  background: #dfe7f4;
+}
+
+.admin-photo-thumb-empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.admin-photo-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-photo-meta span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .inline-note {
   display: inline-flex;
   align-items: center;

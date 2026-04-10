@@ -87,7 +87,16 @@ public final class LeadDtos {
     ) {
     }
 
-    public record LeadPhotoAsset(long id, long leadId, String fileName, String s3Key, String viewUrl) {
+    public record LeadPhotoAsset(
+        long id,
+        long leadId,
+        String fileName,
+        String s3Key,
+        String contentType,
+        Long fileSize,
+        int displayOrder,
+        String viewUrl
+    ) {
     }
 
     public record PublicListingResponse(
@@ -159,6 +168,8 @@ public final class LeadDtos {
         String transactionType,
         String addressLine1,
         String addressLine2,
+        String postalCode,
+        String regionSlug,
         String region2DepthName,
         String region3DepthName,
         Double latitude,
@@ -167,6 +178,7 @@ public final class LeadDtos {
         Long priceKrw,
         Long depositKrw,
         Long monthlyRentKrw,
+        String moveInDate,
         String contactTime,
         String description,
         String adminMemo,
@@ -219,9 +231,29 @@ public final class LeadDtos {
     }
 
     public record AdminLeadUpdateRequest(
+        @Positive long officeId,
+        @NotBlank @Size(min = 4, max = 160) String listingTitle,
+        @NotBlank @Size(min = 2, max = 100) String ownerName,
+        @NotBlank @Size(min = 9, max = 30) @Pattern(regexp = "^[0-9+\\-() ]+$", message = "?곕씫泥??뺤떇???뺤씤??二쇱꽭??") String phone,
+        @Email @Size(max = 191) String email,
+        @NotBlank String propertyType,
+        @NotBlank String transactionType,
+        @NotBlank @Size(min = 5, max = 255) String addressLine1,
+        @Size(max = 255) String addressLine2,
+        @Size(max = 20) String postalCode,
+        @Min(0) Double areaM2,
+        @Min(0) Long priceKrw,
+        @Min(0) Long depositKrw,
+        @Min(0) Long monthlyRentKrw,
+        @Size(max = 50) String moveInDate,
+        @Size(max = 100) String contactTime,
+        @Size(max = 3000) String description,
+        boolean privacyConsent,
+        boolean marketingConsent,
         @NotBlank String status,
         @Size(max = 2000) String adminMemo,
-        boolean isPublished
+        boolean isPublished,
+        @Valid List<LeadPhotoInput> photos
     ) {
     }
 }

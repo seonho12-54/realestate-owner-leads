@@ -4,10 +4,12 @@ import { Navigate } from "react-router-dom";
 import { AdminLeadManager } from "@/components/AdminLeadManager";
 import { useSession } from "@/context/SessionContext";
 import { listAdminLeads, type AdminLeadSummary } from "@/lib/leads";
+import { listActiveOffices, type OfficeOption } from "@/lib/offices";
 
 export function AdminLeadsPage() {
   const { session } = useSession();
   const [leads, setLeads] = useState<AdminLeadSummary[]>([]);
+  const [offices, setOffices] = useState<OfficeOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,13 +21,14 @@ export function AdminLeadsPage() {
     let isMounted = true;
     setIsLoading(true);
 
-    listAdminLeads()
-      .then((response) => {
+    Promise.all([listAdminLeads(), listActiveOffices()])
+      .then(([leadResponse, officeResponse]) => {
         if (!isMounted) {
           return;
         }
 
-        setLeads(response);
+        setLeads(leadResponse);
+        setOffices(officeResponse);
         setError(null);
       })
       .catch((loadError) => {
@@ -34,6 +37,7 @@ export function AdminLeadsPage() {
         }
 
         setLeads([]);
+        setOffices([]);
         setError(loadError instanceof Error ? loadError.message : "관리 목록을 불러오지 못했습니다.");
       })
       .finally(() => {
@@ -82,7 +86,7 @@ export function AdminLeadsPage() {
     <div className="page-stack">
       <section className="page-panel hero-panel-slim">
         <span className="eyebrow">관리자 모드</span>
-        <h1 className="page-title page-title-medium">승인형 매물 관리</h1>
+        <h1 className="page-title page-title-medium">등록 매물 관리</h1>
         <div className="stat-row">
           <div className="stat-pill">전체 {leads.length}건</div>
           <div className="stat-pill">신규 접수 {pendingCount}건</div>
@@ -91,7 +95,7 @@ export function AdminLeadsPage() {
         </div>
       </section>
 
-      <AdminLeadManager leads={leads} />
+      <AdminLeadManager leads={leads} offices={offices} />
     </div>
   );
 }
