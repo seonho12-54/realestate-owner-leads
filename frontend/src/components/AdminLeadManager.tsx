@@ -6,6 +6,7 @@ import { formatFileSize } from "@/lib/client-image";
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel } from "@/lib/format";
 import {
   createEditablePhotos,
+  getPhotoUploadErrorMessage,
   releaseEditablePhoto,
   releaseEditablePhotos,
   reindexEditablePhotos,
@@ -188,7 +189,9 @@ export function AdminLeadManager({
           ? `${compressedCount}장의 사진을 최적화해서 업로드했습니다.`
           : "사진 업로드를 마쳤습니다.",
       );
-    } catch (error) {
+    } catch (error: any) {
+      setMessage(getPhotoUploadErrorMessage(error));
+      return;
       setMessage(error instanceof Error ? error.message : "사진 업로드에 실패했습니다.");
     } finally {
       setIsUploadingPhotos(false);

@@ -8,11 +8,13 @@ const EXTENSION_TO_CONTENT_TYPE: Record<string, string> = {
   heif: "image/heif",
 };
 
-const MAX_IMAGE_EDGE = 1600;
-const TARGET_IMAGE_BYTES = 1_200_000;
-const INITIAL_WEBP_QUALITY = 0.82;
-const MIN_WEBP_QUALITY = 0.58;
+const MAX_IMAGE_EDGE = 1280;
+const MIN_IMAGE_EDGE = 960;
+const TARGET_IMAGE_BYTES = 650_000;
+const INITIAL_WEBP_QUALITY = 0.76;
+const MIN_WEBP_QUALITY = 0.5;
 const WEBP_QUALITY_STEP = 0.08;
+const RESIZE_STEP_RATIO = 0.85;
 
 export type PreparedUploadImage = {
   file: File;
@@ -39,6 +41,29 @@ function getScaledDimensions(width: number, height: number) {
   };
 }
 
+function getNextScaledDimensions(width: number, height: number) {
+  if (Math.max(width, height) <= MIN_IMAGE_EDGE) {
+    return { width, height };
+  }
+
+  const nextWidth = Math.max(1, Math.round(width * RESIZE_STEP_RATIO));
+  const nextHeight = Math.max(1, Math.round(height * RESIZE_STEP_RATIO));
+  const longestEdge = Math.max(nextWidth, nextHeight);
+
+  if (longestEdge < MIN_IMAGE_EDGE) {
+    const scale = MIN_IMAGE_EDGE / longestEdge;
+    return {
+      width: Math.max(1, Math.round(nextWidth * scale)),
+      height: Math.max(1, Math.round(nextHeight * scale)),
+    };
+  }
+
+  return {
+    width: nextWidth,
+    height: nextHeight,
+  };
+}
+
 function createObjectUrlImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -51,7 +76,7 @@ function createObjectUrlImage(file: File): Promise<HTMLImageElement> {
 
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("이미지 파일을 읽지 못했습니다."));
+      reject(new Error("이미지 파일을 열지 못했습니다."));
     };
 
     image.src = objectUrl;
@@ -70,6 +95,19 @@ function buildCompressedFileName(fileName: string) {
   }
 
   return `${fileName}.webp`;
+}
+
+function drawImageToCanvas(canvas: HTMLCanvasElement, image: HTMLImageElement, width: number, height: number) {
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("이미지 압축용 캔버스를 만들지 못했습니다.");
+  }
+
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
 }
 
 export function resolveUploadContentType(file: File) {
@@ -109,21 +147,30 @@ export async function prepareImageForUpload(file: File): Promise<PreparedUploadI
     }
 
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("이미지 압축용 캔버스를 만들지 못했습니다.");
-    }
-
-    context.drawImage(image, 0, 0, width, height);
-
+    let currentWidth = width;
+    let currentHeight = height;
     let quality = INITIAL_WEBP_QUALITY;
+
+    drawImageToCanvas(canvas, image, currentWidth, currentHeight);
+
     let compressedBlob = await canvasToBlob(canvas, "image/webp", quality);
 
-    while (compressedBlob && compressedBlob.size > TARGET_IMAGE_BYTES && quality > MIN_WEBP_QUALITY) {
-      quality = Math.max(MIN_WEBP_QUALITY, quality - WEBP_QUALITY_STEP);
+    while (compressedBlob && compressedBlob.size > TARGET_IMAGE_BYTES) {
+      if (quality > MIN_WEBP_QUALITY) {
+        quality = Math.max(MIN_WEBP_QUALITY, quality - WEBP_QUALITY_STEP);
+        compressedBlob = await canvasToBlob(canvas, "image/webp", quality);
+        continue;
+      }
+
+      const nextDimensions = getNextScaledDimensions(currentWidth, currentHeight);
+      if (nextDimensions.width === currentWidth && nextDimensions.height === currentHeight) {
+        break;
+      }
+
+      currentWidth = nextDimensions.width;
+      currentHeight = nextDimensions.height;
+      quality = INITIAL_WEBP_QUALITY;
+      drawImageToCanvas(canvas, image, currentWidth, currentHeight);
       compressedBlob = await canvasToBlob(canvas, "image/webp", quality);
     }
 
@@ -136,7 +183,7 @@ export async function prepareImageForUpload(file: File): Promise<PreparedUploadI
       };
     }
 
-    if (!shouldResize && compressedBlob.size >= originalFileSize * 0.92) {
+    if (!shouldResize && compressedBlob.size >= originalFileSize * 0.98) {
       return {
         file,
         originalFileSize,
@@ -176,4 +223,16 @@ export function formatFileSize(bytes: number) {
   }
 
   return `${bytes}B`;
+}
+
+export function resolveUploadFailureMessage(error: unknown, fallbackMessage = "사진 업로드에 실패했습니다.") {
+  if (error instanceof TypeError && /failed to fetch/i.test(error.message)) {
+    return "사진 업로드에 실패했습니다. 현재 도메인에서 S3 업로드가 차단되고 있습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallbackMessage;
 }

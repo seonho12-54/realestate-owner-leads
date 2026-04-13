@@ -4,7 +4,7 @@ import { Link } from "@/components/RouterLink";
 import { SellMapPreview } from "@/components/SellMapPreview";
 import { createLead } from "@/lib/leads";
 import { apiFetch, apiRequest } from "@/lib/api";
-import { formatFileSize, prepareImageForUpload, resolveUploadContentType } from "@/lib/client-image";
+import { formatFileSize, prepareImageForUpload, resolveUploadContentType, resolveUploadFailureMessage } from "@/lib/client-image";
 import { useRouter } from "@/lib/router";
 import type { OfficeOption } from "@/lib/offices";
 import { getValidationMessage, leadCreateSchema, propertyTypeOptions, transactionTypeOptions, type LeadPhotoInput } from "@/lib/validation";
@@ -218,15 +218,21 @@ export function SellLeadForm({
       },
     });
 
-    const uploadResponse = await fetch(presign.uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": contentType,
-      },
-      body: prepared.file,
-    });
+    let uploadResponse: Response;
+    try {
+      uploadResponse = await fetch(presign.uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": contentType,
+        },
+        body: prepared.file,
+      });
+    } catch (error) {
+      throw new Error(resolveUploadFailureMessage(error));
+    }
 
     if (!uploadResponse.ok) {
+      throw new Error(`사진 업로드에 실패했습니다. S3 업로드 응답(${uploadResponse.status})을 확인해 주세요.`);
       throw new Error("사진 업로드에 실패했습니다. S3 버킷 권한 또는 CORS 설정을 확인해 주세요.");
     }
 
@@ -277,7 +283,9 @@ export function SellLeadForm({
       } else {
         setUploadHint("사진 업로드가 완료되었습니다.");
       }
-    } catch (uploadError) {
+    } catch (uploadError: any) {
+      setError(resolveUploadFailureMessage(uploadError));
+      return;
       setError(uploadError instanceof Error ? uploadError.message : "사진 업로드에 실패했습니다.");
     } finally {
       setIsUploadingPhotos(false);

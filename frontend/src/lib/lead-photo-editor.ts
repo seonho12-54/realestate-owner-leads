@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import { prepareImageForUpload, resolveUploadContentType } from "@/lib/client-image";
+import { prepareImageForUpload, resolveUploadContentType, resolveUploadFailureMessage } from "@/lib/client-image";
 import type { LeadPhotoAsset } from "@/lib/leads";
 
 export type EditableLeadPhoto = {
@@ -68,7 +68,7 @@ export async function uploadEditablePhoto(file: File, indexOffset: number): Prom
   const contentType = resolveUploadContentType(prepared.file);
 
   if (!contentType) {
-    throw new Error("이미지 형식을 확인해 주세요. JPG, PNG, WEBP 파일만 업로드할 수 있어요.");
+    throw new Error("이미지 형식을 확인해 주세요. JPG, PNG, WEBP 파일만 업로드할 수 있습니다.");
   }
 
   const presign = await apiRequest<{ key: string; uploadUrl: string }>("/api/uploads/presign", {
@@ -80,16 +80,21 @@ export async function uploadEditablePhoto(file: File, indexOffset: number): Prom
     },
   });
 
-  const uploadResponse = await fetch(presign.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType,
-    },
-    body: prepared.file,
-  });
+  let uploadResponse: Response;
+  try {
+    uploadResponse = await fetch(presign.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+      },
+      body: prepared.file,
+    });
+  } catch (error) {
+    throw new Error(resolveUploadFailureMessage(error));
+  }
 
   if (!uploadResponse.ok) {
-    throw new Error("사진 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    throw new Error(`사진 업로드에 실패했습니다. S3 업로드 응답(${uploadResponse.status})을 확인해 주세요.`);
   }
 
   return {
@@ -105,4 +110,8 @@ export async function uploadEditablePhoto(file: File, indexOffset: number): Prom
     optimizedFileSize: prepared.optimizedFileSize,
     wasCompressed: prepared.wasCompressed,
   };
+}
+
+export function getPhotoUploadErrorMessage(error: unknown) {
+  return resolveUploadFailureMessage(error);
 }

@@ -9,6 +9,7 @@ import { formatFileSize } from "@/lib/client-image";
 import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel, getTransactionTypeLabel } from "@/lib/format";
 import {
   createEditablePhotos,
+  getPhotoUploadErrorMessage,
   releaseEditablePhoto,
   releaseEditablePhotos,
   reindexEditablePhotos,
@@ -330,7 +331,9 @@ export function ListingDetailPage() {
           ? `${compressedCount}장의 사진을 최적화해서 업로드했습니다.`
           : "사진 업로드를 마쳤습니다.",
       );
-    } catch (uploadError) {
+    } catch (uploadError: any) {
+      setAdminMessage(getPhotoUploadErrorMessage(uploadError));
+      return;
       setAdminMessage(uploadError instanceof Error ? uploadError.message : "사진 업로드에 실패했습니다.");
     } finally {
       setIsAdminUploading(false);
