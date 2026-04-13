@@ -9,6 +9,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 @Service
 public class PhoneVerificationService {
 
+    private static final Logger log = LoggerFactory.getLogger(PhoneVerificationService.class);
+
     private final JdbcTemplate jdbcTemplate;
     private final AppProperties properties;
     private final SnsClient snsClient;
@@ -36,7 +40,16 @@ public class PhoneVerificationService {
         var builder = SnsClient.builder()
             .region(Region.of(properties.getPhoneVerification().getRegion()));
 
-        if (StringUtils.hasText(properties.getS3().getAccessKeyId()) && StringUtils.hasText(properties.getS3().getSecretAccessKey())) {
+        if (StringUtils.hasText(properties.getPhoneVerification().getAccessKeyId()) && StringUtils.hasText(properties.getPhoneVerification().getSecretAccessKey())) {
+            builder.credentialsProvider(
+                StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(
+                        properties.getPhoneVerification().getAccessKeyId(),
+                        properties.getPhoneVerification().getSecretAccessKey()
+                    )
+                )
+            );
+        } else if (StringUtils.hasText(properties.getS3().getAccessKeyId()) && StringUtils.hasText(properties.getS3().getSecretAccessKey())) {
             builder.credentialsProvider(
                 StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(properties.getS3().getAccessKeyId(), properties.getS3().getSecretAccessKey())

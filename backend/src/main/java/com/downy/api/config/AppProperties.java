@@ -271,6 +271,8 @@ public class AppProperties {
         private boolean enabled = true;
         private String region = "ap-northeast-2";
         private String senderId;
+        private String accessKeyId;
+        private String secretAccessKey;
         private int codeLength = 6;
         private int expiresMinutes = 5;
         private int requestCooldownSeconds = 60;
@@ -297,6 +299,22 @@ public class AppProperties {
 
         public void setSenderId(String senderId) {
             this.senderId = senderId;
+        }
+
+        public String getAccessKeyId() {
+            return accessKeyId;
+        }
+
+        public void setAccessKeyId(String accessKeyId) {
+            this.accessKeyId = accessKeyId;
+        }
+
+        public String getSecretAccessKey() {
+            return secretAccessKey;
+        }
+
+        public void setSecretAccessKey(String secretAccessKey) {
+            this.secretAccessKey = secretAccessKey;
         }
 
         public int getCodeLength() {
