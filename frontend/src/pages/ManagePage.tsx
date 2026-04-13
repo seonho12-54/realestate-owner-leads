@@ -99,7 +99,7 @@ export function ManagePage() {
           <h1 className="page-title page-title-medium">등록한 매물과 진행 상태를 한눈에 확인하세요</h1>
           <p className="page-copy">공개 여부와 심사 상태를 여기에서 바로 확인할 수 있어요.</p>
           <div className="button-row" style={{ marginTop: 8 }}>
-            <Link href="/sell/register" className="button button-primary">
+            <Link href="/sell" className="button button-primary">
               ✏️ 문의하기
             </Link>
             <Link href="/me" className="button button-secondary">

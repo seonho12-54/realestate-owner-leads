@@ -366,7 +366,7 @@ export function SellLeadForm({
     try {
       setIsSubmitting(true);
       const result = await createLead(validation.data);
-      router.replace(`/sell/register/done?id=${result.id}`);
+      router.replace(`/sell/done?id=${result.id}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "매물 접수에 실패했습니다.");
     } finally {
