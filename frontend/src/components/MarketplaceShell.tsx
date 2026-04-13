@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { KakaoMapPanel } from "@/components/KakaoMapPanel";
 import { Link } from "@/components/RouterLink";
+import { useSession } from "@/context/SessionContext";
 import { formatArea, formatTradeLabel, getPropertyTypeLabel, getTransactionTypeLabel } from "@/lib/format";
 import { isSavedListing, toggleSavedListing } from "@/lib/listing-prefs";
 import type { PublicListing } from "@/lib/leads";
@@ -12,6 +13,7 @@ type MarketplaceShellProps = {
   regionName: string;
   title: string;
   description: string;
+  heroActions?: ReactNode;
   previewMode?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
@@ -31,10 +33,12 @@ export function MarketplaceShell({
   regionName,
   title,
   description,
+  heroActions,
   previewMode = false,
   emptyTitle = "조건에 맞는 매물이 아직 없어요",
   emptyDescription = "필터를 조금 바꾸거나 다른 거래 방식을 확인해 보세요.",
 }: MarketplaceShellProps) {
+  const { session } = useSession();
   const [selectedListingId, setSelectedListingId] = useState<number | null>(listings[0]?.id ?? null);
   const [search, setSearch] = useState("");
   const [transactionFilter, setTransactionFilter] = useState("all");
@@ -96,6 +100,16 @@ export function MarketplaceShell({
   }, [filteredListings, selectedListingId]);
 
   const selectedListing = filteredListings.find((listing) => listing.id === selectedListingId) ?? filteredListings[0] ?? null;
+  const defaultHeroActions =
+    !previewMode && session.kind !== "admin" ? (
+      <Link
+        href={session.authenticated ? "/sell/register" : "/login?next=/sell/register"}
+        className="button button-primary"
+      >
+        {session.authenticated ? "매물 등록" : "로그인 후 매물 등록"}
+      </Link>
+    ) : null;
+  const resolvedHeroActions = heroActions ?? defaultHeroActions;
 
   function handleToggleSave(listingId: number) {
     if (previewMode) {
@@ -118,6 +132,11 @@ export function MarketplaceShell({
           <span className="eyebrow">{previewMode ? "🔍 미리보기 모드" : "🏘️ 우리 동네 매물"}</span>
           <h1 className="page-title page-title-medium">{title}</h1>
           <p className="page-copy">{description}</p>
+          {resolvedHeroActions ? (
+            <div className="button-row" style={{ marginTop: 14 }}>
+              {resolvedHeroActions}
+            </div>
+          ) : null}
         </div>
         <div className="hero-region-card">
           <span className="eyebrow" style={{ fontSize: "0.7rem" }}>

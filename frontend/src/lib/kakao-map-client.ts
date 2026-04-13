@@ -1,3 +1,5 @@
+import { apiRequest } from "@/lib/api";
+
 declare global {
   interface Window {
     kakao?: any;
@@ -9,12 +11,36 @@ const KAKAO_SCRIPT_ID = "kakao-maps-sdk";
 
 let kakaoLoaderPromise: Promise<any> | null = null;
 
+async function resolveKakaoAppKey() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const existingKey = window.__DOWNY_KAKAO_JS_KEY__ ?? import.meta.env.VITE_KAKAO_JS_KEY;
+  if (existingKey) {
+    return existingKey;
+  }
+
+  try {
+    const session = await apiRequest<{ kakaoJsKey?: string | null }>("/api/session");
+    const sessionKey = typeof session.kakaoJsKey === "string" ? session.kakaoJsKey.trim() : "";
+    if (sessionKey) {
+      window.__DOWNY_KAKAO_JS_KEY__ = sessionKey;
+      return sessionKey;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export async function loadKakaoMapsSdk(): Promise<any> {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const appKey = window.__DOWNY_KAKAO_JS_KEY__ ?? import.meta.env.VITE_KAKAO_JS_KEY;
+  const appKey = await resolveKakaoAppKey();
 
   if (!appKey) {
     throw new Error("카카오 지도 JavaScript 키가 설정되지 않았습니다.");
