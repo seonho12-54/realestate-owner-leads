@@ -279,14 +279,24 @@ export function MyPagePage() {
               </div>
             ) : (
               <div className="saved-card-grid">
-                {myLeads.map((lead) => (
-                  <Link key={lead.id} href={`/listings/${lead.id}`} className="saved-card">
-                    <strong>{lead.listingTitle}</strong>
-                    <span>{formatTradeLabel(lead)}</span>
-                    <span>{formatArea(lead.areaM2)}</span>
-                    <span>{lead.region3DepthName ?? "우리 동네"}</span>
-                  </Link>
-                ))}
+                {myLeads.map((lead) =>
+                  lead.isPublished ? (
+                    <Link key={lead.id} href={`/listings/${lead.id}`} className="saved-card">
+                      <strong>{lead.listingTitle}</strong>
+                      <span>{formatTradeLabel(lead)}</span>
+                      <span>{formatArea(lead.areaM2)}</span>
+                      <span>{lead.region3DepthName ?? "우리 동네"}</span>
+                    </Link>
+                  ) : (
+                    <div key={lead.id} className="saved-card saved-card-disabled">
+                      <strong>{lead.listingTitle}</strong>
+                      <span>{formatTradeLabel(lead)}</span>
+                      <span>{formatArea(lead.areaM2)}</span>
+                      <span>{lead.region3DepthName ?? "우리 동네"}</span>
+                      <span className="saved-card-note">공개 전 매물은 상세 화면을 아직 열 수 없어요.</span>
+                    </div>
+                  ),
+                )}
               </div>
             )}
           </section>

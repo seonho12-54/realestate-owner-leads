@@ -43,6 +43,7 @@ export function MarketplaceShell({
   const [petOnly, setPetOnly] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [savedIds, setSavedIds] = useState<number[]>([]);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (previewMode) {
@@ -101,11 +102,17 @@ export function MarketplaceShell({
       return;
     }
 
-    setSavedIds(toggleSavedListing(listingId));
+    const nextIds = toggleSavedListing(listingId);
+    setSavedIds(nextIds);
+
+    const isNowSaved = nextIds.includes(listingId);
+    setSaveToast(isNowSaved ? "❤️ 찜 목록에 추가됐어요!" : "찜이 해제됐어요.");
+    setTimeout(() => setSaveToast(null), 2500);
   }
 
   return (
     <div className="page-stack">
+      {/* Hero Banner */}
       <section className="hero-card">
         <div>
           <span className="eyebrow">{previewMode ? "🔍 미리보기 모드" : "🏘️ 우리 동네 매물"}</span>
@@ -113,26 +120,44 @@ export function MarketplaceShell({
           <p className="page-copy">{description}</p>
         </div>
         <div className="hero-region-card">
-          <span>{previewMode ? "💡 안내" : "📍 현재 지역"}</span>
+          <span className="eyebrow" style={{ fontSize: "0.7rem" }}>
+            {previewMode ? "💡 안내" : "📍 현재 지역"}
+          </span>
           <strong>{regionName}</strong>
           <p>
             {previewMode
-              ? "미리보기에서는 실제 데이터만 보여주고, 상세 주소는 문의 전까지 공개하지 않아요."
+              ? "인증 전에도 기본 정보를 먼저 볼 수 있어요. 상세 주소는 문의 후 안내됩니다."
               : "정확한 집 위치 대신 문의 가능한 주변 권역만 지도에 표시합니다."}
           </p>
+          {!previewMode && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginTop: 4,
+                fontSize: "0.8rem",
+                color: "var(--muted)",
+                fontWeight: 600,
+              }}
+            >
+              🔒 지도 프라이버시 보호 중
+            </div>
+          )}
         </div>
       </section>
 
+      {/* Filter Bar */}
       <section className="filter-bar">
         <input
           className="input search-input"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="동네, 주소, 매물명으로 검색해 보세요."
+          placeholder="🔎 동네, 주소, 매물명으로 검색해 보세요"
         />
         <div className="chip-group">
           {[
-            { key: "all", label: "전체" },
+            { key: "all", label: "거래 전체" },
             { key: "sale", label: "매매" },
             { key: "jeonse", label: "전세" },
             { key: "monthly", label: "월세" },
@@ -149,7 +174,7 @@ export function MarketplaceShell({
         </div>
         <div className="chip-group">
           {[
-            { key: "all", label: "매물 유형" },
+            { key: "all", label: "매물 유형 전체" },
             { key: "apartment", label: "아파트" },
             { key: "officetel", label: "오피스텔" },
             { key: "villa", label: "빌라" },
@@ -166,24 +191,54 @@ export function MarketplaceShell({
             </button>
           ))}
           <button type="button" className={`chip${parkingOnly ? " active" : ""}`} onClick={() => setParkingOnly((value) => !value)}>
-            주차
+            🚗 주차
           </button>
           <button type="button" className={`chip${petOnly ? " active" : ""}`} onClick={() => setPetOnly((value) => !value)}>
-            반려동물
+            🐾 반려동물
           </button>
         </div>
       </section>
 
+      {/* Mobile Toggle */}
       <div className="mobile-toggle-row">
-        <button type="button" className={`chip${!showMap ? " active" : ""}`} onClick={() => setShowMap(false)}>
-          목록 보기
+        <button type="button" className={`chip${!showMap ? " active" : ""}`} onClick={() => setShowMap(false)}
+          style={{ height: 48 }}>
+          📋 목록 보기
         </button>
-        <button type="button" className={`chip${showMap ? " active" : ""}`} onClick={() => setShowMap(true)}>
-          지도 보기
+        <button type="button" className={`chip${showMap ? " active" : ""}`} onClick={() => setShowMap(true)}
+          style={{ height: 48 }}>
+          🗺️ 지도 보기
         </button>
       </div>
 
+      {/* Toast notification */}
+      {saveToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 88,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 50,
+            padding: "12px 22px",
+            borderRadius: 999,
+            background: "rgba(26, 58, 110, 0.95)",
+            color: "#fff",
+            fontSize: "0.9rem",
+            fontWeight: 700,
+            boxShadow: "0 12px 28px rgba(10, 20, 50, 0.25)",
+            backdropFilter: "blur(12px)",
+            whiteSpace: "nowrap",
+            animation: "fadeInUp 0.3s ease",
+          }}
+        >
+          {saveToast}
+        </div>
+      )}
+
+      {/* Main Grid: Listing List + Map/Detail */}
       <section className={`market-shell${showMap ? " map-mode" : ""}`}>
+        {/* Left: Listing List */}
         <div className="listing-column">
           <div className="listing-summary">
             <strong>{filteredListings.length}</strong>
@@ -192,7 +247,7 @@ export function MarketplaceShell({
 
           {filteredListings.length === 0 ? (
             <div className="empty-panel">
-              <strong>{emptyTitle}</strong>
+              <strong>🏠 {emptyTitle}</strong>
               <p>{emptyDescription}</p>
             </div>
           ) : (
@@ -201,7 +256,7 @@ export function MarketplaceShell({
                 const isSaved = savedIds.includes(listing.id);
                 const headline = previewMode ? getPreviewHeadline(listing, regionName) : listing.listingTitle;
                 const locationLabel = previewMode
-                  ? `${listing.region3DepthName ?? regionName} / 상세 주소 비공개`
+                  ? `${listing.region3DepthName ?? regionName} · 상세 주소 비공개`
                   : getApproximateLocationLabel(listing, regionName);
 
                 return (
@@ -211,25 +266,36 @@ export function MarketplaceShell({
                     onMouseEnter={() => setSelectedListingId(listing.id)}
                   >
                     {!previewMode ? (
-                      <button type="button" className="listing-save-button" onClick={() => handleToggleSave(listing.id)}>
-                        {isSaved ? "저장됨" : "저장"}
+                      <button
+                        type="button"
+                        className={`listing-save-button${isSaved ? " saved" : ""}`}
+                        onClick={() => handleToggleSave(listing.id)}
+                        title={isSaved ? "찜 해제" : "찜하기"}
+                      >
+                        {isSaved ? "❤️ 찜" : "🤍 찜"}
                       </button>
                     ) : null}
 
-                    <button type="button" className="listing-card-hit" onClick={() => setSelectedListingId(listing.id)}>
+                    <button
+                      type="button"
+                      className="listing-card-hit"
+                      onClick={() => setSelectedListingId(listing.id)}
+                    >
                       <div className="listing-thumb-wrap">
                         {listing.previewPhotoUrl ? (
                           <img className="listing-thumb" src={listing.previewPhotoUrl} alt={headline} />
                         ) : (
                           <div className="listing-thumb empty">사진 준비 중</div>
                         )}
-                        <span className={`listing-badge transaction-${listing.transactionType}`}>{getTransactionTypeLabel(listing.transactionType)}</span>
+                        <span className={`listing-badge transaction-${listing.transactionType}`}>
+                          {getTransactionTypeLabel(listing.transactionType)}
+                        </span>
                       </div>
 
                       <div className="listing-content">
                         <strong>{headline}</strong>
                         <div className="listing-price">{formatTradeLabel(listing)}</div>
-                        <span className="listing-location">{locationLabel}</span>
+                        <span className="listing-location">📍 {locationLabel}</span>
                         <div className="listing-meta">
                           <span>{getPropertyTypeLabel(listing.propertyType)}</span>
                           <span>{formatArea(listing.areaM2)}</span>
@@ -244,6 +310,7 @@ export function MarketplaceShell({
           )}
         </div>
 
+        {/* Right: Map + Selected Detail */}
         <aside className="map-column">
           <KakaoMapPanel listings={filteredListings} selectedListingId={selectedListingId} onSelect={setSelectedListingId} />
 
@@ -251,37 +318,55 @@ export function MarketplaceShell({
             <div className="selected-panel">
               <div className="selected-header">
                 <div>
-                  <span className="eyebrow">{previewMode ? "✨ 미리보기 카드" : "✨ 선택한 매물"}</span>
-                  <strong>{previewMode ? getPreviewHeadline(selectedListing, regionName) : selectedListing.listingTitle}</strong>
+                  <span className="eyebrow" style={{ fontSize: "0.68rem" }}>
+                    {previewMode ? "✨ 미리보기 카드" : "✨ 선택한 매물"}
+                  </span>
+                  <strong style={{ display: "block", marginTop: 6, fontFamily: "var(--font-heading)", fontSize: "1.08rem", letterSpacing: "-0.04em" }}>
+                    {previewMode ? getPreviewHeadline(selectedListing, regionName) : selectedListing.listingTitle}
+                  </strong>
                 </div>
-                <span className={`status-badge transaction-${selectedListing.transactionType}`}>{getTransactionTypeLabel(selectedListing.transactionType)}</span>
+                <span className={`status-badge transaction-${selectedListing.transactionType}`}>
+                  {getTransactionTypeLabel(selectedListing.transactionType)}
+                </span>
               </div>
 
               <div className="selected-grid">
                 <span>{formatTradeLabel(selectedListing)}</span>
                 <span>{getPropertyTypeLabel(selectedListing.propertyType)}</span>
                 <span>{formatArea(selectedListing.areaM2)}</span>
-                <span>{selectedListing.region3DepthName ?? regionName}</span>
+                <span>📍 {selectedListing.region3DepthName ?? regionName}</span>
               </div>
 
               <p className="page-copy compact-copy">
                 {previewMode
-                  ? "미리보기에서는 위치와 기본 정보만 먼저 볼 수 있어요. 상세 주소와 연락처는 문의 등록 후 확인할 수 있어요."
+                  ? "인증 전 미리보기예요. 상세 주소와 연락처는 문의 후 확인할 수 있어요."
                   : selectedListing.description ?? "지도에는 정확한 집 위치 대신 문의 가능한 주변 권역만 표시됩니다."}
               </p>
 
-              {previewMode || selectedListing.isPreview ? <span className="preview-badge">미리보기</span> : null}
+              {previewMode || selectedListing.isPreview ? (
+                <span className="preview-badge">미리보기 매물</span>
+              ) : null}
 
               <div className="button-row">
                 <Link href={`/listings/${selectedListing.id}`} className="button button-primary">
-                  {previewMode ? "문의 등록 후 상세 보기" : "상세 보기"}
+                  {previewMode ? "상세 보기 (인증 필요)" : "상세 보기"}
                 </Link>
                 {!previewMode ? (
-                  <button type="button" className="button button-secondary" onClick={() => handleToggleSave(selectedListing.id)}>
-                    {savedIds.includes(selectedListing.id) ? "저장 해제" : "저장"}
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => handleToggleSave(selectedListing.id)}
+                  >
+                    {savedIds.includes(selectedListing.id) ? "❤️ 찜 해제" : "🤍 찜하기"}
                   </button>
                 ) : null}
               </div>
+
+              {!previewMode && (
+                <p style={{ fontSize: "0.78rem", color: "var(--muted)", marginTop: -4 }}>
+                  찜한 매물은 설정 메뉴에서 다시 볼 수 있어요
+                </p>
+              )}
             </div>
           ) : null}
         </aside>

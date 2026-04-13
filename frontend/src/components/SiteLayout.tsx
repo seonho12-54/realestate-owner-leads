@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { useLocation, Outlet } from "react-router-dom";
 
 import { LogoutButton } from "@/components/LogoutButton";
 import { Link } from "@/components/RouterLink";
@@ -10,46 +10,70 @@ const OFFICE_NAME = "다운우미린공인중개사사무소";
 const OFFICE_PHONE = "010-9904-1031";
 const BLOG_URL = "https://blog.naver.com/tedted111";
 
+const NAV_ITEMS = [
+  { href: "/", label: "홈", icon: "🏠" },
+  { href: "/sell", label: "문의하기", icon: "💬" },
+  { href: "/manage", label: "내 매물", icon: "🗂" },
+  { href: "/me", label: "설정", icon: "⚙️" },
+];
+
 export function SiteLayout() {
   const { session } = useSession();
+  const location = useLocation();
   const isAdmin = session.kind === "admin";
-  const regionName = session.region.region?.name ?? "지역 인증 전";
+  const isVerified = session.region.locked;
+  const regionName = session.region.region?.name ?? "인증 전";
 
   return (
     <div className="app-shell">
       <header className="top-shell">
+        {/* Brand Block */}
         <div className="brand-row">
           <Link href={isAdmin ? "/admin/leads" : "/"} className="brand-link">
-            <span className="brand-badge">LOCAL HOME</span>
-            <strong>다우니</strong>
-          </Link>
-
-          <div className="region-pill">
-            <span>📍 인증 지역</span>
-            <strong>{regionName}</strong>
-          </div>
-
-          {!isAdmin ? (
-            <div className="contact-pill">
-              <span className="contact-pill-label">☎ 문의</span>
-              <strong>
-                {OFFICE_ADDRESS} {OFFICE_NAME}
-              </strong>
-              <p>📞 {OFFICE_PHONE} 문의 부탁합니다.</p>
-              <a href={BLOG_URL} className="contact-pill-link" target="_blank" rel="noreferrer">
-                📝 블로그 바로가기
-              </a>
+            <div className="brand-logo-mark">다</div>
+            <div className="brand-text-group">
+              <div className="brand-name">다우니</div>
+              <div className="brand-badge">Local Home · {SERVICE_REGION_LABEL}</div>
             </div>
-          ) : null}
+          </Link>
         </div>
 
+        {/* Center: region status + contact (hidden on mobile) */}
+        {!isAdmin ? (
+          <div className="header-center">
+            <div className="region-status-chip">
+              <div className={`region-dot${isVerified ? "" : " unverified"}`} />
+              <span className="region-label">인증 지역</span>
+              <span className="region-name">{regionName}</span>
+            </div>
+
+            <div className="contact-pill">
+              <span className="contact-pill-label">☎ 부동산 문의</span>
+              <strong>{OFFICE_NAME}</strong>
+              <p>📞 {OFFICE_PHONE} · {OFFICE_ADDRESS}</p>
+              <a href={BLOG_URL} className="contact-pill-link" target="_blank" rel="noreferrer">
+                📝 블로그 바로가기 →
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="header-center">
+            <div className="region-status-chip">
+              <div className="region-dot" />
+              <span className="region-label">관리자 모드</span>
+              <span className="region-name">다우니 관리</span>
+            </div>
+          </div>
+        )}
+
+        {/* Right: Auth actions */}
         <div className="top-actions">
           {isAdmin ? (
             <>
-              <Link href="/sell" className="nav-button nav-button-secondary">
+              <Link href="/sell" className="nav-button nav-button-secondary button-small">
                 문의 관리
               </Link>
-              <Link href="/admin/leads" className="nav-button nav-button-primary">
+              <Link href="/admin/leads" className="nav-button nav-button-primary button-small">
                 매물 관리
               </Link>
               <LogoutButton action="/api/admin/logout" label="로그아웃" />
@@ -58,10 +82,10 @@ export function SiteLayout() {
             <LogoutButton action="/api/auth/logout" label="로그아웃" />
           ) : (
             <>
-              <Link href="/login" className="nav-button nav-button-secondary">
+              <Link href="/login" className="nav-button nav-button-secondary button-small">
                 로그인
               </Link>
-              <Link href="/signup" className="nav-button nav-button-primary">
+              <Link href="/signup" className="nav-button nav-button-primary button-small">
                 회원가입
               </Link>
             </>
@@ -69,34 +93,28 @@ export function SiteLayout() {
         </div>
       </header>
 
-      {!isAdmin ? (
-        <section className="service-strip">
-          <div>
-            <span className="service-strip-label">✨ 서비스 지역</span>
-            <strong>{SERVICE_REGION_LABEL}</strong>
-          </div>
-          <p>🏡 우리 동네 인증을 마치면 그 지역 매물만 빠르게 비교해서 볼 수 있어요.</p>
-        </section>
-      ) : null}
-
       <main className="page-container">
         <Outlet />
       </main>
 
       {!isAdmin ? (
         <nav className="bottom-nav" aria-label="주요 메뉴">
-          <Link href="/" className="bottom-nav-link">
-            홈
-          </Link>
-          <Link href="/sell" className="bottom-nav-link">
-            문의하기
-          </Link>
-          <Link href="/manage" className="bottom-nav-link">
-            매물 관리
-          </Link>
-          <Link href="/me" className="bottom-nav-link">
-            설정
-          </Link>
+          {NAV_ITEMS.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? location.pathname === "/"
+                : location.pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`bottom-nav-link${isActive ? " active" : ""}`}
+                data-icon={item.icon}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       ) : null}
     </div>

@@ -7,6 +7,13 @@ import { formatArea, formatDateTime, formatTradeLabel, getPropertyTypeLabel } fr
 import { listMyLeads, type MyLeadSummary } from "@/lib/leads";
 import { leadStatusOptions, type LeadStatus } from "@/lib/validation";
 
+function getStatusColor(status: LeadStatus, isPublished: boolean) {
+  if (isPublished) return { bg: "var(--success-soft)", color: "var(--success-strong)" };
+  if (status === "reviewing") return { bg: "var(--warning-soft)", color: "var(--warning-strong)" };
+  if (status === "closed") return { bg: "var(--danger-soft)", color: "var(--danger-strong)" };
+  return { bg: "rgba(26,58,110,0.08)", color: "var(--primary)" };
+}
+
 export function ManagePage() {
   const { session } = useSession();
   const [myLeads, setMyLeads] = useState<MyLeadSummary[]>([]);
@@ -67,10 +74,10 @@ export function ManagePage() {
     return (
       <div className="page-stack">
         <section className="locked-state-card">
-          <span className="eyebrow">🛠️ 매물 관리</span>
+          <span className="eyebrow">🗂 내 매물 관리</span>
           <h1 className="page-title page-title-medium">로그인 후 내 매물을 관리할 수 있어요</h1>
           <p className="page-copy">일반 사용자는 내가 등록한 매물을 확인하고, 새 매물 등록 화면으로 바로 이동할 수 있어요.</p>
-          <div className="button-row">
+          <div className="button-row" style={{ marginTop: 4 }}>
             <Link href="/login?next=/manage" className="button button-primary">
               로그인
             </Link>
@@ -85,37 +92,46 @@ export function ManagePage() {
 
   return (
     <div className="page-stack">
+      {/* Hero */}
       <section className="hero-card">
         <div>
-          <span className="eyebrow">🛠️ 매물 관리</span>
+          <span className="eyebrow">🗂 내 매물 관리</span>
           <h1 className="page-title page-title-medium">등록한 매물과 진행 상태를 한눈에 확인하세요</h1>
-          <p className="page-copy">새 매물 등록은 물론, 공개 여부와 심사 상태도 여기에서 바로 확인할 수 있어요.</p>
+          <p className="page-copy">공개 여부와 심사 상태를 여기에서 바로 확인할 수 있어요.</p>
+          <div className="button-row" style={{ marginTop: 8 }}>
+            <Link href="/sell" className="button button-primary">
+              ✏️ 문의하기
+            </Link>
+            <Link href="/me" className="button button-secondary">
+              설정으로 이동
+            </Link>
+          </div>
         </div>
-        <div className="button-row">
-          <Link href="/sell" className="button button-primary">
-            새 매물 등록
-          </Link>
-          <Link href="/me" className="button button-secondary">
-            지역 설정
-          </Link>
+        <div className="hero-region-card">
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--muted)" }}>매물 현황</span>
+          <strong style={{ color: "var(--primary)", fontSize: "2rem", fontFamily: "var(--font-heading)", letterSpacing: "-0.06em" }}>
+            {myLeads.length}
+          </strong>
+          <p>전체 등록 매물</p>
         </div>
       </section>
 
+      {/* Summary stats */}
       <section className="manage-summary-grid">
         <article className="manage-summary-card">
-          <span className="eyebrow">전체 매물</span>
+          <span className="eyebrow" style={{ width: "fit-content" }}>전체 매물</span>
           <strong>{myLeads.length}</strong>
-          <p className="page-copy compact-copy">현재 계정으로 등록한 매물 수예요.</p>
+          <p style={{ color: "var(--muted)", fontSize: "0.88rem" }}>현재 계정으로 등록한 매물 수예요.</p>
         </article>
-        <article className="manage-summary-card">
-          <span className="eyebrow">공개 중</span>
-          <strong>{publishedCount}</strong>
-          <p className="page-copy compact-copy">둘러보기와 홈 미리보기에 노출 중인 매물 수예요.</p>
+        <article className="manage-summary-card" style={{ borderTop: "3px solid var(--success)" }}>
+          <span className="eyebrow" style={{ width: "fit-content", background: "var(--success-soft)", color: "var(--success-strong)" }}>공개 중</span>
+          <strong style={{ color: "var(--success-strong)" }}>{publishedCount}</strong>
+          <p style={{ color: "var(--muted)", fontSize: "0.88rem" }}>둘러보기에 노출 중인 매물이에요.</p>
         </article>
-        <article className="manage-summary-card">
-          <span className="eyebrow">검토 중</span>
-          <strong>{reviewingCount}</strong>
-          <p className="page-copy compact-copy">관리자 확인을 기다리는 매물 수예요.</p>
+        <article className="manage-summary-card" style={{ borderTop: "3px solid var(--warning)" }}>
+          <span className="eyebrow" style={{ width: "fit-content", background: "var(--warning-soft)", color: "var(--warning-strong)" }}>검토 중</span>
+          <strong style={{ color: "var(--warning-strong)" }}>{reviewingCount}</strong>
+          <p style={{ color: "var(--muted)", fontSize: "0.88rem" }}>관리자 확인을 기다리는 매물이에요.</p>
         </article>
       </section>
 
@@ -127,14 +143,19 @@ export function ManagePage() {
         </section>
       ) : null}
 
+      {/* Listing list with filters */}
       <section className="saved-section">
         <div className="section-heading">
           <div>
             <span className="eyebrow">내 매물</span>
-            <h2 className="section-title">최근 등록한 매물</h2>
+            <h2 className="section-title">등록한 매물 목록</h2>
           </div>
           <div className="chip-group">
-            <button type="button" className={`chip${statusFilter === "all" ? " active" : ""}`} onClick={() => setStatusFilter("all")}>
+            <button
+              type="button"
+              className={`chip${statusFilter === "all" ? " active" : ""}`}
+              onClick={() => setStatusFilter("all")}
+            >
               전체
             </button>
             {leadStatusOptions.map((option) => (
@@ -157,18 +178,48 @@ export function ManagePage() {
           </div>
         ) : (
           <div className="saved-card-grid">
-            {filteredLeads.map((lead) => (
-              <Link key={lead.id} href={`/listings/${lead.id}`} className="saved-card">
-                <strong>{lead.listingTitle}</strong>
-                <span>{formatTradeLabel(lead)}</span>
-                <span>
-                  {getPropertyTypeLabel(lead.propertyType)} · {formatArea(lead.areaM2)}
-                </span>
-                <span>{lead.region3DepthName ?? "인증 지역"}</span>
-                <span>{lead.isPublished ? "공개 중" : getStatusLabel(lead.status)}</span>
-                <span>등록일 {formatDateTime(lead.createdAt)}</span>
-              </Link>
-            ))}
+            {filteredLeads.map((lead) => {
+              const statusStyle = getStatusColor(lead.status, lead.isPublished);
+              const cardContent = (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <strong style={{ flex: 1 }}>{lead.listingTitle}</strong>
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        background: statusStyle.bg,
+                        color: statusStyle.color,
+                        fontSize: "0.76rem",
+                        fontWeight: 800,
+                      }}
+                    >
+                      {lead.isPublished ? "공개 중" : getStatusLabel(lead.status)}
+                    </span>
+                  </div>
+                  <span style={{ fontWeight: 800, color: "var(--primary)", fontSize: "1rem" }}>{formatTradeLabel(lead)}</span>
+                  <span>{getPropertyTypeLabel(lead.propertyType)} · {formatArea(lead.areaM2)}</span>
+                  <span>📍 {lead.region3DepthName ?? "인증 지역"}</span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted-light)" }}>
+                    등록일 {formatDateTime(lead.createdAt)}
+                  </span>
+                  {!lead.isPublished ? <span className="saved-card-note">공개 전이라 상세 화면은 열리지 않아요.</span> : null}
+                </>
+              );
+
+              return (
+                lead.isPublished ? (
+                  <Link key={lead.id} href={`/listings/${lead.id}`} className="saved-card">
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div key={lead.id} className="saved-card saved-card-disabled">
+                    {cardContent}
+                  </div>
+                )
+              );
+            })}
           </div>
         )}
       </section>

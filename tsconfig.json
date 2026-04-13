@@ -36,6 +36,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
+    "frontend",
     "node_modules"
   ]
 }
