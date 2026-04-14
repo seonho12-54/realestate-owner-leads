@@ -33,7 +33,7 @@ export function SiteLayout() {
               🏠
             </div>
             <div className="brand-text-group">
-              <div className="brand-name">다운이</div>
+              <div className="brand-name">다우니</div>
               <div className="brand-badge">LOCAL HOME · {SERVICE_REGION_LABEL}</div>
             </div>
           </Link>
@@ -63,7 +63,7 @@ export function SiteLayout() {
             <div className="region-status-chip">
               <div className="region-dot" />
               <span className="region-label">관리자 모드</span>
-              <span className="region-name">다운이 관리자</span>
+              <span className="region-name">다우니 관리자</span>
             </div>
           </div>
         )}
