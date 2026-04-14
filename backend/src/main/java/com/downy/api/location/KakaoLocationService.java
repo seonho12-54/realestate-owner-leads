@@ -2,6 +2,7 @@ package com.downy.api.location;
 
 import com.downy.api.common.ApiException;
 import com.downy.api.config.AppProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.util.ArrayList;
@@ -267,19 +268,28 @@ public class KakaoLocationService {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record KakaoRegionDocument(
+        @JsonProperty("region_type")
         String regionType,
+        @JsonProperty("address_name")
         String addressName,
+        @JsonProperty("region_1depth_name")
         String region1DepthName,
+        @JsonProperty("region_2depth_name")
         String region2DepthName,
+        @JsonProperty("region_3depth_name")
         String region3DepthName
     ) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record KakaoRegionAddress(
+        @JsonProperty("address_name")
         String addressName,
+        @JsonProperty("region_1depth_name")
         String region1DepthName,
+        @JsonProperty("region_2depth_name")
         String region2DepthName,
+        @JsonProperty("region_3depth_name")
         String region3DepthName,
         String x,
         String y
@@ -288,10 +298,15 @@ public class KakaoLocationService {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record KakaoRoadAddress(
+        @JsonProperty("address_name")
         String addressName,
+        @JsonProperty("region_1depth_name")
         String region1DepthName,
+        @JsonProperty("region_2depth_name")
         String region2DepthName,
+        @JsonProperty("region_3depth_name")
         String region3DepthName,
+        @JsonProperty("zone_no")
         String zoneNo,
         String x,
         String y

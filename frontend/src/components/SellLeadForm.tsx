@@ -84,10 +84,7 @@ function normalizeAddressResults(response: unknown): AddressCandidate[] {
       if (
         typeof candidate.addressName !== "string" ||
         typeof candidate.latitude !== "number" ||
-        typeof candidate.longitude !== "number" ||
-        typeof candidate.region1DepthName !== "string" ||
-        typeof candidate.region2DepthName !== "string" ||
-        typeof candidate.region3DepthName !== "string"
+        typeof candidate.longitude !== "number"
       ) {
         return null;
       }
@@ -98,9 +95,9 @@ function normalizeAddressResults(response: unknown): AddressCandidate[] {
         postalCode: typeof candidate.postalCode === "string" ? candidate.postalCode : null,
         latitude: candidate.latitude,
         longitude: candidate.longitude,
-        region1DepthName: candidate.region1DepthName,
-        region2DepthName: candidate.region2DepthName,
-        region3DepthName: candidate.region3DepthName,
+        region1DepthName: typeof candidate.region1DepthName === "string" ? candidate.region1DepthName : "",
+        region2DepthName: typeof candidate.region2DepthName === "string" ? candidate.region2DepthName : "",
+        region3DepthName: typeof candidate.region3DepthName === "string" ? candidate.region3DepthName : "",
       };
     })
     .filter((candidate): candidate is AddressCandidate => Boolean(candidate));
