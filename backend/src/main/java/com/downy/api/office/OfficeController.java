@@ -22,7 +22,7 @@ public class OfficeController {
             """
                 SELECT id, name, phone
                 FROM offices
-                WHERE is_active = 1
+                WHERE is_active = TRUE
                 ORDER BY id ASC
                 """,
             (rs, rowNum) -> new OfficeResponse(

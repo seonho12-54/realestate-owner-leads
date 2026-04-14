@@ -220,15 +220,18 @@ public class LeadService {
                     l.created_at,
                     o.name AS office_name,
                     o.phone AS office_phone,
-                    COUNT(lp.id) AS photo_count
+                    COALESCE(pc.photo_count, 0) AS photo_count
                 FROM leads l
                 INNER JOIN offices o ON o.id = l.office_id
-                LEFT JOIN lead_photos lp ON lp.lead_id = l.id
-                WHERE l.is_published = 1
-                  AND l.location_verified = 1
+                LEFT JOIN (
+                    SELECT lead_id, COUNT(*) AS photo_count
+                    FROM lead_photos
+                    GROUP BY lead_id
+                ) pc ON pc.lead_id = l.id
+                WHERE l.is_published = TRUE
+                  AND l.location_verified = TRUE
                   AND l.latitude IS NOT NULL
                   AND l.longitude IS NOT NULL
-                GROUP BY l.id
                 ORDER BY COALESCE(l.published_at, l.created_at) DESC, l.created_at DESC
                 LIMIT ?
                 """,
@@ -281,16 +284,19 @@ public class LeadService {
                     l.created_at,
                     o.name AS office_name,
                     o.phone AS office_phone,
-                    COUNT(lp.id) AS photo_count
+                    COALESCE(pc.photo_count, 0) AS photo_count
                 FROM leads l
                 INNER JOIN offices o ON o.id = l.office_id
-                LEFT JOIN lead_photos lp ON lp.lead_id = l.id
-                WHERE l.is_published = 1
-                  AND l.location_verified = 1
+                LEFT JOIN (
+                    SELECT lead_id, COUNT(*) AS photo_count
+                    FROM lead_photos
+                    GROUP BY lead_id
+                ) pc ON pc.lead_id = l.id
+                WHERE l.is_published = TRUE
+                  AND l.location_verified = TRUE
                   AND l.latitude IS NOT NULL
                   AND l.longitude IS NOT NULL
                   AND l.region_slug = ?
-                GROUP BY l.id
                 ORDER BY l.is_published DESC, l.created_at DESC
                 """,
             (rs, rowNum) -> new PublicListingRow(
@@ -326,7 +332,7 @@ public class LeadService {
                 SELECT region_slug
                 FROM leads
                 WHERE id = ?
-                  AND is_published = 1
+                  AND is_published = TRUE
                 LIMIT 1
                 """,
             (rs, rowNum) -> rs.getString("region_slug"),
@@ -374,7 +380,7 @@ public class LeadService {
                     FROM leads l
                     INNER JOIN offices o ON o.id = l.office_id
                     WHERE l.id = ?
-                      AND l.is_published = 1
+                      AND l.is_published = TRUE
                     LIMIT 1
                     """,
                 (rs, rowNum) -> new LeadDetailRow(
@@ -430,7 +436,7 @@ public class LeadService {
                     FROM leads l
                     INNER JOIN offices o ON o.id = l.office_id
                     WHERE l.id = ?
-                      AND l.is_published = 1
+                      AND l.is_published = TRUE
                       AND l.region_slug = ?
                     LIMIT 1
                     """,
@@ -503,7 +509,7 @@ public class LeadService {
                     UPDATE leads
                     SET view_count = view_count + 1
                     WHERE id = ?
-                      AND is_published = 1
+                      AND is_published = TRUE
                     """,
                 leadId
             );
@@ -515,7 +521,7 @@ public class LeadService {
                 UPDATE leads
                 SET view_count = view_count + 1
                 WHERE id = ?
-                  AND is_published = 1
+                  AND is_published = TRUE
                   AND region_slug = ?
                 """,
             leadId,
@@ -552,12 +558,15 @@ public class LeadService {
                     l.status,
                     l.is_published,
                     l.created_at,
-                    COUNT(lp.id) AS photo_count
+                    COALESCE(pc.photo_count, 0) AS photo_count
                 FROM leads l
                 INNER JOIN offices o ON o.id = l.office_id
-                LEFT JOIN lead_photos lp ON lp.lead_id = l.id
+                LEFT JOIN (
+                    SELECT lead_id, COUNT(*) AS photo_count
+                    FROM lead_photos
+                    GROUP BY lead_id
+                ) pc ON pc.lead_id = l.id
                 WHERE l.user_id = ?
-                GROUP BY l.id
                 ORDER BY l.created_at DESC
                 """,
             (rs, rowNum) -> new UserLeadRow(
@@ -656,7 +665,7 @@ public class LeadService {
                     region_slug = ?,
                     latitude = ?,
                     longitude = ?,
-                    location_verified = 1,
+                    location_verified = TRUE,
                     area_m2 = ?,
                     price_krw = ?,
                     deposit_krw = ?,
@@ -665,7 +674,7 @@ public class LeadService {
                     contact_time = ?,
                     description = ?,
                     status = 'reviewing',
-                    is_published = 0,
+                    is_published = FALSE,
                     published_at = NULL,
                     published_by_admin_id = NULL,
                     admin_memo = NULL
@@ -760,14 +769,17 @@ public class LeadService {
                     l.referrer_url,
                     l.landing_url,
                     l.created_at,
-                    COUNT(lp.id) AS photo_count
+                    COALESCE(pc.photo_count, 0) AS photo_count
                 FROM leads l
                 INNER JOIN offices o ON o.id = l.office_id
                 LEFT JOIN users u ON u.id = l.user_id
-                LEFT JOIN lead_photos lp ON lp.lead_id = l.id
+                LEFT JOIN (
+                    SELECT lead_id, COUNT(*) AS photo_count
+                    FROM lead_photos
+                    GROUP BY lead_id
+                ) pc ON pc.lead_id = l.id
                 """
                 + whereClause + """
-                GROUP BY l.id
                 ORDER BY l.created_at DESC
                 """,
             (rs, rowNum) -> new AdminLeadRow(
@@ -956,7 +968,7 @@ public class LeadService {
                     region_slug = ?,
                     latitude = ?,
                     longitude = ?,
-                    location_verified = 1,
+                    location_verified = TRUE,
                     area_m2 = ?,
                     price_krw = ?,
                     deposit_krw = ?,
@@ -970,12 +982,12 @@ public class LeadService {
                     is_published = ?,
                     admin_memo = ?,
                     published_at = CASE
-                        WHEN ? = 1 AND published_at IS NULL THEN NOW()
-                        WHEN ? = 0 THEN NULL
+                        WHEN ? AND published_at IS NULL THEN NOW()
+                        WHEN NOT ? THEN NULL
                         ELSE published_at
                     END,
                     published_by_admin_id = CASE
-                        WHEN ? = 1 THEN ?
+                        WHEN ? THEN ?
                         ELSE NULL
                     END
                 WHERE id = ?
@@ -1045,7 +1057,7 @@ public class LeadService {
             """
                 SELECT COUNT(*)
                 FROM offices
-                WHERE id = ? AND is_active = 1
+                WHERE id = ? AND is_active = TRUE
                 """,
             Integer.class,
             officeId

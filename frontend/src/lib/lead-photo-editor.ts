@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest, createApiHeaders } from "@/lib/api";
 import { prepareImageForUpload, resolveUploadContentType, resolveUploadFailureMessage } from "@/lib/client-image";
 import type { LeadPhotoAsset } from "@/lib/leads";
 
@@ -84,9 +84,10 @@ export async function uploadEditablePhoto(file: File, indexOffset: number): Prom
   try {
     uploadResponse = await fetch(presign.uploadUrl, {
       method: "PUT",
-      headers: {
+      credentials: "include",
+      headers: createApiHeaders({
         "Content-Type": contentType,
-      },
+      }),
       body: prepared.file,
     });
   } catch (error) {

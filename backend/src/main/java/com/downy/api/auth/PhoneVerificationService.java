@@ -276,7 +276,7 @@ public class PhoneVerificationService {
                 SELECT COUNT(*)
                 FROM users
                 WHERE phone_normalized = ?
-                   OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(IFNULL(phone, ''), '-', ''), ' ', ''), '(', ''), ')', ''), '+', ''), '.', '') = ?
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), '-', ''), ' ', ''), '(', ''), ')', ''), '+', ''), '.', '') = ?
                 """,
             Integer.class,
             normalizedPhone,

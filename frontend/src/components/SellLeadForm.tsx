@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import { Link } from "@/components/RouterLink";
 import { SellMapPreview } from "@/components/SellMapPreview";
 import { createLead } from "@/lib/leads";
-import { apiFetch, apiRequest } from "@/lib/api";
+import { apiRequest, createApiHeaders } from "@/lib/api";
 import { formatFileSize, prepareImageForUpload, resolveUploadContentType, resolveUploadFailureMessage } from "@/lib/client-image";
 import { useRouter } from "@/lib/router";
 import type { OfficeOption } from "@/lib/offices";
@@ -222,9 +222,10 @@ export function SellLeadForm({
     try {
       uploadResponse = await fetch(presign.uploadUrl, {
         method: "PUT",
-        headers: {
+        credentials: "include",
+        headers: createApiHeaders({
           "Content-Type": contentType,
-        },
+        }),
         body: prepared.file,
       });
     } catch (error) {

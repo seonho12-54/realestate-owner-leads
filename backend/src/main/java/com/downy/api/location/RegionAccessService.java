@@ -231,7 +231,7 @@ public class RegionAccessService {
                     verified_region_slug = ?,
                     verified_region_name = ?,
                     region_verified_at = ?,
-                    location_locked = 1
+                    location_locked = TRUE
                 WHERE id = ?
                 """,
             regionSlug,

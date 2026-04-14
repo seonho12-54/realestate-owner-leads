@@ -330,7 +330,7 @@ public class InquiryService {
 
     private void ensureUserExists(long userId) {
         Integer count = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM users WHERE id = ? AND is_active = 1",
+            "SELECT COUNT(*) FROM users WHERE id = ? AND is_active = TRUE",
             Integer.class,
             userId
         );

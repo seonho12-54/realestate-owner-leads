@@ -68,7 +68,7 @@ public class AdminBootstrapService implements ApplicationRunner {
                         name,
                         role,
                         is_active
-                    ) VALUES (?, ?, ?, ?, 1)
+                    ) VALUES (?, ?, ?, ?, TRUE)
                     """,
                 email,
                 passwordEncoder.encode(password),
@@ -95,7 +95,7 @@ public class AdminBootstrapService implements ApplicationRunner {
                 SET password_hash = ?,
                     name = ?,
                     role = ?,
-                    is_active = 1
+                    is_active = TRUE
                 WHERE id = ?
                 """,
             passwordEncoder.encode(password),

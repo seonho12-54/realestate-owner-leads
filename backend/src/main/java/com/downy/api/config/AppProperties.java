@@ -15,6 +15,7 @@ public class AppProperties {
     private int maxPhotoSizeMb = 20;
     private int maxPhotoCount = 10;
     private S3Properties s3 = new S3Properties();
+    private SupabaseProperties supabase = new SupabaseProperties();
     private CorsProperties cors = new CorsProperties();
     private CookieProperties cookie = new CookieProperties();
     private BootstrapAdminProperties bootstrapAdmin = new BootstrapAdminProperties();
@@ -90,6 +91,14 @@ public class AppProperties {
 
     public void setS3(S3Properties s3) {
         this.s3 = s3;
+    }
+
+    public SupabaseProperties getSupabase() {
+        return supabase;
+    }
+
+    public void setSupabase(SupabaseProperties supabase) {
+        this.supabase = supabase;
     }
 
     public CorsProperties getCors() {
@@ -170,6 +179,46 @@ public class AppProperties {
 
         public void setSecretAccessKey(String secretAccessKey) {
             this.secretAccessKey = secretAccessKey;
+        }
+    }
+
+    public static class SupabaseProperties {
+
+        private String url;
+        private String serviceRoleKey;
+        private String storageBucket = "leads";
+        private boolean publicBucket = true;
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public String getServiceRoleKey() {
+            return serviceRoleKey;
+        }
+
+        public void setServiceRoleKey(String serviceRoleKey) {
+            this.serviceRoleKey = serviceRoleKey;
+        }
+
+        public String getStorageBucket() {
+            return storageBucket;
+        }
+
+        public void setStorageBucket(String storageBucket) {
+            this.storageBucket = storageBucket;
+        }
+
+        public boolean isPublicBucket() {
+            return publicBucket;
+        }
+
+        public void setPublicBucket(boolean publicBucket) {
+            this.publicBucket = publicBucket;
         }
     }
 
