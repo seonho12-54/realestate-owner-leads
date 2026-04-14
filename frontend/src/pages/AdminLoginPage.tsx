@@ -1,6 +1,5 @@
 import { Navigate } from "react-router-dom";
 
-import { AdminLoginForm } from "@/components/AdminLoginForm";
 import { useSession } from "@/context/SessionContext";
 
 export function AdminLoginPage() {
@@ -10,9 +9,9 @@ export function AdminLoginPage() {
     return <Navigate to="/admin/leads" replace />;
   }
 
-  return (
-    <div className="auth-page">
-      <AdminLoginForm />
-    </div>
-  );
+  if (!session.isLoading && session.kind === "user") {
+    return <Navigate to="/manage" replace />;
+  }
+
+  return <Navigate to="/login?next=%2Fadmin%2Fleads" replace />;
 }

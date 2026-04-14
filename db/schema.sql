@@ -18,12 +18,19 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(100) NOT NULL,
   phone VARCHAR(30) NULL,
+  phone_normalized VARCHAR(20) NULL,
+  phone_verified_at DATETIME NULL,
+  verified_region_slug VARCHAR(80) NULL,
+  verified_region_name VARCHAR(120) NULL,
+  region_verified_at DATETIME NULL,
+  location_locked TINYINT(1) NOT NULL DEFAULT 0,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   last_login_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_users_email (email)
+  UNIQUE KEY uq_users_email (email),
+  KEY idx_users_phone_normalized (phone_normalized)
 );
 
 CREATE TABLE IF NOT EXISTS admins (
@@ -59,6 +66,7 @@ CREATE TABLE IF NOT EXISTS leads (
   region_1depth_name VARCHAR(40) NULL,
   region_2depth_name VARCHAR(40) NULL,
   region_3depth_name VARCHAR(60) NULL,
+  region_slug VARCHAR(80) NULL,
   latitude DECIMAL(10, 7) NULL,
   longitude DECIMAL(10, 7) NULL,
   location_verified TINYINT(1) NOT NULL DEFAULT 0,
@@ -94,6 +102,7 @@ CREATE TABLE IF NOT EXISTS leads (
   KEY idx_leads_status (status),
   KEY idx_leads_is_published (is_published),
   KEY idx_leads_region (region_2depth_name, region_3depth_name),
+  KEY idx_leads_region_slug (region_slug),
   KEY idx_leads_transaction_type (transaction_type),
   KEY idx_leads_created_at (created_at),
   CONSTRAINT fk_leads_office_id FOREIGN KEY (office_id) REFERENCES offices(id),
@@ -131,3 +140,64 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   KEY idx_audit_logs_created_at (created_at)
 );
 
+CREATE TABLE IF NOT EXISTS location_verification_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NULL,
+  session_key VARCHAR(120) NULL,
+  attempted_lat DECIMAL(10, 7) NOT NULL,
+  attempted_lng DECIMAL(10, 7) NOT NULL,
+  resolved_region_slug VARCHAR(80) NULL,
+  resolved_region_name VARCHAR(120) NULL,
+  success TINYINT(1) NOT NULL DEFAULT 0,
+  device_info VARCHAR(500) NULL,
+  ip_address VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_location_verification_logs_user_id (user_id),
+  KEY idx_location_verification_logs_region (resolved_region_slug),
+  KEY idx_location_verification_logs_created_at (created_at),
+  CONSTRAINT fk_location_verification_logs_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS phone_verification_challenges (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  verification_key VARCHAR(64) NOT NULL,
+  purpose VARCHAR(30) NOT NULL DEFAULT 'signup',
+  phone_normalized VARCHAR(20) NOT NULL,
+  verification_code VARCHAR(8) NOT NULL,
+  request_ip VARCHAR(64) NULL,
+  user_agent VARCHAR(500) NULL,
+  expires_at DATETIME NOT NULL,
+  verified_at DATETIME NULL,
+  consumed_at DATETIME NULL,
+  consumed_by_user_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_phone_verification_key (verification_key),
+  KEY idx_phone_verification_lookup (phone_normalized, purpose, created_at),
+  KEY idx_phone_verification_consumed_by (consumed_by_user_id),
+  CONSTRAINT fk_phone_verification_consumed_by FOREIGN KEY (consumed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS support_inquiries (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(160) NOT NULL,
+  content TEXT NOT NULL,
+  is_secret TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('open', 'answered') NOT NULL DEFAULT 'open',
+  admin_reply TEXT NULL,
+  admin_reply_at DATETIME NULL,
+  admin_reply_admin_id BIGINT UNSIGNED NULL,
+  request_ip VARCHAR(64) NULL,
+  user_agent VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_support_inquiries_user_id (user_id),
+  KEY idx_support_inquiries_status (status),
+  KEY idx_support_inquiries_created_at (created_at),
+  KEY idx_support_inquiries_admin_reply_admin_id (admin_reply_admin_id),
+  CONSTRAINT fk_support_inquiries_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_support_inquiries_admin_reply_admin_id FOREIGN KEY (admin_reply_admin_id) REFERENCES admins(id) ON DELETE SET NULL
+);

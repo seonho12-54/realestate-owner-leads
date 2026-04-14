@@ -15,7 +15,12 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException exception) {
-        return ResponseEntity.status(exception.getStatus()).body(Map.of("error", exception.getMessage()));
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("error", exception.getMessage());
+        if (exception.getCode() != null && !exception.getCode().isBlank()) {
+            response.put("code", exception.getCode());
+        }
+        return ResponseEntity.status(exception.getStatus()).body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

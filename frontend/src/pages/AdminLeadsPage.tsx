@@ -1,43 +1,60 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 
 import { AdminLeadManager } from "@/components/AdminLeadManager";
-import { LogoutButton } from "@/components/LogoutButton";
+import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
+import { adminLeadFilters, getAdminLeadFilterMeta, getAdminLeadsPath, isLeadStatusFilter } from "@/lib/admin-lead-status";
 import { listAdminLeads, type AdminLeadSummary } from "@/lib/leads";
-import { leadStatusOptions } from "@/lib/validation";
+import { listActiveOffices, type OfficeOption } from "@/lib/offices";
+import type { LeadStatus } from "@/lib/validation";
+
+function countByStatus(leads: AdminLeadSummary[], status: LeadStatus) {
+  return leads.filter((lead) => lead.status === status).length;
+}
 
 export function AdminLeadsPage() {
   const { session } = useSession();
-  const [searchParams] = useSearchParams();
-  const statusParam = searchParams.get("status");
-  const statusFilter = leadStatusOptions.some((option) => option.value === statusParam) ? statusParam : null;
+  const { statusFilter: statusFilterParam } = useParams();
   const [leads, setLeads] = useState<AdminLeadSummary[]>([]);
+  const [allLeads, setAllLeads] = useState<AdminLeadSummary[]>([]);
+  const [offices, setOffices] = useState<OfficeOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const statusFilter = statusFilterParam == null ? null : isLeadStatusFilter(statusFilterParam) ? statusFilterParam : "invalid";
+
   useEffect(() => {
-    if (session.kind !== "admin") {
+    if (session.kind !== "admin" || statusFilter === "invalid") {
       return;
     }
 
     let isMounted = true;
     setIsLoading(true);
 
-    listAdminLeads(statusFilter)
-      .then((response) => {
+    const filteredLeadsRequest = listAdminLeads(statusFilter);
+    const allLeadsRequest = statusFilter ? listAdminLeads() : filteredLeadsRequest;
+
+    Promise.all([filteredLeadsRequest, listActiveOffices(), allLeadsRequest])
+      .then(([leadResponse, officeResponse, allLeadResponse]) => {
         if (!isMounted) {
           return;
         }
-        setLeads(response);
+
+        setLeads(leadResponse);
+        setAllLeads(allLeadResponse);
+        setOffices(officeResponse);
         setError(null);
       })
       .catch((loadError) => {
         if (!isMounted) {
           return;
         }
+
         setLeads([]);
-        setError(loadError instanceof Error ? loadError.message : "관리자 매물 목록을 불러오지 못했습니다.");
+        setAllLeads([]);
+        setOffices([]);
+        setError(loadError instanceof Error ? loadError.message : "관리 목록을 불러오지 못했습니다.");
       })
       .finally(() => {
         if (isMounted) {
@@ -50,19 +67,29 @@ export function AdminLeadsPage() {
     };
   }, [session.kind, statusFilter]);
 
-  const publishedCount = useMemo(() => leads.filter((lead) => lead.isPublished).length, [leads]);
-  const locationVerifiedCount = useMemo(() => leads.filter((lead) => lead.locationVerified).length, [leads]);
+  const filterMeta = useMemo(
+    () => (statusFilter === "invalid" ? getAdminLeadFilterMeta(null) : getAdminLeadFilterMeta(statusFilter)),
+    [statusFilter],
+  );
+  const publishedCount = useMemo(() => allLeads.filter((lead) => lead.isPublished).length, [allLeads]);
+  const newCount = useMemo(() => countByStatus(allLeads, "new"), [allLeads]);
+  const reviewingCount = useMemo(() => countByStatus(allLeads, "reviewing"), [allLeads]);
+  const completedCount = useMemo(() => countByStatus(allLeads, "completed"), [allLeads]);
+
+  if (statusFilter === "invalid") {
+    return <Navigate to="/admin/leads" replace />;
+  }
 
   if (!session.isLoading && session.kind !== "admin") {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (isLoading) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
-          <span className="eyebrow">관리자 콘솔</span>
-          <h1 className="page-title page-title-medium">운영 데이터를 불러오는 중입니다</h1>
+        <section className="page-panel">
+          <span className="eyebrow">관리자 모드</span>
+          <h1 className="page-title page-title-medium">관리자 화면을 준비하고 있습니다.</h1>
         </section>
       </div>
     );
@@ -71,9 +98,9 @@ export function AdminLeadsPage() {
   if (error) {
     return (
       <div className="page-stack">
-        <section className="hero-panel compact hero-panel-slim">
+        <section className="page-panel">
           <span className="eyebrow">불러오기 실패</span>
-          <h1 className="page-title page-title-medium">관리자 목록을 가져오지 못했습니다</h1>
+          <h1 className="page-title page-title-medium">관리 목록을 가져오지 못했습니다.</h1>
           <p className="page-copy compact-copy">{error}</p>
         </section>
       </div>
@@ -81,55 +108,35 @@ export function AdminLeadsPage() {
   }
 
   return (
-    <div className="page-stack console-shell">
-      <section className="console-hero">
-        <div className="console-hero-copy">
-          <span className="eyebrow">CONTROL ROOM</span>
-          <h1 className="console-hero-title">접수 검토, 공개 승인, 메모 관리까지 한 화면에서</h1>
-          <p className="console-hero-description">
-            {session.user?.name} 관리자 계정으로 로그인되어 있습니다. 접수 상태를 바꾸고, 사진을 확인하고, 공개 여부를 결정하는 모든
-            흐름을 이 화면에서 처리할 수 있습니다.
-          </p>
-          <div className="button-row">
-            <Link to="/" className="button button-secondary">
-              공개 홈 보기
-            </Link>
-            <LogoutButton action="/api/admin/logout" redirectTo="/" className="button button-primary" label="관리자 로그아웃" />
-          </div>
+    <div className="page-stack">
+      <section className="page-panel hero-panel-slim">
+        <span className="eyebrow">관리자 모드</span>
+        <h1 className="page-title page-title-medium">{filterMeta.label} 매물 관리</h1>
+        <p className="page-copy compact-copy">{filterMeta.description}</p>
+        <div className="stat-row">
+          <div className="stat-pill">전체 {allLeads.length}건</div>
+          <div className="stat-pill">신규접수 {newCount}건</div>
+          <div className="stat-pill">검토중 {reviewingCount}건</div>
+          <div className="stat-pill">처리완료 {completedCount}건</div>
+          <div className="stat-pill">공개 중 {publishedCount}건</div>
+        </div>
+        <div className="button-row">
+          {adminLeadFilters.map((filter) => {
+            const isActive = filter.value === statusFilter;
+            return (
+              <Link
+                key={filter.label}
+                href={getAdminLeadsPath(filter.value)}
+                className={`button button-small ${isActive ? "button-primary" : "button-secondary"}`}
+              >
+                {filter.label}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
-      <section className="console-overview-grid">
-        <article className="console-overview-card">
-          <span>전체 접수</span>
-          <strong>{leads.length}</strong>
-        </article>
-        <article className="console-overview-card">
-          <span>현재 공개</span>
-          <strong>{publishedCount}</strong>
-        </article>
-        <article className="console-overview-card">
-          <span>위치 검증 완료</span>
-          <strong>{locationVerifiedCount}</strong>
-        </article>
-      </section>
-
-      <section className="filter-panel console-tab-row">
-        <Link to="/admin/leads" className={`filter-chip link${!statusFilter ? " active" : ""}`}>
-          전체
-        </Link>
-        {leadStatusOptions.map((option) => (
-          <Link
-            key={option.value}
-            to={`/admin/leads?status=${option.value}`}
-            className={`filter-chip link${statusFilter === option.value ? " active" : ""}`}
-          >
-            {option.label}
-          </Link>
-        ))}
-      </section>
-
-      <AdminLeadManager leads={leads} />
+      <AdminLeadManager leads={leads} offices={offices} activeStatus={statusFilter} />
     </div>
   );
 }

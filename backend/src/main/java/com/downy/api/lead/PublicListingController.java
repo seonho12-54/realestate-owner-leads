@@ -1,10 +1,9 @@
 package com.downy.api.lead;
 
 import com.downy.api.auth.SessionService;
-import com.downy.api.common.ApiException;
+import com.downy.api.location.RegionAccessService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,26 +14,26 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicListingController {
 
     private final LeadService leadService;
+    private final RegionAccessService regionAccessService;
     private final SessionService sessionService;
 
-    public PublicListingController(LeadService leadService, SessionService sessionService) {
+    public PublicListingController(LeadService leadService, RegionAccessService regionAccessService, SessionService sessionService) {
         this.leadService = leadService;
+        this.regionAccessService = regionAccessService;
         this.sessionService = sessionService;
     }
 
     @GetMapping
-    public List<LeadDtos.PublicListingResponse> listPublishedListings() {
-        return leadService.listPublishedListings();
+    public List<LeadDtos.PublicListingResponse> listPublishedListings(HttpServletRequest request) {
+        String regionSlug = regionAccessService.requireVerifiedRegionSlug(request);
+        return leadService.listPublishedListings(regionSlug);
     }
 
     @GetMapping("/{leadId}")
     public LeadDtos.LeadDetailResponse getPublishedListingDetail(@PathVariable long leadId, HttpServletRequest request) {
-        if (!sessionService.hasUserOrAdmin(request)) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "로그인 후 매물 상세를 확인할 수 있습니다.");
-        }
-
-        LeadDtos.LeadDetailResponse response = leadService.getPublishedListingDetail(leadId);
-        leadService.incrementViewCount(leadId);
+        String regionSlug = sessionService.readAdminSession(request) != null ? null : regionAccessService.requireVerifiedRegionSlug(request);
+        LeadDtos.LeadDetailResponse response = leadService.getPublishedListingDetail(leadId, regionSlug);
+        leadService.incrementViewCount(leadId, regionSlug);
         return response;
     }
 }

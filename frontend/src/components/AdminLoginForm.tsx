@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent } from "react";
 
 import { Link } from "@/components/RouterLink";
@@ -24,8 +22,8 @@ export function AdminLoginForm() {
       await loginAdmin({ email, password });
       await refreshSession();
       router.replace("/admin/leads");
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "관리자 로그인에 실패했습니다.");
+    } catch {
+      setError("관리자 계정 정보 또는 배포 환경 쿠키 설정을 확인해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
@@ -33,11 +31,9 @@ export function AdminLoginForm() {
 
   return (
     <form className="auth-card admin vibrant" onSubmit={handleSubmit}>
-      <span className="eyebrow">ADMIN ONLY</span>
+      <span className="eyebrow">관리자 전용</span>
       <h1 className="page-title">관리자 로그인</h1>
-      <p className="page-copy">
-        승인 대기 매물 확인, 공개 상태 전환, 운영 메모 입력은 관리자 계정으로 로그인한 뒤에만 가능합니다.
-      </p>
+      <p className="page-copy">접수 검토, 공개 전환, 메모 관리 등 관리자 전용 기능은 여기에서 로그인한 뒤 사용할 수 있어요.</p>
 
       <div className="field">
         <label htmlFor="adminEmail">관리자 이메일</label>
@@ -72,10 +68,10 @@ export function AdminLoginForm() {
 
       <div className="button-row">
         <Link href="/" className="button button-secondary button-small">
-          공개 홈으로
+          홈으로
         </Link>
         <Link href="/login" className="button button-ghost button-small">
-          일반 회원 로그인
+          일반 로그인
         </Link>
       </div>
     </form>

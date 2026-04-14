@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS support_inquiries (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(160) NOT NULL,
+  content TEXT NOT NULL,
+  is_secret TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('open', 'answered') NOT NULL DEFAULT 'open',
+  admin_reply TEXT NULL,
+  admin_reply_at DATETIME NULL,
+  admin_reply_admin_id BIGINT UNSIGNED NULL,
+  request_ip VARCHAR(64) NULL,
+  user_agent VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_support_inquiries_user_id (user_id),
+  KEY idx_support_inquiries_status (status),
+  KEY idx_support_inquiries_created_at (created_at),
+  KEY idx_support_inquiries_admin_reply_admin_id (admin_reply_admin_id),
+  CONSTRAINT fk_support_inquiries_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_support_inquiries_admin_reply_admin_id FOREIGN KEY (admin_reply_admin_id) REFERENCES admins(id) ON DELETE SET NULL
+);

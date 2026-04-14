@@ -1,18 +1,9 @@
-"use client";
-
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
-import { apiFetch } from "@/lib/api";
-import { signupUser } from "@/lib/auth";
-import { readLocationAccessCache, writeLocationAccessCache } from "@/lib/location-access";
+import { confirmSignupPhoneVerification, requestSignupPhoneVerification, signupUser } from "@/lib/auth";
 import { useRouter } from "@/lib/router";
-import { SERVICE_REGION_LABEL } from "@/lib/service-area";
-
-function getInsecureContextMessage() {
-  return "현재 주소가 HTTP라서 브라우저 위치 권한이 제한될 수 있습니다. HTTPS 주소에서 다시 시도해 주세요.";
-}
 
 export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   const router = useRouter();
@@ -21,203 +12,186 @@ export function UserSignupForm({ nextUrl = "/" }: { nextUrl?: string }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationKey, setVerificationKey] = useState<string | null>(null);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [locationMessage, setLocationMessage] = useState(`회원가입 전 허용 지역(${SERVICE_REGION_LABEL}) 위치 인증을 한 번만 완료해 주세요.`);
-  const [isLocationVerified, setIsLocationVerified] = useState(false);
-  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isCheckingCode, setIsCheckingCode] = useState(false);
 
-  useEffect(() => {
-    const cached = readLocationAccessCache();
-
-    if (!cached) {
-      return;
-    }
-
-    setIsLocationVerified(true);
-    setLocationMessage(
-      cached.addressName
-        ? `${cached.addressName}에서 인증된 사용자입니다. 저장된 위치 인증을 재사용하므로 다시 확인할 필요가 없습니다.`
-        : "이미 위치 인증을 마친 사용자입니다. 저장된 인증 상태를 그대로 사용합니다.",
-    );
-  }, []);
-
-  async function handleLocationVerification() {
-    if (!window.isSecureContext && window.location.hostname !== "localhost") {
-      setLocationMessage(getInsecureContextMessage());
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      setLocationMessage("현재 브라우저에서는 위치 서비스를 지원하지 않습니다.");
-      return;
-    }
-
-    setIsCheckingLocation(true);
+  function handlePhoneChange(nextPhone: string) {
+    setPhone(nextPhone);
+    setNotice(null);
     setError(null);
-    setLocationMessage("현재 위치를 확인하고 있습니다.");
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const response = await apiFetch("/api/location/verify", {
-            method: "POST",
-            json: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            },
-          });
+    if (verifiedPhone && verifiedPhone !== nextPhone.trim()) {
+      setVerifiedPhone(null);
+      setVerificationKey(null);
+      setVerificationCode("");
+    }
+  }
 
-          const result = await response.json();
+  async function handleSendCode() {
+    setError(null);
+    setNotice(null);
 
-          if (!response.ok) {
-            throw new Error(result.error ?? "위치 인증에 실패했습니다.");
-          }
+    try {
+      setIsSendingCode(true);
+      const response = await requestSignupPhoneVerification(phone);
+      setVerificationKey(response.verificationKey);
+      setVerifiedPhone(null);
+      setVerificationCode("");
+      setNotice("인증번호를 보냈어요. 문자로 받은 번호를 아래에 입력해 주세요.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "인증번호 전송에 실패했어요.");
+    } finally {
+      setIsSendingCode(false);
+    }
+  }
 
-          if (!result.allowed) {
-            setIsLocationVerified(false);
-            setLocationMessage(`${result.addressName ?? "현재 위치"}에서는 회원가입 인증을 진행할 수 없습니다.`);
-            return;
-          }
+  async function handleVerifyCode() {
+    if (!verificationKey) {
+      setError("먼저 인증번호를 요청해 주세요.");
+      return;
+    }
 
-          writeLocationAccessCache({
-            approvedAt: Date.now(),
-            addressName: result.addressName ?? null,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
+    setError(null);
+    setNotice(null);
 
-          setIsLocationVerified(true);
-          setLocationMessage(`${result.addressName ?? SERVICE_REGION_LABEL}에서 인증이 완료되었습니다. 이후에는 다시 위치 인증할 필요가 없습니다.`);
-        } catch (locationError) {
-          setIsLocationVerified(false);
-          setLocationMessage(locationError instanceof Error ? locationError.message : "위치 인증에 실패했습니다.");
-        } finally {
-          setIsCheckingLocation(false);
-        }
-      },
-      (geoError) => {
-        setIsCheckingLocation(false);
-        setIsLocationVerified(false);
-
-        if (geoError.code === geoError.PERMISSION_DENIED) {
-          setLocationMessage("브라우저에서 위치 권한을 허용한 뒤 다시 시도해 주세요.");
-          return;
-        }
-
-        if (geoError.code === geoError.TIMEOUT) {
-          setLocationMessage("위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
-          return;
-        }
-
-        setLocationMessage("현재 위치를 가져오지 못했습니다.");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 1000 * 60 * 5,
-      },
-    );
+    try {
+      setIsCheckingCode(true);
+      await confirmSignupPhoneVerification(phone, verificationKey, verificationCode);
+      setVerifiedPhone(phone.trim());
+      setNotice("전화번호 인증이 완료됐어요.");
+    } catch (confirmError) {
+      setError(confirmError instanceof Error ? confirmError.message : "인증번호 확인에 실패했어요.");
+    } finally {
+      setIsCheckingCode(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    if (!isLocationVerified) {
-      setError("회원가입 전에 위치 인증을 먼저 완료해 주세요.");
+    if (!verificationKey || verifiedPhone !== phone.trim()) {
+      setError("전화번호 인증을 먼저 완료해 주세요.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await signupUser({ name, email, phone, password });
+      await signupUser({ name, email, phone, password, phoneVerificationKey: verificationKey });
       await refreshSession();
       router.replace(nextUrl);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "회원가입에 실패했습니다.");
+      setError(submitError instanceof Error ? submitError.message : "회원가입에 실패했어요.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="auth-card signup-card vibrant" onSubmit={handleSubmit}>
-      <span className="eyebrow">JOIN DOWNY</span>
-      <h1 className="page-title">회원가입</h1>
-      <p className="page-copy">
-        지도와 공개 목록은 비회원도 볼 수 있지만, 상세 페이지와 매물 접수는 회원가입 후 이용할 수 있습니다.
-      </p>
+    <form className="auth-card" onSubmit={handleSubmit}>
+      <span className="eyebrow">회원가입</span>
+      <h1 className="page-title page-title-medium">다우니 동네 매물을 더 안전하게 둘러보세요.</h1>
+      <p className="page-copy compact-copy">이제 회원가입 전에 전화번호 인증을 마쳐야 하고, 인증된 번호는 한 번만 가입할 수 있어요.</p>
 
-      <section className="signup-verify-panel">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">1. 위치 인증</span>
-            <h2 className="section-title">처음 한 번만 위치를 확인합니다</h2>
-          </div>
-          <button type="button" className="button button-secondary" onClick={handleLocationVerification} disabled={isCheckingLocation}>
-            {isCheckingLocation ? "확인 중..." : isLocationVerified ? "다시 확인" : "현재 위치 인증"}
-          </button>
-        </div>
-        <p className="page-copy compact-copy">{locationMessage}</p>
-        <div className="inline-note-list">
-          <span className={`inline-note${isLocationVerified ? " success" : ""}`}>
-            {isLocationVerified ? "인증된 사용자입니다" : `허용 지역: ${SERVICE_REGION_LABEL}`}
-          </span>
-          {isLocationVerified ? <span className="inline-note success">위치 인증은 저장되어 이후에도 재사용됩니다.</span> : null}
-        </div>
-      </section>
+      <label className="field">
+        <span>이름</span>
+        <input className="input" value={name} onChange={(event) => setName(event.target.value)} placeholder="홍길동" />
+      </label>
 
-      <div className="field">
-        <label htmlFor="signupName">이름</label>
-        <input id="signupName" className="input" value={name} onChange={(event) => setName(event.target.value)} placeholder="이름" />
-      </div>
-      <div className="field">
-        <label htmlFor="signupEmail">이메일</label>
+      <label className="field">
+        <span>이메일</span>
         <input
-          id="signupEmail"
           className="input"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           inputMode="email"
-          placeholder="you@example.com"
+          autoComplete="username"
+          placeholder="name@example.com"
         />
-      </div>
-      <div className="field">
-        <label htmlFor="signupPhone">전화번호</label>
+      </label>
+
+      <label className="field">
+        <span>휴대전화</span>
         <input
-          id="signupPhone"
           className="input"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-          inputMode="tel"
+          onChange={(event) => handlePhoneChange(event.target.value)}
           placeholder="010-1234-5678"
+          autoComplete="tel"
         />
+      </label>
+
+      <div className="button-row button-row-compact">
+        <button type="button" className="button button-secondary button-small" onClick={() => void handleSendCode()} disabled={isSendingCode}>
+          {isSendingCode ? "전송 중..." : "인증번호 받기"}
+        </button>
+        {verifiedPhone === phone.trim() ? (
+          <button
+            type="button"
+            className="button button-ghost button-small"
+            onClick={() => {
+              setVerifiedPhone(null);
+              setVerificationKey(null);
+              setVerificationCode("");
+              setNotice(null);
+            }}
+          >
+            번호 다시 입력
+          </button>
+        ) : null}
       </div>
-      <div className="field">
-        <label htmlFor="signupPassword">비밀번호</label>
+
+      <label className="field">
+        <span>인증번호</span>
         <input
-          id="signupPassword"
+          className="input"
+          value={verificationCode}
+          onChange={(event) => setVerificationCode(event.target.value)}
+          placeholder="문자로 받은 인증번호"
+          inputMode="numeric"
+        />
+      </label>
+
+      <div className="button-row button-row-compact">
+        <button
+          type="button"
+          className="button button-secondary button-small"
+          onClick={() => void handleVerifyCode()}
+          disabled={isCheckingCode || !verificationKey}
+        >
+          {isCheckingCode ? "확인 중..." : "인증 확인"}
+        </button>
+        {verifiedPhone === phone.trim() ? <span className="inline-note success">전화번호 인증 완료</span> : null}
+      </div>
+
+      <label className="field">
+        <span>비밀번호</span>
+        <input
           className="input"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="영문과 숫자를 포함한 8자 이상"
+          autoComplete="new-password"
+          placeholder="영문과 숫자를 포함해 입력해 주세요."
         />
-      </div>
+      </label>
 
+      {notice ? <div className="success-banner">{notice}</div> : null}
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <button className="button button-primary" type="submit" disabled={isSubmitting}>
+      <button className="button button-primary button-full" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "가입 중..." : "회원가입"}
       </button>
 
-      <div className="button-row">
+      <div className="button-row button-row-compact">
         <Link href={`/login?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
-          로그인
-        </Link>
-        <Link href="/admin/login" className="button button-ghost button-small">
-          관리자 로그인
+          이미 계정이 있어요
         </Link>
       </div>
     </form>

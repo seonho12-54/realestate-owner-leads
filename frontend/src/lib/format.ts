@@ -1,89 +1,120 @@
-import { propertyTypeOptions, transactionTypeOptions } from "@/lib/validation";
-
-const propertyTypeLabelMap = Object.fromEntries(propertyTypeOptions.map((option) => [option.value, option.label]));
-const transactionTypeLabelMap = Object.fromEntries(transactionTypeOptions.map((option) => [option.value, option.label]));
-
-const numberFormatter = new Intl.NumberFormat("ko-KR");
-const areaFormatter = new Intl.NumberFormat("ko-KR", {
-  maximumFractionDigits: 2,
-});
-
-const dateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
-  dateStyle: "medium",
-  timeStyle: "short",
+const KRW = new Intl.NumberFormat("ko-KR");
+const DATETIME = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
-export function formatKrw(value: number | null): string {
-  if (value === null) {
+function formatManUnit(value: number) {
+  const eok = Math.floor(value / 100_000_000);
+  const man = Math.floor((value % 100_000_000) / 10_000);
+
+  if (eok > 0 && man > 0) {
+    return `${KRW.format(eok)}억 ${KRW.format(man)}만`;
+  }
+
+  if (eok > 0) {
+    return `${KRW.format(eok)}억`;
+  }
+
+  if (man > 0) {
+    return `${KRW.format(man)}만`;
+  }
+
+  return `${KRW.format(Math.round(value))}원`;
+}
+
+export function formatKrw(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     return "-";
   }
 
-  return `${numberFormatter.format(value)}원`;
+  return `${KRW.format(Math.round(value))}원`;
 }
 
-export function formatCompactKrw(value: number | null): string {
-  if (value === null) {
+export function formatCompactKrw(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return "-";
   }
 
-  if (value >= 100000000) {
-    const eok = Math.floor(value / 100000000);
-    const rest = value % 100000000;
-
-    if (rest === 0) {
-      return `${eok}억`;
-    }
-
-    return `${eok}억 ${Math.floor(rest / 10000).toLocaleString("ko-KR")}만`;
-  }
-
-  if (value >= 10000) {
-    return `${Math.floor(value / 10000).toLocaleString("ko-KR")}만`;
-  }
-
-  return `${numberFormatter.format(value)}원`;
+  return formatManUnit(value);
 }
 
-export function formatArea(value: number | null): string {
-  if (value === null) {
+export function formatArea(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return "-";
   }
 
-  return `${areaFormatter.format(value)}㎡`;
+  return `${value.toFixed(1)}㎡`;
 }
 
-export function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
+export function formatDateTime(value?: string | Date | null) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return DATETIME.format(date);
 }
 
-export function formatTradeLabel(params: {
+export function getPropertyTypeLabel(value?: string | null) {
+  switch (value) {
+    case "apartment":
+      return "아파트";
+    case "officetel":
+      return "오피스텔";
+    case "villa":
+      return "빌라";
+    case "house":
+      return "주택";
+    case "commercial":
+      return "상가";
+    case "land":
+      return "토지";
+    default:
+      return "기타";
+  }
+}
+
+export function getTransactionTypeLabel(value?: string | null) {
+  switch (value) {
+    case "sale":
+      return "매매";
+    case "jeonse":
+      return "전세";
+    case "monthly":
+      return "월세";
+    case "consult":
+      return "상담";
+    default:
+      return "거래";
+  }
+}
+
+export function formatTradeLabel(value: {
   transactionType: string;
-  priceKrw: number | null;
-  depositKrw: number | null;
-  monthlyRentKrw: number | null;
-}): string {
-  const transactionLabel = transactionTypeLabelMap[params.transactionType] ?? params.transactionType;
-
-  if (params.transactionType === "sale") {
-    return `${transactionLabel} ${formatCompactKrw(params.priceKrw)}`;
+  priceKrw?: number | null;
+  depositKrw?: number | null;
+  monthlyRentKrw?: number | null;
+}) {
+  if (value.transactionType === "sale") {
+    return `매매 ${formatCompactKrw(value.priceKrw)}`;
   }
 
-  if (params.transactionType === "jeonse") {
-    return `${transactionLabel} ${formatCompactKrw(params.depositKrw)}`;
+  if (value.transactionType === "jeonse") {
+    return `전세 ${formatCompactKrw(value.depositKrw)}`;
   }
 
-  if (params.transactionType === "monthly") {
-    return `${transactionLabel} ${formatCompactKrw(params.depositKrw)} / ${formatCompactKrw(params.monthlyRentKrw)}`;
+  if (value.transactionType === "monthly") {
+    return `월세 ${formatCompactKrw(value.depositKrw)} / ${formatCompactKrw(value.monthlyRentKrw)}`;
   }
 
-  return transactionLabel;
-}
-
-export function getPropertyTypeLabel(value: string): string {
-  return propertyTypeLabelMap[value] ?? value;
-}
-
-export function getTransactionTypeLabel(value: string): string {
-  return transactionTypeLabelMap[value] ?? value;
+  return "상담 문의";
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 
 import { useSession } from "@/context/SessionContext";
@@ -8,7 +6,7 @@ import { logoutAdmin, logoutUser } from "@/lib/auth";
 export function LogoutButton({
   action,
   redirectTo = "/",
-  className = "button button-ghost button-small",
+  className = "nav-button nav-button-secondary",
   label = "로그아웃",
 }: {
   action: "/api/auth/logout" | "/api/admin/logout";

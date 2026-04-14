@@ -1,6 +1,6 @@
 export const LOCATION_ACCESS_CACHE_KEY = "downy-location-access";
 export const LEGACY_LOCATION_ACCESS_CACHE_KEY = "allowed-location-approved-at";
-export const LOCATION_ACCESS_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+export const LOCATION_ACCESS_TTL_MS = 1000 * 60 * 60 * 24 * 365;
 
 export type StoredLocationAccess = {
   approvedAt: number;

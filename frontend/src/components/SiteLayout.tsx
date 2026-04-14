@@ -1,89 +1,122 @@
-import { Link, Outlet } from "react-router-dom";
+import { useLocation, Outlet } from "react-router-dom";
 
 import { LogoutButton } from "@/components/LogoutButton";
+import { Link } from "@/components/RouterLink";
 import { useSession } from "@/context/SessionContext";
 import { SERVICE_REGION_LABEL } from "@/lib/service-area";
 
+const OFFICE_ADDRESS = "울산광역시 중구 다운로 160";
+const OFFICE_NAME = "다운우미린공인중개사사무소";
+const OFFICE_PHONE = "010-9904-1031";
+const BLOG_URL = "https://blog.naver.com/tedted111";
+
+const NAV_ITEMS = [
+  { href: "/", label: "홈", icon: "🏠" },
+  { href: "/sell", label: "문의하기", icon: "💬" },
+  { href: "/manage", label: "내 매물", icon: "🗂" },
+  { href: "/me", label: "설정", icon: "⚙️" },
+];
+
 export function SiteLayout() {
   const { session } = useSession();
-  const adminSession = session.kind === "admin" ? session.user : null;
-  const userSession = session.kind === "user" ? session.user : null;
+  const location = useLocation();
+  const isAdmin = session.kind === "admin";
+  const isVerified = session.region.locked;
+  const regionName = session.region.region?.name ?? "인증 전";
 
   return (
-    <div className="site-shell downy-shell">
-      <header className={`shell-header${adminSession ? " admin" : ""}`}>
-        <div className="shell-branding">
-          <Link to={adminSession ? "/admin/leads" : "/"} className="shell-brand-line" aria-label="다우니 홈">
-            <span className="shell-brand-word">다우니</span>
-            <span className="shell-brand-chip">{adminSession ? "운영 콘솔" : "WEB EDITION"}</span>
+    <div className="app-shell">
+      <header className="top-shell">
+        {/* Brand Block */}
+        <div className="brand-row">
+          <Link href={isAdmin ? "/admin/leads" : "/"} className="brand-link">
+            <div className="brand-logo-mark">다</div>
+            <div className="brand-text-group">
+              <div className="brand-name">다우니</div>
+              <div className="brand-badge">Local Home · {SERVICE_REGION_LABEL}</div>
+            </div>
           </Link>
-          <div className="shell-brand-copy">
-            <span className="shell-brand-caption">
-              {adminSession
-                ? "승인 전환, 메모 관리, 공개 상태 변경까지 한 번에 관리하는 관리자 워크스페이스"
-                : `${SERVICE_REGION_LABEL} 중심 승인형 매물 접수 · 공개 플랫폼`}
-            </span>
-          </div>
         </div>
 
-        <nav className="shell-nav" aria-label="주요 메뉴">
-          {adminSession ? (
-            <>
-              <Link to="/admin/leads" className="shell-nav-link">
-                관리자 콘솔
-              </Link>
-              <Link to="/" className="shell-nav-link">
-                공개 홈
-              </Link>
-              <Link to="/privacy" className="shell-nav-link">
-                개인정보
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link to="/" className="shell-nav-link">
-                홈
-              </Link>
-              <Link to="/sell" className="shell-nav-link">
-                매물 등록
-              </Link>
-              <Link to="/privacy" className="shell-nav-link">
-                개인정보 처리방침
-              </Link>
-            </>
-          )}
-        </nav>
+        {/* Center: region status + contact (hidden on mobile) */}
+        {!isAdmin ? (
+          <div className="header-center">
+            <div className="region-status-chip">
+              <div className={`region-dot${isVerified ? "" : " unverified"}`} />
+              <span className="region-label">인증 지역</span>
+              <span className="region-name">{regionName}</span>
+            </div>
 
-        <div className="shell-userbar">
-          {adminSession ? (
+            <div className="contact-pill">
+              <span className="contact-pill-label">☎ 부동산 문의</span>
+              <strong>{OFFICE_NAME}</strong>
+              <p>📞 {OFFICE_PHONE} · {OFFICE_ADDRESS}</p>
+              <a href={BLOG_URL} className="contact-pill-link" target="_blank" rel="noreferrer">
+                📝 블로그 바로가기 →
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="header-center">
+            <div className="region-status-chip">
+              <div className="region-dot" />
+              <span className="region-label">관리자 모드</span>
+              <span className="region-name">다우니 관리</span>
+            </div>
+          </div>
+        )}
+
+        {/* Right: Auth actions */}
+        <div className="top-actions">
+          {isAdmin ? (
             <>
-              <span className="shell-user-pill">{adminSession.name} 관리자</span>
-              <LogoutButton action="/api/admin/logout" redirectTo="/" label="로그아웃" className="button button-secondary button-small" />
+              <Link href="/sell" className="nav-button nav-button-secondary button-small">
+                문의 관리
+              </Link>
+              <Link href="/admin/leads" className="nav-button nav-button-primary button-small">
+                매물 관리
+              </Link>
+              <LogoutButton action="/api/admin/logout" label="로그아웃" />
             </>
-          ) : userSession ? (
-            <>
-              <span className="shell-user-pill">{userSession.name}님</span>
-              <LogoutButton action="/api/auth/logout" redirectTo="/" label="로그아웃" className="button button-secondary button-small" />
-            </>
+          ) : session.authenticated ? (
+            <LogoutButton action="/api/auth/logout" label="로그아웃" />
           ) : (
             <>
-              <Link to="/login" className="button button-ghost button-small">
+              <Link href="/login" className="nav-button nav-button-secondary button-small">
                 로그인
               </Link>
-              <Link to="/signup" className="button button-primary button-small">
+              <Link href="/signup" className="nav-button nav-button-primary button-small">
                 회원가입
-              </Link>
-              <Link to="/admin/login" className="button button-secondary button-small">
-                관리자
               </Link>
             </>
           )}
         </div>
       </header>
 
-      <main className="page-shell">
+      <main className="page-container">
         <Outlet />
       </main>
+
+      {!isAdmin ? (
+        <nav className="bottom-nav" aria-label="주요 메뉴">
+          {NAV_ITEMS.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? location.pathname === "/"
+                : location.pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`bottom-nav-link${isActive ? " active" : ""}`}
+                data-icon={item.icon}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
     </div>
   );
 }

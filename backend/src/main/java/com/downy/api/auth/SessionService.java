@@ -1,6 +1,7 @@
 package com.downy.api.auth;
 
 import com.downy.api.auth.SessionModels.AdminSession;
+import com.downy.api.auth.SessionModels.RegionSession;
 import com.downy.api.auth.SessionModels.SessionKind;
 import com.downy.api.auth.SessionModels.SessionSnapshot;
 import com.downy.api.auth.SessionModels.UserSession;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.Clock;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -20,6 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +31,7 @@ public class SessionService {
 
     public static final String ADMIN_SESSION_COOKIE = "rea_admin_session";
     public static final String USER_SESSION_COOKIE = "rea_user_session";
+    public static final String REGION_SESSION_COOKIE = "rea_region_lock";
 
     private final AppProperties properties;
     private final Clock clock;
@@ -40,13 +44,18 @@ public class SessionService {
     }
 
     public AdminSession readAdminSession(HttpServletRequest request) {
-        String token = readToken(request, ADMIN_SESSION_COOKIE);
+        String token = readToken(request, ADMIN_SESSION_COOKIE, true);
         return token == null ? null : parseAdminSession(token);
     }
 
     public UserSession readUserSession(HttpServletRequest request) {
-        String token = readToken(request, USER_SESSION_COOKIE);
+        String token = readToken(request, USER_SESSION_COOKIE, true);
         return token == null ? null : parseUserSession(token);
+    }
+
+    public RegionSession readRegionSession(HttpServletRequest request) {
+        String token = readToken(request, REGION_SESSION_COOKIE, false);
+        return token == null ? null : parseRegionSession(token);
     }
 
     public SessionSnapshot readSnapshot(HttpServletRequest request) {
@@ -65,13 +74,43 @@ public class SessionService {
         return token;
     }
 
-    public String setUserSession(HttpServletResponse response, long userId, String email, String name) {
+    public String setUserSession(
+        HttpServletResponse response,
+        long userId,
+        String email,
+        String name,
+        String verifiedRegionSlug,
+        String verifiedRegionName,
+        boolean locationLocked,
+        long regionVerifiedAt
+    ) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("userId", userId);
         payload.put("email", email);
         payload.put("name", name);
+        payload.put("verifiedRegionSlug", verifiedRegionSlug);
+        payload.put("verifiedRegionName", verifiedRegionName);
+        payload.put("locationLocked", locationLocked);
+        payload.put("regionVerifiedAt", regionVerifiedAt);
         String token = createToken(SessionKind.USER, payload);
         setCookie(response, USER_SESSION_COOKIE, token);
+        return token;
+    }
+
+    public String setRegionSession(
+        HttpServletResponse response,
+        String regionSlug,
+        String regionName,
+        boolean locationLocked,
+        long verifiedAt
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("regionSlug", regionSlug);
+        payload.put("regionName", regionName);
+        payload.put("locationLocked", locationLocked);
+        payload.put("verifiedAt", verifiedAt);
+        String token = createToken(SessionKind.REGION, payload);
+        setCookie(response, REGION_SESSION_COOKIE, token);
         return token;
     }
 
@@ -81,6 +120,10 @@ public class SessionService {
 
     public void clearUserSession(HttpServletResponse response) {
         clearCookie(response, USER_SESSION_COOKIE);
+    }
+
+    public void clearRegionSession(HttpServletResponse response) {
+        clearCookie(response, REGION_SESSION_COOKIE);
     }
 
     public AdminSession requireAdmin(HttpServletRequest request) {
@@ -151,6 +194,25 @@ public class SessionService {
             asLong(payload.get("userId")),
             asString(payload.get("email")),
             asString(payload.get("name")),
+            asString(payload.get("verifiedRegionSlug")),
+            asString(payload.get("verifiedRegionName")),
+            asBoolean(payload.get("locationLocked")),
+            asOptionalEpochMillis(payload.get("regionVerifiedAt")),
+            asExpirationMillis(payload.get("exp"))
+        );
+    }
+
+    private RegionSession parseRegionSession(String token) {
+        Map<String, Object> payload = verify(SessionKind.REGION, token);
+        if (payload == null) {
+            return null;
+        }
+
+        return new RegionSession(
+            asString(payload.get("regionSlug")),
+            asString(payload.get("regionName")),
+            asBoolean(payload.get("locationLocked")),
+            asOptionalEpochMillis(payload.get("verifiedAt")),
             asExpirationMillis(payload.get("exp"))
         );
     }
@@ -222,13 +284,18 @@ public class SessionService {
     }
 
     private String secret(SessionKind kind) {
-        return kind == SessionKind.ADMIN ? properties.getAdminSessionSecret() : properties.getUserSessionSecret();
+        return switch (kind) {
+            case ADMIN -> properties.getAdminSessionSecret();
+            case USER, REGION -> properties.getUserSessionSecret();
+        };
     }
 
-    private String readToken(HttpServletRequest request, String cookieName) {
-        String bearerToken = readBearerToken(request);
-        if (bearerToken != null) {
-            return bearerToken;
+    private String readToken(HttpServletRequest request, String cookieName, boolean allowBearer) {
+        if (allowBearer) {
+            String bearerToken = readBearerToken(request);
+            if (bearerToken != null) {
+                return bearerToken;
+            }
         }
 
         return readCookie(request, cookieName);
@@ -264,29 +331,63 @@ public class SessionService {
     }
 
     private void setCookie(HttpServletResponse response, String name, String value) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureCookie());
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (properties.getSessionDurationDays() * 24L * 60L * 60L));
-        response.addCookie(cookie);
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, value)
+            .httpOnly(true)
+            .secure(isSecureCookie())
+            .path("/")
+            .maxAge(Duration.ofDays(properties.getSessionDurationDays()))
+            .sameSite(resolveSameSite());
+
+        if (properties.getCookie().getDomain() != null && !properties.getCookie().getDomain().isBlank()) {
+            cookieBuilder.domain(properties.getCookie().getDomain().trim());
+        }
+
+        response.addHeader("Set-Cookie", cookieBuilder.build().toString());
     }
 
     private void clearCookie(HttpServletResponse response, String name) {
-        Cookie cookie = new Cookie(name, "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureCookie());
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from(name, "")
+            .httpOnly(true)
+            .secure(isSecureCookie())
+            .path("/")
+            .maxAge(Duration.ZERO)
+            .sameSite(resolveSameSite());
+
+        if (properties.getCookie().getDomain() != null && !properties.getCookie().getDomain().isBlank()) {
+            cookieBuilder.domain(properties.getCookie().getDomain().trim());
+        }
+
+        response.addHeader("Set-Cookie", cookieBuilder.build().toString());
     }
 
     private boolean isSecureCookie() {
+        String configured = properties.getCookie().getSecure();
+        if (configured != null && !configured.isBlank()) {
+            return Boolean.parseBoolean(configured.trim());
+        }
+
         return properties.getBaseUrl() != null && properties.getBaseUrl().startsWith("https://");
+    }
+
+    private String resolveSameSite() {
+        String sameSite = properties.getCookie().getSameSite();
+        return sameSite == null || sameSite.isBlank() ? "Lax" : sameSite.trim();
     }
 
     private String asString(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private boolean asBoolean(Object value) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+
+        return value != null && Boolean.parseBoolean(String.valueOf(value));
     }
 
     private long asLong(Object value) {
@@ -297,9 +398,17 @@ public class SessionService {
         return Long.parseLong(String.valueOf(value));
     }
 
-    private long asExpirationMillis(Object value) {
+    private long asOptionalEpochMillis(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+
         long rawValue = asLong(value);
         return rawValue >= 1_000_000_000_000L ? rawValue : rawValue * 1000L;
+    }
+
+    private long asExpirationMillis(Object value) {
+        return asOptionalEpochMillis(value);
     }
 
     private boolean secureEquals(String left, String right) {

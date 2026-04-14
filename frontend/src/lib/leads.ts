@@ -6,6 +6,9 @@ export type LeadPhotoAsset = {
   leadId: number;
   fileName: string;
   s3Key: string;
+  contentType: string | null;
+  fileSize: number | null;
+  displayOrder: number;
   viewUrl: string | null;
 };
 
@@ -14,6 +17,8 @@ export type PublicListing = {
   listingTitle: string;
   propertyType: string;
   transactionType: string;
+  isPreview: boolean;
+  regionSlug: string;
   addressLine1: string;
   addressLine2: string | null;
   region3DepthName: string | null;
@@ -54,6 +59,8 @@ export type AdminLeadSummary = {
   transactionType: string;
   addressLine1: string;
   addressLine2: string | null;
+  postalCode: string | null;
+  regionSlug: string | null;
   region2DepthName: string | null;
   region3DepthName: string | null;
   latitude: number | null;
@@ -62,6 +69,7 @@ export type AdminLeadSummary = {
   priceKrw: number | null;
   depositKrw: number | null;
   monthlyRentKrw: number | null;
+  moveInDate: string | null;
   contactTime: string | null;
   description: string | null;
   adminMemo: string | null;
@@ -76,6 +84,36 @@ export type AdminLeadSummary = {
   utmCampaign: string | null;
   referrerUrl: string | null;
   landingUrl: string | null;
+  createdAt: string;
+  photoCount: number;
+  photos: LeadPhotoAsset[];
+};
+
+export type MyLeadSummary = {
+  id: number;
+  officeId: number;
+  officeName: string;
+  listingTitle: string;
+  ownerName: string;
+  phone: string;
+  email: string | null;
+  propertyType: string;
+  transactionType: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  postalCode: string | null;
+  regionSlug: string | null;
+  region2DepthName: string | null;
+  region3DepthName: string | null;
+  areaM2: number | null;
+  priceKrw: number | null;
+  depositKrw: number | null;
+  monthlyRentKrw: number | null;
+  moveInDate: string | null;
+  contactTime: string | null;
+  description: string | null;
+  status: LeadStatus;
+  isPublished: boolean;
   createdAt: string;
   photoCount: number;
   photos: LeadPhotoAsset[];
@@ -108,8 +146,8 @@ export type CreateLeadPayload = {
   utmContent: string;
   referrerUrl: string;
   landingUrl: string;
-  browserLatitude: number;
-  browserLongitude: number;
+  browserLatitude?: number | null;
+  browserLongitude?: number | null;
   photos: Array<{
     s3Key: string;
     fileName: string;
@@ -117,6 +155,28 @@ export type CreateLeadPayload = {
     fileSize: number;
     displayOrder: number;
   }>;
+};
+
+export type UpdateMyLeadPayload = {
+  officeId: number;
+  listingTitle: string;
+  ownerName: string;
+  phone: string;
+  email: string | null;
+  propertyType: string;
+  transactionType: string;
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  areaM2: number | null;
+  priceKrw: number | null;
+  depositKrw: number | null;
+  monthlyRentKrw: number | null;
+  moveInDate: string;
+  contactTime: string;
+  description: string;
+  browserLatitude?: number | null;
+  browserLongitude?: number | null;
 };
 
 function normalizePhotoAsset(photo: Partial<LeadPhotoAsset> | null | undefined): LeadPhotoAsset | null {
@@ -129,6 +189,9 @@ function normalizePhotoAsset(photo: Partial<LeadPhotoAsset> | null | undefined):
     leadId: photo.leadId,
     fileName: typeof photo.fileName === "string" ? photo.fileName : "",
     s3Key: typeof photo.s3Key === "string" ? photo.s3Key : "",
+    contentType: typeof photo.contentType === "string" ? photo.contentType : null,
+    fileSize: typeof photo.fileSize === "number" ? photo.fileSize : null,
+    displayOrder: typeof photo.displayOrder === "number" ? photo.displayOrder : 0,
     viewUrl: typeof photo.viewUrl === "string" ? photo.viewUrl : null,
   };
 }
@@ -162,6 +225,8 @@ function normalizePublicListing(listing: Partial<PublicListing> | null | undefin
     listingTitle: listing.listingTitle,
     propertyType: listing.propertyType,
     transactionType: listing.transactionType,
+    isPreview: typeof listing.isPreview === "boolean" ? listing.isPreview : false,
+    regionSlug: typeof listing.regionSlug === "string" ? listing.regionSlug : "",
     addressLine1: listing.addressLine1,
     addressLine2: typeof listing.addressLine2 === "string" ? listing.addressLine2 : null,
     region3DepthName: typeof listing.region3DepthName === "string" ? listing.region3DepthName : null,
@@ -247,6 +312,8 @@ function normalizeAdminLead(value: unknown): AdminLeadSummary | null {
     transactionType: lead.transactionType,
     addressLine1: lead.addressLine1,
     addressLine2: typeof lead.addressLine2 === "string" ? lead.addressLine2 : null,
+    postalCode: typeof lead.postalCode === "string" ? lead.postalCode : null,
+    regionSlug: typeof lead.regionSlug === "string" ? lead.regionSlug : null,
     region2DepthName: typeof lead.region2DepthName === "string" ? lead.region2DepthName : null,
     region3DepthName: typeof lead.region3DepthName === "string" ? lead.region3DepthName : null,
     latitude: typeof lead.latitude === "number" ? lead.latitude : null,
@@ -255,6 +322,7 @@ function normalizeAdminLead(value: unknown): AdminLeadSummary | null {
     priceKrw: typeof lead.priceKrw === "number" ? lead.priceKrw : null,
     depositKrw: typeof lead.depositKrw === "number" ? lead.depositKrw : null,
     monthlyRentKrw: typeof lead.monthlyRentKrw === "number" ? lead.monthlyRentKrw : null,
+    moveInDate: typeof lead.moveInDate === "string" ? lead.moveInDate : null,
     contactTime: typeof lead.contactTime === "string" ? lead.contactTime : null,
     description: typeof lead.description === "string" ? lead.description : null,
     adminMemo: typeof lead.adminMemo === "string" ? lead.adminMemo : null,
@@ -283,13 +351,77 @@ function normalizeAdminLeadArray(value: unknown): AdminLeadSummary[] {
   return value.map((lead) => normalizeAdminLead(lead)).filter((lead): lead is AdminLeadSummary => Boolean(lead));
 }
 
+function normalizeMyLead(value: unknown): MyLeadSummary | null {
+  const lead = (value ?? {}) as Partial<MyLeadSummary>;
+
+  if (
+    typeof lead.id !== "number" ||
+    typeof lead.officeId !== "number" ||
+    typeof lead.officeName !== "string" ||
+    typeof lead.listingTitle !== "string" ||
+    typeof lead.ownerName !== "string" ||
+    typeof lead.phone !== "string" ||
+    typeof lead.propertyType !== "string" ||
+    typeof lead.transactionType !== "string" ||
+    typeof lead.addressLine1 !== "string" ||
+    typeof lead.status !== "string" ||
+    typeof lead.isPublished !== "boolean" ||
+    typeof lead.createdAt !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: lead.id,
+    officeId: lead.officeId,
+    officeName: lead.officeName,
+    listingTitle: lead.listingTitle,
+    ownerName: lead.ownerName,
+    phone: lead.phone,
+    email: typeof lead.email === "string" ? lead.email : null,
+    propertyType: lead.propertyType,
+    transactionType: lead.transactionType,
+    addressLine1: lead.addressLine1,
+    addressLine2: typeof lead.addressLine2 === "string" ? lead.addressLine2 : null,
+    postalCode: typeof lead.postalCode === "string" ? lead.postalCode : null,
+    regionSlug: typeof lead.regionSlug === "string" ? lead.regionSlug : null,
+    region2DepthName: typeof lead.region2DepthName === "string" ? lead.region2DepthName : null,
+    region3DepthName: typeof lead.region3DepthName === "string" ? lead.region3DepthName : null,
+    areaM2: typeof lead.areaM2 === "number" ? lead.areaM2 : null,
+    priceKrw: typeof lead.priceKrw === "number" ? lead.priceKrw : null,
+    depositKrw: typeof lead.depositKrw === "number" ? lead.depositKrw : null,
+    monthlyRentKrw: typeof lead.monthlyRentKrw === "number" ? lead.monthlyRentKrw : null,
+    moveInDate: typeof lead.moveInDate === "string" ? lead.moveInDate : null,
+    contactTime: typeof lead.contactTime === "string" ? lead.contactTime : null,
+    description: typeof lead.description === "string" ? lead.description : null,
+    status: lead.status as LeadStatus,
+    isPublished: lead.isPublished,
+    createdAt: lead.createdAt,
+    photoCount: typeof lead.photoCount === "number" ? lead.photoCount : 0,
+    photos: normalizePhotoArray(lead.photos),
+  };
+}
+
+function normalizeMyLeadArray(value: unknown): MyLeadSummary[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((lead) => normalizeMyLead(lead)).filter((lead): lead is MyLeadSummary => Boolean(lead));
+}
+
+export async function listPreviewListings(limit = 6) {
+  const response = await apiRequest<unknown>(`/api/listings/preview?limit=${encodeURIComponent(String(limit))}`);
+  return normalizePublicListingArray(response);
+}
+
 export async function listPublishedListings() {
-  const response = await apiRequest<unknown>("/api/public/listings");
+  const response = await apiRequest<unknown>("/api/listings");
   return normalizePublicListingArray(response);
 }
 
 export async function getPublishedListingDetail(listingId: number) {
-  const response = await apiRequest<unknown>(`/api/public/listings/${listingId}`);
+  const response = await apiRequest<unknown>(`/api/listings/${listingId}`);
   return normalizeLeadDetail(response);
 }
 
@@ -300,13 +432,68 @@ export async function createLead(payload: CreateLeadPayload) {
   });
 }
 
+export async function listMyLeads() {
+  const response = await apiRequest<unknown>("/api/me/leads");
+  return normalizeMyLeadArray(response);
+}
+
+export async function updateMyLead(leadId: number, payload: UpdateMyLeadPayload) {
+  return apiRequest<{ ok: boolean }>(`/api/me/leads/${leadId}`, {
+    method: "PATCH",
+    json: payload,
+  });
+}
+
 export async function listAdminLeads(status?: string | null) {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   const response = await apiRequest<unknown>(`/api/admin/leads${query}`);
   return normalizeAdminLeadArray(response);
 }
 
-export async function updateLeadAdminFields(leadId: number, payload: { status: LeadStatus; isPublished: boolean; adminMemo: string }) {
+export async function getAdminLeadDetail(leadId: number) {
+  const leads = await listAdminLeads();
+  const lead = leads.find((item) => item.id === leadId) ?? null;
+
+  if (!lead) {
+    throw new Error("관리 중인 매물을 찾지 못했어요.");
+  }
+
+  return lead;
+}
+
+export type UpdateAdminLeadPayload = {
+  officeId: number;
+  listingTitle: string;
+  ownerName: string;
+  phone: string;
+  email: string | null;
+  propertyType: string;
+  transactionType: string;
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  areaM2: number | null;
+  priceKrw: number | null;
+  depositKrw: number | null;
+  monthlyRentKrw: number | null;
+  moveInDate: string;
+  contactTime: string;
+  description: string;
+  privacyConsent: boolean;
+  marketingConsent: boolean;
+  status: LeadStatus;
+  adminMemo: string;
+  isPublished: boolean;
+  photos: Array<{
+    s3Key: string;
+    fileName: string;
+    contentType: string;
+    fileSize: number;
+    displayOrder: number;
+  }>;
+};
+
+export async function updateLeadAdminFields(leadId: number, payload: UpdateAdminLeadPayload) {
   return apiRequest<{ success: boolean }>(`/api/admin/leads/${leadId}`, {
     method: "PATCH",
     json: payload,

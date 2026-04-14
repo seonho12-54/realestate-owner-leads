@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent } from "react";
 
 import { Link } from "@/components/RouterLink";
@@ -21,56 +19,61 @@ export function UserLoginForm({ nextUrl = "/" }: { nextUrl?: string }) {
 
     try {
       setIsSubmitting(true);
-      await loginUser({ email, password });
+      const result = await loginUser({ email, password });
       await refreshSession();
+
+      if (result.kind === "admin") {
+        router.replace("/admin/leads");
+        return;
+      }
+
       router.replace(nextUrl);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "로그인에 실패했습니다.");
+    } catch {
+      setError("이메일 또는 비밀번호를 확인해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="auth-card vibrant" onSubmit={handleSubmit}>
-      <span className="eyebrow">MEMBER LOGIN</span>
-      <h1 className="page-title">회원 로그인</h1>
-      <p className="page-copy">
-        상세 페이지 확인, 매물 접수, 접수 결과 확인은 회원 로그인 후 이어집니다. 지도와 공개 리스트는 비회원도 미리 볼 수 있습니다.
+    <form className="auth-card" onSubmit={handleSubmit}>
+      <span className="eyebrow">로그인</span>
+      <h1 className="page-title page-title-medium">우리 동네 매물을 다시 이어서 둘러보세요</h1>
+      <p className="page-copy compact-copy">
+        로그인하면 인증한 지역 잠금 상태와 등록한 매물 정보를 그대로 이어서 볼 수 있어요.
       </p>
 
-      <div className="field">
-        <label htmlFor="loginEmail">이메일</label>
+      <label className="field">
+        <span>이메일</span>
         <input
-          id="loginEmail"
           className="input"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           inputMode="email"
           autoComplete="username"
-          placeholder="you@example.com"
+          placeholder="name@example.com"
         />
-      </div>
-      <div className="field">
-        <label htmlFor="loginPassword">비밀번호</label>
+      </label>
+
+      <label className="field">
+        <span>비밀번호</span>
         <input
-          id="loginPassword"
           className="input"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="current-password"
-          placeholder="비밀번호"
+          placeholder="비밀번호를 입력해 주세요"
         />
-      </div>
+      </label>
 
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <button className="button button-primary" type="submit" disabled={isSubmitting}>
+      <button className="button button-primary button-full" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "로그인 중..." : "로그인"}
       </button>
 
-      <div className="button-row">
+      <div className="button-row button-row-compact">
         <Link href={`/signup?next=${encodeURIComponent(nextUrl)}`} className="button button-secondary button-small">
           회원가입
         </Link>

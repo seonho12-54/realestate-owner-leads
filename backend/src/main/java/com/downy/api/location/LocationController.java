@@ -1,5 +1,8 @@
 package com.downy.api.location;
 
+import com.downy.api.common.RequestMeta;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -20,14 +23,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class LocationController {
 
     private final KakaoLocationService kakaoLocationService;
+    private final RegionAccessService regionAccessService;
 
-    public LocationController(KakaoLocationService kakaoLocationService) {
+    public LocationController(KakaoLocationService kakaoLocationService, RegionAccessService regionAccessService) {
         this.kakaoLocationService = kakaoLocationService;
+        this.regionAccessService = regionAccessService;
     }
 
     @PostMapping("/verify")
-    public KakaoLocationService.VerificationResponse verify(@Valid @RequestBody VerifyRequest request) {
-        return kakaoLocationService.verify(request.latitude(), request.longitude());
+    public RegionAccessService.RegionStatusResponse verify(
+        @Valid @RequestBody VerifyRequest request,
+        HttpServletRequest httpRequest,
+        HttpServletResponse response
+    ) {
+        return regionAccessService.verifyAndLock(
+            request.latitude(),
+            request.longitude(),
+            httpRequest,
+            response,
+            RequestMeta.from(httpRequest),
+            false
+        );
     }
 
     @GetMapping("/address-search")

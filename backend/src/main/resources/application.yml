@@ -22,6 +22,25 @@ app:
   admin-session-secret: ${ADMIN_SESSION_SECRET:change-this-admin-secret}
   user-session-secret: ${USER_SESSION_SECRET:change-this-user-secret}
   session-duration-days: ${SESSION_DURATION_DAYS:14}
+  cookie:
+    same-site: ${APP_COOKIE_SAME_SITE:Lax}
+    domain: ${APP_COOKIE_DOMAIN:}
+    secure: ${APP_COOKIE_SECURE:}
+  bootstrap-admin:
+    enabled: ${APP_BOOTSTRAP_ADMIN_ENABLED:true}
+    email: ${APP_BOOTSTRAP_ADMIN_EMAIL:admin@downy.local}
+    password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:admin}
+    name: ${APP_BOOTSTRAP_ADMIN_NAME:admin}
+    role: ${APP_BOOTSTRAP_ADMIN_ROLE:super}
+  phone-verification:
+    enabled: ${APP_PHONE_VERIFICATION_ENABLED:true}
+    region: ${APP_PHONE_VERIFICATION_REGION:ap-northeast-2}
+    sender-id: ${APP_PHONE_VERIFICATION_SENDER_ID:}
+    access-key-id: ${APP_PHONE_VERIFICATION_ACCESS_KEY_ID:}
+    secret-access-key: ${APP_PHONE_VERIFICATION_SECRET_ACCESS_KEY:}
+    code-length: ${APP_PHONE_VERIFICATION_CODE_LENGTH:6}
+    expires-minutes: ${APP_PHONE_VERIFICATION_EXPIRES_MINUTES:5}
+    request-cooldown-seconds: ${APP_PHONE_VERIFICATION_REQUEST_COOLDOWN_SECONDS:60}
   kakao-rest-api-key: ${KAKAO_REST_API_KEY:}
   kakao-js-key: ${KAKAO_JS_KEY:}
   max-photo-size-mb: ${MAX_PHOTO_SIZE_MB:20}
@@ -33,5 +52,4 @@ app:
     access-key-id: ${AWS_ACCESS_KEY_ID:}
     secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
   cors:
-    allowed-origins:
-      - ${FRONTEND_ORIGIN:http://localhost:5173}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:${FRONTEND_ORIGIN:http://localhost:5173}}
