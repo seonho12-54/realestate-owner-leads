@@ -39,48 +39,6 @@ public class ServiceAreaSupport {
             37.2778,
             127.2308,
             4500
-        ),
-        new ServiceArea(
-            "yongin-cheoin-yubang",
-            "경기도 용인시 처인구 유방동",
-            "경기도",
-            "용인시 처인구",
-            "유방동",
-            List.of("경기", "경기도"),
-            List.of("용인시처인구", "처인구", "용인시"),
-            List.of("유방동", "유방"),
-            true,
-            37.2319,
-            127.2112,
-            1500
-        ),
-        new ServiceArea(
-            "yongin-cheoin-yeokbuk",
-            "경기도 용인시 처인구 역북동",
-            "경기도",
-            "용인시 처인구",
-            "역북동",
-            List.of("경기", "경기도"),
-            List.of("용인시처인구", "처인구", "용인시"),
-            List.of("역북동", "역북"),
-            true,
-            37.2370,
-            127.2023,
-            1200
-        ),
-        new ServiceArea(
-            "seoul-mapo-seogyo",
-            "서울특별시 마포구 서교동",
-            "서울특별시",
-            "마포구",
-            "서교동",
-            List.of("서울", "서울특별시"),
-            List.of("마포구"),
-            List.of("서교동", "동교동", "합정동"),
-            false,
-            37.5555,
-            126.9216,
-            900
         )
     );
 

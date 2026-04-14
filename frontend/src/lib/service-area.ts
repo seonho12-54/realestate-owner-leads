@@ -33,39 +33,6 @@ export const SERVICE_AREAS: ServiceArea[] = [
       lng: 127.2308,
     },
   },
-  {
-    slug: "yongin-cheoin-yubang",
-    name: "경기도 용인시 처인구 유방동",
-    city: "경기도",
-    district: "용인시 처인구",
-    neighborhood: "유방동",
-    center: {
-      lat: 37.2319,
-      lng: 127.2112,
-    },
-  },
-  {
-    slug: "yongin-cheoin-yeokbuk",
-    name: "경기도 용인시 처인구 역북동",
-    city: "경기도",
-    district: "용인시 처인구",
-    neighborhood: "역북동",
-    center: {
-      lat: 37.237,
-      lng: 127.2023,
-    },
-  },
-  {
-    slug: "seoul-mapo-seogyo",
-    name: "서울특별시 마포구 서교동",
-    city: "서울특별시",
-    district: "마포구",
-    neighborhood: "서교동",
-    center: {
-      lat: 37.5555,
-      lng: 126.9216,
-    },
-  },
 ];
 
 export const SERVICE_REGION_LABEL = SERVICE_AREAS.map((area) => area.name).join(" / ");

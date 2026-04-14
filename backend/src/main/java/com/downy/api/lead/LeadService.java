@@ -202,8 +202,9 @@ public class LeadService {
 
     public List<PublicListingResponse> listPreviewListings(int limit) {
         int safeLimit = Math.max(3, Math.min(limit, 6));
+        List<String> allowedRegionSlugs = serviceAreaSupport.areas().stream().map(ServiceAreaSupport.ServiceArea::slug).toList();
 
-        List<PublicListingRow> rows = jdbcTemplate.query(
+        List<PublicListingRow> rows = namedParameterJdbcTemplate.query(
             """
                 SELECT
                     l.id,
@@ -236,9 +237,13 @@ public class LeadService {
                   AND l.location_verified = TRUE
                   AND l.latitude IS NOT NULL
                   AND l.longitude IS NOT NULL
+                  AND l.region_slug IN (:regionSlugs)
                 ORDER BY COALESCE(l.published_at, l.created_at) DESC, l.created_at DESC
-                LIMIT ?
+                LIMIT :limit
                 """,
+            new MapSqlParameterSource()
+                .addValue("regionSlugs", allowedRegionSlugs)
+                .addValue("limit", safeLimit),
             (rs, rowNum) -> new PublicListingRow(
                 rs.getLong("id"),
                 rs.getString("listing_title"),
@@ -259,8 +264,7 @@ public class LeadService {
                 rs.getString("office_name"),
                 rs.getString("office_phone"),
                 rs.getInt("photo_count")
-            ),
-            safeLimit
+            )
         );
 
         return toPublicListingResponses(rows, true);

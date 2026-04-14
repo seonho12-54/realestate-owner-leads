@@ -180,9 +180,10 @@ p {
   border-radius: 12px;
   background: linear-gradient(135deg, #1a3a6e, #1e4d9b);
   color: #fff;
-  font-size: 1.1rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
   box-shadow: 0 6px 14px rgba(26, 58, 110, 0.3);
   flex-shrink: 0;
 }
@@ -1019,12 +1020,14 @@ p {
   display: grid;
   gap: 18px;
   grid-template-columns: minmax(0, 1.02fr) minmax(400px, 0.98fr);
+  align-items: start;
 }
 
 .listing-column,
 .map-column {
   display: grid;
   gap: 16px;
+  align-content: start;
 }
 
 .listing-summary {
@@ -1209,6 +1212,7 @@ p {
   box-shadow: var(--shadow-lg);
 }
 
+.map-shell,
 .market-map-shell,
 .sell-map-shell {
   display: grid;
@@ -2360,6 +2364,15 @@ p {
   .my-page-grid {
     grid-template-columns: 1fr;
   }
+
+  .market-shell {
+    gap: 14px;
+  }
+
+  .mobile-toggle-row {
+    position: relative;
+    z-index: 2;
+  }
 }
 
 /* =============================================
@@ -2494,10 +2507,6 @@ p {
     min-height: 350px;
   }
 
-  .market-shell {
-    gap: 14px;
-  }
-
   .listing-summary {
     padding: 14px 16px;
   }
@@ -2551,16 +2560,7 @@ p {
   }
 
   .map-column {
-    display: none;
     order: initial;
-  }
-
-  .market-shell.map-mode .map-column {
-    display: grid;
-  }
-
-  .market-shell.map-mode .listing-column {
-    display: none;
   }
 }
 
