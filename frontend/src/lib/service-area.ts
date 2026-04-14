@@ -56,6 +56,30 @@ export function findServiceAreaBySlug(slug?: string | null) {
   return SERVICE_AREAS.find((area) => area.slug === slug) ?? null;
 }
 
+function normalize(value?: string | null) {
+  return (value ?? "").replaceAll(" ", "").toLowerCase();
+}
+
+export function resolveServiceAreaByRegion(region1?: string | null, region2?: string | null, region3?: string | null) {
+  const region1Value = normalize(region1);
+  const region2Value = normalize(region2);
+  const region3Value = normalize(region3);
+
+  return (
+    SERVICE_AREAS.find((area) => {
+      const city = normalize(area.city);
+      const district = normalize(area.district);
+      const neighborhood = normalize(area.neighborhood);
+
+      return (
+        (region1Value === city || city.includes(region1Value) || region1Value.includes(city)) &&
+        (region2Value === district || district.includes(region2Value) || region2Value.includes(district)) &&
+        (region3Value === neighborhood || neighborhood.includes(region3Value) || region3Value.includes(neighborhood))
+      );
+    }) ?? null
+  );
+}
+
 export function buildServiceAreaSearchQueries(query: string): string[] {
   const trimmed = query.trim();
 

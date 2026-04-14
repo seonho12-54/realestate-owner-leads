@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import { Link } from "@/components/RouterLink";
 import { SellMapPreview } from "@/components/SellMapPreview";
 import { createLead } from "@/lib/leads";
-import { apiRequest, createApiHeaders } from "@/lib/api";
+import { ApiError, apiRequest, createApiHeaders } from "@/lib/api";
 import { formatFileSize, prepareImageForUpload, resolveUploadContentType, resolveUploadFailureMessage } from "@/lib/client-image";
 import { useRouter } from "@/lib/router";
 import type { OfficeOption } from "@/lib/offices";
+import { findServiceAreaBySlug, resolveServiceAreaByRegion } from "@/lib/service-area";
 import { getValidationMessage, leadCreateSchema, propertyTypeOptions, transactionTypeOptions, type LeadPhotoInput } from "@/lib/validation";
 
 type AddressCandidate = {
@@ -113,6 +114,10 @@ function numberOrNull(value: string) {
   return Number.isFinite(nextValue) ? nextValue : Number.NaN;
 }
 
+function buildCrossRegionMessage(currentRegionName: string, targetRegionName: string) {
+  return `${currentRegionName} 인증 상태에서는 ${targetRegionName} 매물을 등록할 수 없어요. ${targetRegionName}에서 다시 지역 인증 후 등록해 주세요.`;
+}
+
 export function SellLeadForm({
   offices,
   initialOfficeId,
@@ -120,6 +125,8 @@ export function SellLeadForm({
   userEmail,
   browserCoords,
   isAdmin,
+  verifiedRegionSlug = null,
+  verifiedRegionName = null,
 }: {
   offices: OfficeOption[];
   initialOfficeId: number | null;
@@ -127,6 +134,8 @@ export function SellLeadForm({
   userEmail: string | null;
   browserCoords: { latitude: number; longitude: number } | null;
   isAdmin: boolean;
+  verifiedRegionSlug?: string | null;
+  verifiedRegionName?: string | null;
 }) {
   const router = useRouter();
   const [form, setForm] = useState(() => createInitialState(initialOfficeId, userName, userEmail));
@@ -193,6 +202,15 @@ export function SellLeadForm({
   }
 
   function handleSelectAddress(candidate: AddressCandidate) {
+    if (!isAdmin && verifiedRegionSlug) {
+      const targetArea = resolveServiceAreaByRegion(candidate.region1DepthName, candidate.region2DepthName, candidate.region3DepthName);
+      if (targetArea && targetArea.slug !== verifiedRegionSlug) {
+        const currentArea = findServiceAreaBySlug(verifiedRegionSlug);
+        setError(buildCrossRegionMessage(verifiedRegionName ?? currentArea?.name ?? "현재 인증 지역", targetArea.name));
+        return;
+      }
+    }
+
     setSelectedAddress(candidate);
     setSearchResults(EMPTY_SEARCH_RESULTS);
     setError(null);
@@ -320,6 +338,20 @@ export function SellLeadForm({
       return;
     }
 
+    if (!isAdmin && verifiedRegionSlug) {
+      const targetArea = resolveServiceAreaByRegion(
+        selectedAddress.region1DepthName,
+        selectedAddress.region2DepthName,
+        selectedAddress.region3DepthName,
+      );
+
+      if (targetArea && targetArea.slug !== verifiedRegionSlug) {
+        const currentArea = findServiceAreaBySlug(verifiedRegionSlug);
+        setError(buildCrossRegionMessage(verifiedRegionName ?? currentArea?.name ?? "현재 인증 지역", targetArea.name));
+        return;
+      }
+    }
+
     const submitLatitude = browserCoords?.latitude ?? selectedAddress.latitude;
     const submitLongitude = browserCoords?.longitude ?? selectedAddress.longitude;
 
@@ -374,6 +406,20 @@ export function SellLeadForm({
       const result = await createLead(validation.data);
       router.replace(`/sell/register/done?id=${result.id}`);
     } catch (submitError) {
+      if (submitError instanceof ApiError && submitError.code === "REGION_ACCESS_DENIED" && !isAdmin) {
+        const targetArea = resolveServiceAreaByRegion(
+          selectedAddress.region1DepthName,
+          selectedAddress.region2DepthName,
+          selectedAddress.region3DepthName,
+        );
+
+        if (targetArea) {
+          const currentArea = findServiceAreaBySlug(verifiedRegionSlug);
+          setError(buildCrossRegionMessage(verifiedRegionName ?? currentArea?.name ?? "현재 인증 지역", targetArea.name));
+          return;
+        }
+      }
+
       setError(submitError instanceof Error ? submitError.message : "매물 접수에 실패했습니다.");
     } finally {
       setIsSubmitting(false);

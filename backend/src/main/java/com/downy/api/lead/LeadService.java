@@ -73,7 +73,7 @@ public class LeadService {
             throw new ApiException(
                 HttpStatus.FORBIDDEN,
                 RegionAccessService.REGION_ACCESS_DENIED,
-                "인증한 지역 안의 매물만 등록할 수 있어요."
+                buildRegionVerificationRequiredMessage(verifiedRegionSlug, serviceArea.slug(), "등록")
             );
         }
 
@@ -649,7 +649,7 @@ public class LeadService {
             throw new ApiException(
                 HttpStatus.FORBIDDEN,
                 RegionAccessService.REGION_ACCESS_DENIED,
-                "인증한 지역 안의 매물만 수정할 수 있어요."
+                buildRegionVerificationRequiredMessage(verifiedRegionSlug, serviceArea.slug(), "수정")
             );
         }
 
@@ -1095,6 +1095,18 @@ public class LeadService {
                 "현재 인증된 우리 동네 안에서만 매물 접수와 수정이 가능해요."
             );
         }
+    }
+
+    private String buildRegionVerificationRequiredMessage(String verifiedRegionSlug, String targetRegionSlug, String action) {
+        String currentRegionName = resolveRegionName(verifiedRegionSlug, "현재 인증 지역");
+        String targetRegionName = resolveRegionName(targetRegionSlug, "선택한 지역");
+        return "%s 인증 상태에서는 %s 매물을 %s할 수 없어요. %s에서 다시 지역 인증 후 진행해 주세요."
+            .formatted(currentRegionName, targetRegionName, action, targetRegionName);
+    }
+
+    private String resolveRegionName(String regionSlug, String fallback) {
+        ServiceAreaSupport.ServiceArea area = serviceAreaSupport.findBySlug(regionSlug);
+        return area != null ? area.name() : fallback;
     }
 
     private ServiceAreaSupport.ServiceArea resolveServiceArea(AddressSearchResult geocoded) {

@@ -298,6 +298,8 @@ export function CreateLeadPage() {
           userEmail={session.user?.email ?? null}
           browserCoords={browserCoords}
           isAdmin={session.kind === "admin"}
+          verifiedRegionSlug={session.kind === "user" ? session.region.region?.slug ?? null : null}
+          verifiedRegionName={session.kind === "user" ? session.region.region?.name ?? null : null}
         />
       )}
     </div>
