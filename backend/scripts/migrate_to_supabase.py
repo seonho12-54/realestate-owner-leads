@@ -60,6 +60,9 @@ def read_env_file(path: Path) -> dict[str, str]:
         if not line or line.startswith("#") or "=" not in line:
             continue
 
+        if line.startswith("export "):
+            line = line[len("export ") :].strip()
+
         key, value = line.split("=", 1)
         value = value.strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
