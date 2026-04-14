@@ -1069,6 +1069,7 @@ p {
 }
 
 .listing-card {
+  position: relative;
   padding: 14px;
   cursor: pointer;
 }
