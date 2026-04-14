@@ -63,7 +63,7 @@ public class AuthService {
                     phone_normalized,
                     phone_verified_at,
                     is_active
-                ) VALUES (?, ?, ?, ?, ?, ?, 1)
+                ) VALUES (?, ?, ?, ?, ?, ?, TRUE)
                 """,
             normalizedEmail,
             passwordEncoder.encode(request.password()),
@@ -88,7 +88,7 @@ public class AuthService {
 
         AdminRecord admin = findAdminByIdentifier(normalizedIdentifier);
         if (admin != null && Boolean.TRUE.equals(admin.active()) && passwordEncoder.matches(request.password(), admin.passwordHash())) {
-            jdbcTemplate.update("UPDATE admins SET last_login_at = ? WHERE id = ?", Instant.now(), admin.id());
+            jdbcTemplate.update("UPDATE admins SET last_login_at = ? WHERE id = ?", Timestamp.from(Instant.now()), admin.id());
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("email", admin.email());
             payload.put("role", admin.role());
@@ -105,7 +105,7 @@ public class AuthService {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인해 주세요.");
         }
 
-        jdbcTemplate.update("UPDATE users SET last_login_at = ? WHERE id = ?", Instant.now(), user.id());
+        jdbcTemplate.update("UPDATE users SET last_login_at = ? WHERE id = ?", Timestamp.from(Instant.now()), user.id());
         auditLogService.write(null, "user.login", "user", user.id(), requestMeta, Map.of("email", user.email()));
         return LoginResult.user(
             new UserSession(
@@ -131,7 +131,7 @@ public class AuthService {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "관리자 계정을 확인해 주세요.");
         }
 
-        jdbcTemplate.update("UPDATE admins SET last_login_at = ? WHERE id = ?", Instant.now(), admin.id());
+        jdbcTemplate.update("UPDATE admins SET last_login_at = ? WHERE id = ?", Timestamp.from(Instant.now()), admin.id());
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("email", admin.email());
         payload.put("role", admin.role());
@@ -220,7 +220,7 @@ public class AuthService {
             """
                 SELECT id, office_id, email, password_hash, name, role, is_active
                 FROM admins
-                WHERE LOWER(SUBSTRING_INDEX(email, '@', 1)) = ?
+                WHERE LOWER(split_part(email, '@', 1)) = ?
                 LIMIT 1
                 """,
             (rs, rowNum) -> mapAdmin(rs),
