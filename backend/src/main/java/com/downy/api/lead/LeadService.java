@@ -77,6 +77,10 @@ public class LeadService {
             );
         }
 
+        if (verifiedRegionSlug != null) {
+            ensureCurrentLocationMatchesVerifiedRegion(input.browserLatitude(), input.browserLongitude(), verifiedRegionSlug);
+        }
+
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -645,6 +649,8 @@ public class LeadService {
             );
         }
 
+        ensureCurrentLocationMatchesVerifiedRegion(request.browserLatitude(), request.browserLongitude(), verifiedRegionSlug);
+
         int updated = jdbcTemplate.update(
             """
                 UPDATE leads
@@ -1065,6 +1071,25 @@ public class LeadService {
 
         if (exists == null || exists == 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "선택한 중개사무소를 찾을 수 없어요.");
+        }
+    }
+
+    private void ensureCurrentLocationMatchesVerifiedRegion(Double browserLatitude, Double browserLongitude, String verifiedRegionSlug) {
+        if (browserLatitude == null || browserLongitude == null) {
+            throw new ApiException(
+                HttpStatus.FORBIDDEN,
+                RegionAccessService.REGION_VERIFICATION_REQUIRED,
+                "현재 위치를 확인한 뒤 같은 동네에서만 매물 접수를 진행할 수 있어요."
+            );
+        }
+
+        KakaoLocationService.VerificationResponse verification = kakaoLocationService.verify(browserLatitude, browserLongitude);
+        if (!verification.allowed() || !Objects.equals(verifiedRegionSlug, verification.regionSlug())) {
+            throw new ApiException(
+                HttpStatus.FORBIDDEN,
+                RegionAccessService.REGION_ACCESS_DENIED,
+                "현재 인증된 우리 동네 안에서만 매물 접수와 수정이 가능해요."
+            );
         }
     }
 

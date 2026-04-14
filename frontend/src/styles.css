@@ -2360,10 +2360,6 @@ p {
   .my-page-grid {
     grid-template-columns: 1fr;
   }
-
-  .map-column {
-    order: -1;
-  }
 }
 
 /* =============================================
@@ -2371,6 +2367,15 @@ p {
    ============================================= */
 
 @media (max-width: 860px) {
+  .page-panel,
+  .hero-card,
+  .detail-hero,
+  .map-panel,
+  .selected-panel {
+    padding: 18px;
+    border-radius: var(--radius-xl);
+  }
+
   .top-shell {
     display: flex;
     flex-wrap: wrap;
@@ -2406,6 +2411,45 @@ p {
 
   .saved-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .filter-bar,
+  .sell-form,
+  .admin-detail-panel,
+  .my-page-editor-panel,
+  .admin-form-section {
+    gap: 14px;
+  }
+
+  .filter-bar {
+    padding: 16px;
+  }
+
+  .chip-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .chip-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chip {
+    flex: 0 0 auto;
+  }
+
+  .mobile-toggle-row {
+    gap: 8px;
+  }
+
+  .mobile-toggle-row .chip {
+    width: 100%;
+    min-height: 52px;
+    font-size: 0.95rem;
   }
 
   .preview-card-grid,
@@ -2450,12 +2494,65 @@ p {
     min-height: 350px;
   }
 
+  .market-shell {
+    gap: 14px;
+  }
+
+  .listing-summary {
+    padding: 14px 16px;
+  }
+
+  .listing-summary strong {
+    font-size: 1.7rem;
+  }
+
+  .listing-card-hit {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .listing-content {
+    padding-right: 0;
+  }
+
+  .selected-panel {
+    gap: 12px;
+  }
+
+  .button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .button-row .button,
+  .button-row .nav-button {
+    width: 100%;
+  }
+
   .bottom-nav {
     width: calc(100% - 16px);
   }
 
+  .admin-list,
+  .my-lead-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .admin-lead-card-top,
+  .my-lead-card-top {
+    flex-direction: column;
+  }
+
+  .admin-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .map-column {
     display: none;
+    order: initial;
   }
 
   .market-shell.map-mode .map-column {
