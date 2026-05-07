@@ -1,0 +1,4 @@
+/home/ec2-user/realestate-owner-leads/backend/src/test/java/com/downy/api/auth/AdminBootstrapServiceTest.java
+/home/ec2-user/realestate-owner-leads/backend/src/test/java/com/downy/api/lead/ListingControllerTest.java
+/home/ec2-user/realestate-owner-leads/backend/src/test/java/com/downy/api/location/RegionAccessServiceTest.java
+/home/ec2-user/realestate-owner-leads/backend/src/test/java/com/downy/api/location/ServiceAreaSupportTest.java
